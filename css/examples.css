@@ -1,0 +1,4 @@
+.example-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.example-card { display: grid; gap: 0.65rem; }
+.example-card .button { align-self: end; }
+

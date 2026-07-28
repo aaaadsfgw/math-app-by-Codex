@@ -1,0 +1,61 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f3f6fb;
+  --surface: #ffffff;
+  --surface-muted: #eef3f8;
+  --text: #18212f;
+  --muted: #5d6978;
+  --line: #d7e0ea;
+  --primary: #2457d6;
+  --primary-hover: #1948bc;
+  --success: #177a4d;
+  --warning: #9a5d00;
+  --danger: #b42318;
+  --info: #165d88;
+  --shadow: 0 8px 24px rgba(24, 33, 47, 0.08);
+  --radius: 14px;
+  font-family: Inter, "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101722;
+    --surface: #182230;
+    --surface-muted: #222f40;
+    --text: #f2f6fb;
+    --muted: #adbac9;
+    --line: #334357;
+    --primary: #78a0ff;
+    --primary-hover: #9bbaff;
+    --success: #62d29a;
+    --warning: #f3b95f;
+    --danger: #ff8e87;
+    --info: #73c3f0;
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--bg); }
+body { margin: 0; color: var(--text); background: var(--bg); font-size: 15px; line-height: 1.6; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-size: clamp(1.5rem, 3vw, 2.15rem); line-height: 1.25; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1rem; }
+a { color: var(--primary); }
+button, input, select, textarea { font: inherit; }
+button, select, input[type="checkbox"], input[type="radio"] { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+textarea, input, select {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--text); padding: 0.7rem 0.8rem;
+}
+textarea { resize: vertical; min-height: 7rem; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.muted { color: var(--muted); }
+.danger-text { color: var(--danger); }
+.success-text { color: var(--success); }
+.mono { font-family: "Cascadia Mono", Consolas, monospace; overflow-wrap: anywhere; }
+

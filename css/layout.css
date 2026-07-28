@@ -1,0 +1,22 @@
+.app-header { background: var(--surface); border-bottom: 1px solid var(--line); }
+.header-inner, .page-shell { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
+.header-inner { padding: 1rem 0; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; color: var(--text); font-weight: 800; }
+.brand-mark { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 10px; color: white; background: #2457d6; }
+.top-nav { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.top-nav a { padding: 0.35rem 0.6rem; border-radius: 8px; text-decoration: none; color: var(--muted); font-size: 0.88rem; }
+.top-nav a:hover, .top-nav a[aria-current="page"] { background: var(--surface-muted); color: var(--text); }
+.page-shell { padding: 1.5rem 0 3rem; }
+.page-heading { margin-bottom: 1.2rem; }
+.grid { display: grid; gap: 1rem; }
+.grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sidebar-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.38fr); gap: 1rem; align-items: start; }
+.stack { display: grid; gap: 1rem; }
+.inline { display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; }
+.spread { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+@media (max-width: 760px) {
+  .grid.two, .grid.three, .sidebar-layout { grid-template-columns: 1fr; }
+  .header-inner, .page-shell { width: min(100% - 1rem, 1120px); }
+}
+

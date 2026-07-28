@@ -1,0 +1,5 @@
+.toc { columns: 2; }
+.toc a { display: block; padding: 0.15rem 0; }
+.help-section { scroll-margin-top: 1rem; }
+@media (max-width: 560px) { .toc { columns: 1; } }
+

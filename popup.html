@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Math Study Log AI</title>
+  <link rel="stylesheet" href="css/base.css"><link rel="stylesheet" href="css/layout.css"><link rel="stylesheet" href="css/components.css"><link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <main class="popup-shell">
+    <header class="popup-header"><div><p class="muted">検証と学習記録をひとつに</p><h1 class="popup-title">Math Study Log AI</h1></div><span id="appStateBadge" class="badge">準備完了</span></header>
+    <nav class="popup-nav" aria-label="画面ナビゲーション">
+      <a href="history.html" target="_blank" rel="noopener">履歴</a><a href="analytics.html" target="_blank" rel="noopener">分析</a><a href="review.html" target="_blank" rel="noopener">復習</a><a href="geometry.html" target="_blank" rel="noopener">図形</a><a href="examples.html" target="_blank" rel="noopener">例題</a><a href="settings.html" target="_blank" rel="noopener">設定</a><a href="help.html" target="_blank" rel="noopener">ヘルプ</a><a href="about.html" target="_blank" rel="noopener">情報</a>
+    </nav>
+    <section class="card compact-card stack" aria-labelledby="questionHeading">
+      <div class="spread"><h2 id="questionHeading">問題文</h2><span id="charCount" class="muted" aria-live="polite">0文字</span></div>
+      <textarea id="questionInput" aria-label="数学の問題文" placeholder="例: 2x + 3 = 11"></textarea>
+      <div class="button-row"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><span id="categoryStatus" class="badge">未分類</span></div>
+    </section>
+    <section class="card compact-card stack" aria-labelledby="modeHeading">
+      <h2 id="modeHeading">出力モード</h2>
+      <fieldset class="choice-grid mode-grid"><legend class="sr-only">出力モードを選択</legend>
+        <label><input type="radio" name="mode" value="answer" checked>答え</label><label><input type="radio" name="mode" value="hint1">ヒント1</label><label><input type="radio" name="mode" value="hint2">ヒント2</label><label><input type="radio" name="mode" value="steps">途中式</label><label><input type="radio" name="mode" value="explain">解説</label>
+      </fieldset>
+      <button id="runButton" class="button primary" type="button">解析する</button>
+      <div id="processStatus" class="notice loading-dot" role="status" aria-live="polite" hidden>解析中です</div>
+      <div id="errorMessage" class="notice error" role="alert" hidden></div>
+    </section>
+    <section id="resultPanel" class="card compact-card stack" aria-labelledby="resultHeading" hidden>
+      <div class="result-heading"><h2 id="resultHeading">結果</h2><span id="verificationBadge" class="badge"></span></div>
+      <div id="verificationMessage" class="muted"></div><div id="resultOutput" class="result-output" tabindex="0"></div>
+      <div class="button-row"><button id="copyButton" class="button primary" type="button">結果をコピー</button></div>
+    </section>
+    <section id="assessmentPanel" class="card compact-card stack" aria-labelledby="assessmentHeading" hidden>
+      <h2 id="assessmentHeading">どの段階で解けましたか？</h2>
+      <div class="field"><label for="assessmentSelect">自己評価</label><select id="assessmentSelect"><option value="unassessed">未評価</option><option value="self_solved">自力で解けた（100）</option><option value="hint1_solved">ヒント1で解けた（80）</option><option value="hint2_solved">ヒント2で解けた（60）</option><option value="steps_solved">途中式で解けた（40）</option><option value="explain_understood">解説を見て理解した（30）</option><option value="answer_seen">答えを見た（0）</option><option value="unsolved">解けなかった（0）</option></select></div>
+      <button id="assessmentSaveButton" class="button" type="button">評価を保存</button><p id="saveStatus" class="muted" aria-live="polite"></p>
+    </section>
+  </main>
+  <script type="module" src="js/popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+.metrics-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.category-row { display: grid; grid-template-columns: minmax(90px, 0.8fr) minmax(140px, 2fr) auto; gap: 0.7rem; align-items: center; padding: 0.45rem 0; }
+@media (max-width: 560px) { .category-row { grid-template-columns: 1fr auto; } .category-row .progress-track { grid-column: 1 / -1; } }
+

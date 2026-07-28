@@ -1,0 +1,12 @@
+.geometry-workspace { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr); gap: 1rem; align-items: start; }
+.canvas-wrap { min-height: 390px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fbfdff; }
+#geometryCanvas { width: 100%; min-height: 390px; display: block; touch-action: none; }
+.geometry-point { fill: #2457d6; stroke: white; stroke-width: 3; cursor: grab; }
+.geometry-point:active { cursor: grabbing; }
+.geometry-segment { stroke: #26364c; stroke-width: 4; cursor: pointer; }
+.geometry-segment.auxiliary { stroke-dasharray: 8 6; stroke-width: 2; }
+.geometry-label { fill: #18212f; font-weight: 800; pointer-events: none; }
+.constraint-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.45rem; }
+.constraint-list li { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem; }
+@media (max-width: 800px) { .geometry-workspace { grid-template-columns: 1fr; } }
+
