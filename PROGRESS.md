@@ -127,7 +127,25 @@ Last updated: 2026-07-30
 - Added whole-input quadratic-equation parsing and blocked ambiguous `x2`
   notation across both quadratic and legacy linear equation paths.
 - Expanded the generated corpus with 250 quadratic equations and 250 quadratic
-  inequalities, for 1,500 generated cases total.
+  inequalities.
+- Migrated the remaining one-variable linear-equation solver from floating
+  arithmetic and tolerance checks to exact rational coefficients and exact
+  substitution. Tiny nonzero coefficients and constants can no longer be
+  erased by an epsilon.
+- Added bounded exact rational-function reduction with separate numerator,
+  denominator, and original-domain-factor ledgers.
+- Added one-variable rational equations whose cleared equation and every
+  denominator factor reduce to degree two or below:
+  - preserve holes after cancellation, multiplication by zero, nested
+    division, and negative powers;
+  - filter rational and radical candidates by exact substitution into every
+    original denominator;
+  - preserve real exclusion values as conditional result data through history;
+  - reject ambiguous slash-plus-implicit-multiplication notation.
+- Fixed identically-zero bases raised to the zeroth power from being accepted
+  as verified identities.
+- Added 250 generated rational-equation cases, bringing the generated corpus
+  to 1,750 cases total.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -156,21 +174,21 @@ Last updated: 2026-07-30
 
 ## Next
 
-1. Add rational equations with explicit denominator exclusions and exact
-   substitution into the original equation.
-2. Expand the rational-expression regression corpus before enabling more
-   cancellation patterns.
+1. Add standard exponential and logarithmic equations with positive-base and
+   domain checks.
+2. Add rational inequalities only after exact sign charts can include poles as
+   separate open endpoints.
 3. Add definite integrals only after endpoint-domain and discontinuity checks.
 4. Extend the evaluation corpus across every newly supported curriculum
-   domain instead of treating the current 1,500 algebra-heavy cases as final.
+   domain instead of treating the current 1,750 algebra-heavy cases as final.
 5. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 104 passed, 0 failed on 2026-07-30, including 1,500 generated
+- `npm test` - 124 passed, 0 failed on 2026-07-30, including 1,750 generated
   evaluation cases.
-- `npm run check` - passed for 102 files, 10 HTML, 64 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 107 files, 10 HTML, 69 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

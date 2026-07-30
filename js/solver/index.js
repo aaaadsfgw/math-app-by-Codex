@@ -8,6 +8,7 @@ import { solveLinearSystem } from "./linear-system.js";
 import { solvePercentage } from "./percentage.js";
 import { solveQuadraticEquation } from "./quadratic-equation.js";
 import { solveQuadraticInequality } from "./quadratic-inequality.js";
+import { solveRationalEquation } from "./rational-equation.js";
 import { unsupportedResult } from "./utils.js";
 
 export {
@@ -21,6 +22,7 @@ export {
   solvePercentage,
   solveQuadraticEquation,
   solveQuadraticInequality,
+  solveRationalEquation,
 };
 
 export const SOLVERS = Object.freeze([
@@ -29,15 +31,16 @@ export const SOLVERS = Object.freeze([
   solveLinearInequality,
   solveBaseConversion,
   solvePercentage,
+  solveRationalEquation,
   solveQuadraticEquation,
   solveLinearEquation,
 ]);
 
 const CATEGORY_SOLVERS = Object.freeze({
-  "一次方程式": [solveLinearEquation],
+  "一次方程式": [solveRationalEquation, solveLinearEquation],
   "不等式": [solveQuadraticInequality, solveLinearInequality],
   "連立方程式": [solveLinearSystem],
-  "二次方程式": [solveQuadraticEquation],
+  "二次方程式": [solveRationalEquation, solveQuadraticEquation],
   "基数変換": [solveBaseConversion],
   "パーセント": [solvePercentage],
 });

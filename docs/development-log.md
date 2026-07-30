@@ -147,3 +147,24 @@ higher-degree inequalities remain unsupported.
 
 Node tests and source validation pass. Complex roots, parameterized
 coefficients, and higher-degree equations remain unsupported.
+
+## 2026-07-30: exact linear and rational equations
+
+- Migrated one-variable linear equations to exact rational coefficients and
+  exact substitution, removing the remaining epsilon-based equation path.
+- Added a bounded rational-function reducer that keeps numerator, denominator,
+  and every original domain factor separate.
+- Added rational equations that clear to degree two or below and whose domain
+  factors also have degree at most two.
+- Preserve holes after cancellation, zero multiplication, nested division, and
+  exponents -1 or -2. Rational and radical candidates are rejected whenever an
+  original denominator evaluates to exactly zero.
+- Reject ambiguous forms such as `1/x(x+1)` and `1/2x`; users must write
+  `(1/x)*(x+1)`, `1/(x(x+1))`, `(1/2)*x`, or `1/(2x)`.
+- Reject identically-zero bases raised to the zeroth power.
+- Added 250 generated rational-equation cases, bringing the generated baseline
+  to 1,750.
+
+Node tests and source validation pass. Higher-degree rational equations,
+rational inequalities, parameterized denominators, and function-valued
+denominators remain unsupported.

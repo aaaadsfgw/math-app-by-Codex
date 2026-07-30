@@ -12,6 +12,8 @@ API key, external server, network permission, remote script, or CDN.
 The current migration checkpoint supports:
 
 - linear equations in one variable;
+- one-variable rational equations whose cleared numerator and every original
+  denominator reduce to degree two or below;
 - systems of two linear equations in `x` and `y`, with exact fractions;
 - one-variable linear inequalities;
 - one-variable quadratic inequalities with exact rational or radical

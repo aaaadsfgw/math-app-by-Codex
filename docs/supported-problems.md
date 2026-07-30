@@ -8,6 +8,7 @@ Classification alone never means a problem can be solved.
 | Domain | Accepted examples | Verification |
 | --- | --- | --- |
 | Linear equation | `2x+3=11`, `3(x+2)=15` | substitute into the original equation |
+| Rational equation | `1/(x-1)=2`, `(x²-1)/(x-1)=0` | exact clearing plus substitution into every original denominator |
 | Two-variable linear system | `x+y=3, x-y=1` | exact substitution into both equations |
 | One-variable linear inequality | `-3x+6>=0`, `0.5x>1` | exact boundary and coefficient-sign check |
 | One-variable quadratic inequality | `x^2-5x+6<=0`, `x^2-2<0` | exact discriminant and sign chart |
@@ -54,3 +55,10 @@ differentiates back to the original integrand.
 For rational-expression simplification, restrictions from every original
 denominator are preserved in the displayed answer and history record. For
 example, `(x^2-1)/(x-1)` may simplify to `x+1`, but only under `(x-1)≠0`.
+
+Rational equations currently allow one variable, arithmetic, parentheses, and
+integer powers from -2 through 2. Every original denominator factor and the
+cleared equation must reduce to degree two or below; larger intermediate or
+domain polynomials fail safely. Slash notation followed by implicit
+multiplication, such as `1/x(x+1)`, is rejected until the denominator is made
+explicit with parentheses.

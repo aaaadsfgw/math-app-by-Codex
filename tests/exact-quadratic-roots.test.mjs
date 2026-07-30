@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   analyzeExactQuadraticRoots,
+  evaluateExactPolynomialAtQuadraticRoot,
   integerSquareRoot,
   verifyExactQuadraticRoot,
 } from "../js/math-core/exact-quadratic-roots.js";
@@ -103,4 +104,23 @@ test("二次でない式・上限超過係数・改変した根を受理しな�
     analysis.integerCoefficients,
     { ...analysis.roots[0], radicalCoefficient: -2n },
   ), false);
+});
+
+test("二次根へ任意の有界多項式を有理部・根号部に分けて代入する", () => {
+  const analysis = analyzeExactQuadraticRoots(coefficients("-2", "0", "1"));
+  for (const root of analysis.roots) {
+    const zero = evaluateExactPolynomialAtQuadraticRoot(
+      coefficients("-2", "0", "1"),
+      root,
+    );
+    assert.equal(zero.isZero, true);
+    assert.equal(zero.rationalPart.toString(), "0");
+    assert.equal(zero.radicalPart.toString(), "0");
+
+    const nonzero = evaluateExactPolynomialAtQuadraticRoot(
+      coefficients("-1", "1", "0"),
+      root,
+    );
+    assert.equal(nonzero.isZero, false);
+  }
 });

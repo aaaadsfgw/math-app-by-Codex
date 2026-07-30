@@ -136,6 +136,20 @@ function generatedQuadraticEquations() {
   });
 }
 
+function generatedRationalEquations() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const root = (index % 29) - 14;
+    let excluded = ((index * 5) % 31) - 15;
+    if (excluded === root) excluded += 1;
+    const leading = index % 2 === 0 ? (index % 7) + 1 : -((index % 7) + 1);
+    return {
+      family: "rational-equation",
+      question: `${leading}${factorAt(root)}/${factorAt(excluded)}=0`,
+      answer: `x=${root}（ただし x≠${excluded}）`,
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -161,13 +175,14 @@ const positiveCorpus = [
   ...generatedLinearSystems(),
   ...generatedBaseConversions(),
   ...generatedQuadraticEquations(),
+  ...generatedRationalEquations(),
   ...generatedQuadraticInequalities(),
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("1,500問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 1_500);
+test("1,750問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 1_750);
 
   for (const item of positiveCorpus) {
     const result = solveQuestion(item.question);

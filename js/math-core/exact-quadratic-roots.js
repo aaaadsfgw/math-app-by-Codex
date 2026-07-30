@@ -178,6 +178,43 @@ function withApproximation(root, approximate) {
   });
 }
 
+export function evaluateExactPolynomialAtQuadraticRoot(coefficients, root) {
+  if (
+    !Array.isArray(coefficients)
+    || coefficients.some((coefficient) => !(coefficient instanceof ExactRational))
+    || !root
+  ) {
+    throw new TypeError("厳密係数と二次根を指定してください。");
+  }
+  const p = root.numeratorConstant;
+  const q = root.radicalCoefficient;
+  const r = root.radicand;
+  const d = root.denominator;
+  if ([p, q, r, d].some((value) => typeof value !== "bigint") || d <= 0n || r < 0n) {
+    throw new TypeError("二次根の内部表現が正しくありません。");
+  }
+
+  const rootRational = new ExactRational(p, d);
+  const rootRadical = new ExactRational(q, d);
+  const radicand = new ExactRational(r);
+  let rationalPart = ExactRational.zero();
+  let radicalPart = ExactRational.zero();
+  for (let index = coefficients.length - 1; index >= 0; index -= 1) {
+    const nextRational = rationalPart.multiply(rootRational)
+      .add(radicalPart.multiply(rootRadical).multiply(radicand))
+      .add(coefficients[index]);
+    const nextRadical = rationalPart.multiply(rootRadical)
+      .add(radicalPart.multiply(rootRational));
+    rationalPart = nextRational;
+    radicalPart = nextRadical;
+  }
+  return Object.freeze({
+    rationalPart,
+    radicalPart,
+    isZero: rationalPart.isZero() && radicalPart.isZero(),
+  });
+}
+
 function rootComponents(integerCoefficients, discriminant) {
   const [cOriginal, bOriginal, aOriginal] = integerCoefficients;
   let a = aOriginal;
@@ -226,17 +263,14 @@ export function verifyExactQuadraticRoot(integerCoefficients, root) {
   ) {
     return false;
   }
-  const [c, b, a] = integerCoefficients;
-  const p = root.numeratorConstant;
-  const q = root.radicalCoefficient;
-  const r = root.radicand;
-  const d = root.denominator;
-  if ([p, q, r, d].some((value) => typeof value !== "bigint") || d <= 0n || r < 0n) {
+  try {
+    return evaluateExactPolynomialAtQuadraticRoot(
+      integerCoefficients.map((coefficient) => new ExactRational(coefficient)),
+      root,
+    ).isZero;
+  } catch {
     return false;
   }
-  const rationalPart = a * (p * p + q * q * r) + b * p * d + c * d * d;
-  const radicalPart = 2n * a * p * q + b * q * d;
-  return rationalPart === 0n && radicalPart === 0n;
 }
 
 export function analyzeExactQuadraticRoots(coefficients) {

@@ -2,6 +2,7 @@ import { setPendingQuestion } from './storage.js';
 
 const examples = [
   ['一次方程式', '2x + 3 = 11', true], ['二次方程式', 'x^2 - 5x + 6 = 0', true],
+  ['分数方程式', '1/(x-1)=2', true],
   ['式の計算', '(x+1)(x-1)を展開せよ', true],
   ['連立方程式', 'x+y=3, x-y=1', true],
   ['一次不等式', '-3x+6≥0', true],

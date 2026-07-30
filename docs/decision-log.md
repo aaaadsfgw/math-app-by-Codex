@@ -116,3 +116,17 @@ represented as `(p+q√r)/d`; substitution must reduce both its rational part an
 its radical coefficient to exactly zero. Decimal approximations may accompany
 an exact root for readability, but never replace `exactAnswer` or serve as
 verification evidence.
+
+## D-010: Preserve original denominator factors independently
+
+**Status:** accepted
+**Date:** 2026-07-30
+
+Rational expressions are represented by an exact numerator and denominator,
+plus a separate ledger of every original nonzero denominator factor. Algebraic
+cancellation, multiplication by zero, nested division, and negative powers
+must never erase that ledger. A rational-equation candidate is accepted only
+when the cleared equation is exactly zero and every ledger factor is exactly
+nonzero. Real exclusion values make the result conditional so they survive
+history storage. Ambiguous slash notation followed by implicit multiplication
+is rejected rather than assigned one of multiple textbook interpretations.

@@ -91,6 +91,17 @@ function power(base, exponentPolynomial) {
       unsupported: true,
     });
   }
+  if (exponent === 0n && degree(base) === 0 && base[0].isZero()) {
+    throw new ExactPolynomialError("0の0乗は扱えません。", {
+      code: "ZERO_TO_ZERO",
+    });
+  }
+  if (exponent === 0n && degree(base) > 0) {
+    throw new ExactPolynomialError("変数を含む式の0乗は定義域の分岐が必要です。", {
+      code: "ZERO_POWER_DOMAIN",
+      unsupported: true,
+    });
+  }
   let output = constant(ExactRational.one());
   for (let count = 0n; count < exponent; count += 1n) {
     output = multiply(output, base);
@@ -152,4 +163,3 @@ export function evaluateExactPolynomial(coefficients, x) {
     ExactRational.zero(),
   );
 }
-

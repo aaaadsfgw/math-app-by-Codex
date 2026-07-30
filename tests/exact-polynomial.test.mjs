@@ -40,5 +40,16 @@ test("三次式・変数分母・0除算を二次多項式として受理しな�
     ),
     /0では割れません/,
   );
+  assert.throws(
+    () => exactPolynomialFromAst(
+      parseMathExpression("(x-x)^0", { symbols: ["x"] }).ast,
+    ),
+    /0の0乗/,
+  );
+  assert.throws(
+    () => exactPolynomialFromAst(
+      parseMathExpression("x^0", { symbols: ["x"] }).ast,
+    ),
+    (error) => error instanceof ExactPolynomialError && error.unsupported,
+  );
 });
-

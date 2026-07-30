@@ -6,7 +6,10 @@ import {
 } from "../math-core/exact-polynomial.js";
 import { analyzeExactQuadraticRoots } from "../math-core/exact-quadratic-roots.js";
 import { MathParseError, parseMathExpression } from "../math-core/expression-parser.js";
-import { parseEquationInput } from "./equation-input.js";
+import {
+  hasAmbiguousDivisionMultiplication,
+  parseEquationInput,
+} from "./equation-input.js";
 import { failedResult, solvedResult, unsupportedResult } from "./utils.js";
 
 export const QUADRATIC_SOLVER_ID = "quadratic-equation";
@@ -39,12 +42,19 @@ function approximateRootAnswer(roots) {
 }
 
 function parseExactQuadratic(source) {
-  const left = exactPolynomialFromAst(
-    parseMathExpression(source.leftSource, { symbols: ["x"] }).ast,
-  );
-  const right = exactPolynomialFromAst(
-    parseMathExpression(source.rightSource, { symbols: ["x"] }).ast,
-  );
+  const leftAst = parseMathExpression(source.leftSource, { symbols: ["x"] }).ast;
+  const rightAst = parseMathExpression(source.rightSource, { symbols: ["x"] }).ast;
+  if (
+    hasAmbiguousDivisionMultiplication(source.leftSource)
+    || hasAmbiguousDivisionMultiplication(source.rightSource)
+  ) {
+    throw new ExactPolynomialError(
+      "割り算の直後の暗黙の掛け算は曖昧です。分母と掛け算を括弧で明示してください。",
+      { code: "AMBIGUOUS_DIVISION_MULTIPLICATION" },
+    );
+  }
+  const left = exactPolynomialFromAst(leftAst);
+  const right = exactPolynomialFromAst(rightAst);
   const coefficients = subtractExactPolynomials(left, right);
   if (exactPolynomialDegree(coefficients) !== 2) {
     throw new ExactPolynomialError("二次方程式ではありません。", {
