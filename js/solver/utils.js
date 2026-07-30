@@ -1,3 +1,10 @@
+import {
+  createInvalidMathResult,
+  createSolvedMathResult,
+  createUnsupportedMathResult,
+  toLegacySolverResult,
+} from "../math-core/result.js";
+
 const EPSILON = 1e-9;
 const MAX_POLYNOMIAL_DEGREE = 4;
 
@@ -43,42 +50,28 @@ export function formatNumber(value, maximumFractionDigits = 10) {
 }
 
 export function unsupportedResult(error = "未対応形式") {
-  return {
-    supported: false,
-    solved: false,
-    answer: "",
-    steps: [],
-    verified: false,
-    verification: "",
-    solverId: null,
-    error,
-  };
+  return toLegacySolverResult(createUnsupportedMathResult({ reason: error }));
 }
 
 export function failedResult(solverId, error) {
-  return {
-    supported: true,
-    solved: false,
-    answer: "",
-    steps: [],
-    verified: false,
-    verification: "",
-    solverId,
-    error,
-  };
+  return toLegacySolverResult(createInvalidMathResult({
+    reason: error,
+    code: "SOLVER_INPUT_ERROR",
+    domain: solverId,
+  }));
 }
 
 export function solvedResult({ answer, steps = [], verification, solverId }) {
-  return {
-    supported: true,
-    solved: true,
-    answer: String(answer),
-    steps: steps.map(String),
-    verified: true,
-    verification: String(verification),
+  return toLegacySolverResult(createSolvedMathResult({
+    answer,
+    steps,
+    verification: {
+      method: "solver-specific-check",
+      evidence: verification,
+    },
+    domain: solverId,
     solverId,
-    error: null,
-  };
+  }));
 }
 
 function trimJapanesePrompt(text) {

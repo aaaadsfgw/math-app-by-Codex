@@ -51,6 +51,19 @@ Last updated: 2026-07-30
   function, variable, input-size, output-size, and syntax boundary.
 - Added contract tests for simplification, equivalence, polynomial roots,
   differentiation, integration, unsafe input, and malformed syntax.
+- Added shared notation normalization for full-width input, Unicode operators,
+  superscript exponents, square roots, pi, and common LaTeX operator spellings.
+- Added a bounded tokenizer and recursive-descent expression parser with:
+  - immutable AST nodes;
+  - implicit multiplication;
+  - right-associative powers and conventional unary-minus precedence;
+  - allow-listed symbols and unary functions;
+  - node-count and nesting-depth limits;
+  - safe serialization for the symbolic adapter.
+- Added the project-owned result contract for exact, approximate, conditional,
+  unsupported, and invalid states.
+- Migrated all four existing solver result factories through the new contract
+  while retaining the current popup/history-compatible shape.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -58,21 +71,21 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Define the restricted expression AST and typed result contract.
+- Add enforceable symbolic-computation isolation and migrate parsing to the
+  shared AST.
 
 ## Next
 
-1. Define the tokenizer, restricted expression AST, normalization rules, and
-   typed result states.
-2. Add worker isolation or another enforceable computation deadline before
+1. Add worker isolation or another enforceable computation deadline before
    declaring the symbolic backend fully accepted.
-3. Migrate the four existing solvers onto the shared contract.
-4. Add the first new algebra domains on top of the shared core.
+2. Replace the duplicate polynomial tokenizer with the shared expression AST.
+3. Add the first new algebra domains on top of the shared core.
+4. Enrich solution traces with typed teaching steps instead of plain strings.
 
 ## Last verified commands
 
-- `npm test` - 36 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 64 files, 8 HTML, 28 JS/MJS, and 11 CSS files
+- `npm test` - 45 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 69 files, 8 HTML, 33 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

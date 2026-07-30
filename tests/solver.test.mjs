@@ -13,6 +13,7 @@ function assertVerified(result, solverId) {
   assert.equal(result.verified, true, result.error);
   assert.equal(result.solverId, solverId);
   assert.equal(result.error, null);
+  assert.equal(result.resultKind, "exact");
   assert.ok(result.verification);
 }
 
@@ -57,6 +58,7 @@ test("未対応の関数・指数・根号を式の一部だけで検証しな�
     assert.equal(result.solved, false, question);
     assert.equal(result.verified, false, question);
     assert.equal(result.answer, "", question);
+    assert.equal(result.resultKind, "unsupported", question);
   }
 });
 
@@ -78,6 +80,7 @@ test("統合ルーターは対応形式の矛盾・不正入力をエラーと�
   const malformedLinear = solveQuestion("2x+=11", { category: "一次方程式" });
   assert.equal(malformedLinear.supported, true);
   assert.equal(malformedLinear.solved, false);
+  assert.equal(malformedLinear.resultKind, "invalid");
   assert.ok(malformedLinear.error);
 
   const invalidBase = solveQuestion("102(2)を10進数に変換", { category: "基数変換" });
@@ -155,6 +158,7 @@ test("図や作図を必要とする問題は推測せず未対応にする", ()
     assert.equal(result.solved, false, question);
     assert.equal(result.verified, false, question);
     assert.equal(result.answer, "", question);
+    assert.equal(result.resultKind, "unsupported", question);
   }
 });
 
