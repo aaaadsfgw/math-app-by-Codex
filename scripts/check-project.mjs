@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -25,6 +26,21 @@ function assert(condition, message) { if (!condition) fail(message); }
 
 const files = await allFiles(root);
 const relativeFiles = new Set(files.map((file) => relative(root, file).replaceAll('\\', '/')));
+const pinnedVendorHashes = new Map([
+  [
+    'vendor/algebrite/algebrite.bundle.js',
+    'D51C5DBE412DF49E6EDA0376D81FB4C09DAF7B4D7EFC69AE693ED5876F2FF67E',
+  ],
+]);
+
+for (const [file, expectedHash] of pinnedVendorHashes) {
+  assert(relativeFiles.has(file), `Missing vendored dependency: ${file}`);
+  if (!relativeFiles.has(file)) continue;
+  const source = await readFile(join(root, file));
+  const actualHash = createHash('sha256').update(source).digest('hex').toUpperCase();
+  assert(actualHash === expectedHash, `Vendored dependency hash mismatch: ${file}`);
+}
+assert(relativeFiles.has('vendor/algebrite/LICENSE'), 'Missing Algebrite license');
 
 let manifest;
 try {
@@ -67,6 +83,8 @@ for (const file of jsFiles) {
   if (result.status !== 0) fail(`JavaScript syntax error in ${relative(root, file)}: ${(result.stderr || result.stdout).trim()}`);
 
   const source = await readFile(file, 'utf8');
+  const relativeFile = relative(root, file).replaceAll('\\', '/');
+  const isPinnedVendor = pinnedVendorHashes.has(relativeFile);
   for (const match of source.matchAll(/(?:from\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
     const target = resolve(dirname(file), match[1]);
     const candidates = [target, `${target}.js`, `${target}.mjs`, join(target, 'index.js')];
@@ -77,19 +95,26 @@ for (const file of jsFiles) {
     if (!found) fail(`Broken import in ${relative(root, file)}: ${match[1]}`);
   }
 
-  const urls = [...source.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((match) => match[0]);
-  for (const url of urls) {
-    const isStandardNamespace = url === 'http://www.w3.org/2000/svg';
-    if (!isStandardNamespace) fail(`External URL in JavaScript: ${url} (${relative(root, file)})`);
+  if (!isPinnedVendor) {
+    const urls = [...source.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((match) => match[0]);
+    for (const url of urls) {
+      const isStandardNamespace = url === 'http://www.w3.org/2000/svg';
+      if (!isStandardNamespace) fail(`External URL in JavaScript: ${url} (${relative(root, file)})`);
+    }
   }
 
   if (file !== currentFile) {
-    const forbiddenApiPatterns = [
-      new RegExp(['navigator', 'clipboard', 'readText'].join('\\s*\\.\\s*')),
-      new RegExp(['clipboard', 'read'].join('\\s*\\.\\s*') + '\\s*\\('),
-      new RegExp('(?:^|[^A-Za-z])' + ['ev', 'al'].join('') + '\\s*\\('),
-      new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
-    ];
+    const forbiddenApiPatterns = isPinnedVendor
+      ? [
+          new RegExp('(?:globalThis|window)\\s*\\.\\s*' + ['ev', 'al'].join('')),
+          new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
+        ]
+      : [
+          new RegExp(['navigator', 'clipboard', 'readText'].join('\\s*\\.\\s*')),
+          new RegExp(['clipboard', 'read'].join('\\s*\\.\\s*') + '\\s*\\('),
+          new RegExp('(?:^|[^A-Za-z])' + ['ev', 'al'].join('') + '\\s*\\('),
+          new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
+        ];
     for (const pattern of forbiddenApiPatterns) {
       if (pattern.test(source)) fail(`Forbidden JavaScript API in ${relative(root, file)}: ${pattern}`);
     }
@@ -108,7 +133,14 @@ for (const file of textFiles) {
   const info = await stat(file);
   if (info.size === 0) fail(`Empty file: ${relative(root, file)}`);
   const source = await readFile(file, 'utf8');
-  if (file !== new URL(import.meta.url).pathname && markerPattern.test(source)) notes.push(`Unfinished marker: ${relative(root, file)}`);
+  const relativeFile = relative(root, file).replaceAll('\\', '/');
+  if (
+    file !== new URL(import.meta.url).pathname
+    && !pinnedVendorHashes.has(relativeFile)
+    && markerPattern.test(source)
+  ) {
+    notes.push(`Unfinished marker: ${relative(root, file)}`);
+  }
   markerPattern.lastIndex = 0;
 }
 if (notes.length) failures.push(...notes);

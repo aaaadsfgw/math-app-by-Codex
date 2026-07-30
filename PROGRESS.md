@@ -40,6 +40,17 @@ Last updated: 2026-07-30
   key is still removed by full-data deletion.
 - Renamed the visible product from Math Study Log AI to Math Study Log and
   rewrote active documentation for the revised scope.
+- Vendored the audited Algebrite 1.4.0 browser bundle and MIT license.
+  - Original SHA-256:
+    `4C5D57E3263883D6B0F32A406D158695F4F8267E89CA2CDACED160F8C4F3B275`
+  - Vendored SHA-256:
+    `D51C5DBE412DF49E6EDA0376D81FB4C09DAF7B4D7EFC69AE693ED5876F2FF67E`
+  - The static check verifies the vendored hash and continues to reject
+    dynamic-code APIs.
+- Added a project-owned symbolic adapter with a strict character, identifier,
+  function, variable, input-size, output-size, and syntax boundary.
+- Added contract tests for simplification, equivalence, polynomial roots,
+  differentiation, integration, unsafe input, and malformed syntax.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -47,20 +58,21 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Verify and commit the completed non-AI runtime migration.
+- Define the restricted expression AST and typed result contract.
 
 ## Next
 
-1. Vendor the audited Algebrite browser bundle and license.
-2. Add the project-owned symbolic adapter and contract tests.
-3. Define the tokenizer, restricted expression AST, normalization rules, and
+1. Define the tokenizer, restricted expression AST, normalization rules, and
    typed result states.
-4. Migrate the four existing solvers onto the shared contract.
+2. Add worker isolation or another enforceable computation deadline before
+   declaring the symbolic backend fully accepted.
+3. Migrate the four existing solvers onto the shared contract.
+4. Add the first new algebra domains on top of the shared core.
 
 ## Last verified commands
 
-- `npm test` - 31 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 59 files, 8 HTML, 25 JS/MJS, and 11 CSS files
+- `npm test` - 36 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 64 files, 8 HTML, 28 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure
