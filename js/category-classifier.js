@@ -3,6 +3,7 @@ const CATEGORIES = Object.freeze([
   "二次方程式",
   "式の計算",
   "連立方程式",
+  "不等式",
   "指数・対数",
   "三角関数",
   "微分",
@@ -57,6 +58,9 @@ export function classifyCategory(question) {
     && (text.match(/=/g)?.length ?? 0) >= 2
   ) {
     addSignal(scores, reasons, "連立方程式", 6, "複数の未知数と等式を検出");
+  }
+  if (/不等式|[<>≤≥≦≧]/u.test(text)) {
+    addSignal(scores, reasons, "不等式", 8, "不等式を示す語または記号を検出");
   }
 
   if (/展開|因数分解|式を簡単に|簡約|式を整理/u.test(text)) {

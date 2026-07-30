@@ -51,3 +51,15 @@ release.
 
 Node tests and source validation pass. Nonlinear systems, three-variable
 systems, and word-problem interpretation remain unsupported.
+
+## 2026-07-30: exact linear inequalities
+
+- Added one-variable linear inequalities with strict and inclusive operators.
+- Preserve exact fractional boundaries and reverse the operator only when
+  dividing by a negative coefficient.
+- Distinguish all-real and empty solution sets when the variable term cancels.
+- Reject quadratic, chained, simultaneous, malformed, and unsafe input rather
+  than solving a partial substring.
+
+Node tests and source validation pass. Quadratic and compound inequalities
+remain unsupported.

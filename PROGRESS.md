@@ -86,6 +86,9 @@ Last updated: 2026-07-30
   fractional coefficients. Unique answers are substituted exactly into both
   original equations; inconsistent, dependent, and identity systems are kept
   distinct.
+- Added one-variable linear inequalities with exact fractional boundaries,
+  explicit negative-coefficient reversal, and all-real/empty constant cases.
+  Chained and higher-degree input is rejected without partial solving.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -117,13 +120,12 @@ Last updated: 2026-07-30
 2. Enrich solution traces with typed teaching steps instead of plain strings.
 3. Expand the rational-expression regression corpus before enabling more
    cancellation patterns.
-4. Add one-variable linear and quadratic inequalities after their sign and
-   interval result contract is defined.
+4. Define the interval result contract, then add quadratic inequalities.
 
 ## Last verified commands
 
-- `npm test` - 66 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 83 files, 10 HTML, 45 JS/MJS, and 11 CSS files
+- `npm test` - 70 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 85 files, 10 HTML, 47 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

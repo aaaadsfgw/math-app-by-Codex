@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { CATEGORIES, classifyCategory } from "../js/category-classifier.js";
 
 test("定義された全ジャンル名は重複しない", () => {
-  assert.equal(CATEGORIES.length, 16);
+  assert.equal(CATEGORIES.length, 17);
   assert.equal(new Set(CATEGORIES).size, CATEGORIES.length);
   assert.equal(CATEGORIES.at(-1), "その他");
 });
@@ -13,6 +13,7 @@ test("主要ジャンルの問題を分類する", () => {
   const cases = [
     ["2x + 3 = 11", "一次方程式"],
     ["x+y=3, x-y=1", "連立方程式"],
+    ["2x+3<11", "不等式"],
     ["x² - 5x + 6 = 0", "二次方程式"],
     ["x²-1を因数分解せよ", "式の計算"],
     ["1011(2)を10進数に変換", "基数変換"],
