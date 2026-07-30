@@ -12,6 +12,7 @@ API key, external server, network permission, remote script, or CDN.
 The current migration checkpoint supports:
 
 - linear equations in one variable;
+- systems of two linear equations in `x` and `y`, with exact fractions;
 - quadratic equations over the real numbers;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;

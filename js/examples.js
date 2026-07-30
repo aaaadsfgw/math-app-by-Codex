@@ -3,6 +3,7 @@ import { setPendingQuestion } from './storage.js';
 const examples = [
   ['一次方程式', '2x + 3 = 11', true], ['二次方程式', 'x^2 - 5x + 6 = 0', true],
   ['式の計算', '(x+1)(x-1)を展開せよ', true],
+  ['連立方程式', 'x+y=3, x-y=1', true],
   ['指数', '2^x = 16 を解け', false], ['対数', 'log₂8 を求めよ', false], ['三角関数', 'sin 30° を求めよ', false],
   ['微分', 'y=x^3-2x を微分せよ', false], ['積分', '∫(2x+1)dx を求めよ', false],
   ['数列', '初項3、公差2の等差数列の第10項', false], ['確率', 'サイコロ2個の和が7となる確率', false],

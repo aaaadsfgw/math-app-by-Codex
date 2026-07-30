@@ -2,7 +2,7 @@
 
 ## D-001: Remove AI instead of replacing its provider
 
-**Status:** accepted  
+**Status:** accepted
 **Date:** 2026-07-30
 
 The product will not use Ollama, a cloud model, an API key, or an external
@@ -71,3 +71,12 @@ Every supported problem family requires positive, negative, boundary, malformed,
 and equivalent-notation tests. Documentation records intent, but a milestone is
 not complete until its tests and static checks pass.
 
+## D-006: Use exact rational arithmetic for deterministic algebra
+
+**Status:** accepted
+**Date:** 2026-07-30
+
+Finite decimals and fractional coefficients are converted to bounded reduced
+fractions before algebraic elimination. Supported equation solvers must not
+use rounded floating-point values as proof of correctness. A reported solution
+is substituted into every original equation using the same exact arithmetic.

@@ -8,6 +8,7 @@ Classification alone never means a problem can be solved.
 | Domain | Accepted examples | Verification |
 | --- | --- | --- |
 | Linear equation | `2x+3=11`, `3(x+2)=15` | substitute into the original equation |
+| Two-variable linear system | `x+y=3, x-y=1` | exact substitution into both equations |
 | Quadratic equation | `x^2-5x+6=0`, `x²-2=0` | substitute every reported real root |
 | Algebraic transformation | `(x+1)(x-1)を展開せよ`, `x²-1を因数分解せよ` | simplify the symbolic difference to zero |
 | Base conversion | `1011(2)を10進数に変換` | convert the result back to the source base |
@@ -15,7 +16,7 @@ Classification alone never means a problem can be solved.
 
 ## Planned textual domains
 
-- algebraic inequalities and systems;
+- algebraic inequalities;
 - powers, roots, exponentials, logarithms, and complex numbers;
 - trigonometric values, identities, equations, and inequalities;
 - sequences and common finite/infinite sums;

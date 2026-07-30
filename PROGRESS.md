@@ -80,6 +80,12 @@ Last updated: 2026-07-30
 - Rational-expression simplification now preserves nonzero restrictions from
   original denominators and negative powers. Conditional results retain those
   restrictions in both the displayed answer and the history record.
+- Added bounded exact-rational arithmetic and a shared two-variable linear
+  expression reducer.
+- Added two-variable linear-system solving for integer, finite-decimal, and
+  fractional coefficients. Unique answers are substituted exactly into both
+  original equations; inconsistent, dependent, and identity systems are kept
+  distinct.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -111,12 +117,13 @@ Last updated: 2026-07-30
 2. Enrich solution traces with typed teaching steps instead of plain strings.
 3. Expand the rational-expression regression corpus before enabling more
    cancellation patterns.
-4. Add systems and inequalities after the algebra corpus is stable.
+4. Add one-variable linear and quadratic inequalities after their sign and
+   interval result contract is defined.
 
 ## Last verified commands
 
-- `npm test` - 60 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 79 files, 10 HTML, 41 JS/MJS, and 11 CSS files
+- `npm test` - 66 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 83 files, 10 HTML, 45 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

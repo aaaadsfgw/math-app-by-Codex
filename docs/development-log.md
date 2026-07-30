@@ -37,3 +37,17 @@ junior-high-to-Math-III expansion remain future milestones.
 Node tests and source validation pass. An unpacked-Chrome test of the module
 worker and offscreen bridge is still required before accepting the backend for
 release.
+
+## 2026-07-30: exact linear systems
+
+- Added bounded exact-rational arithmetic for integers, finite decimals, and
+  fractions.
+- Added a shared linear-expression reducer for `x` and `y`.
+- Added two-variable linear-system solving with unique, inconsistent,
+  dependent, and identity cases.
+- Verify unique solutions by exact substitution into both original equations.
+- Updated category routing, examples, supported-problem documentation, and
+  deterministic hints.
+
+Node tests and source validation pass. Nonlinear systems, three-variable
+systems, and word-problem interpretation remain unsupported.

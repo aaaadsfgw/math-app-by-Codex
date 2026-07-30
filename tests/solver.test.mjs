@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { solveQuestion } from "../js/solver/index.js";
 import { solveLinearEquation } from "../js/solver/linear-equation.js";
+import { solveLinearSystem } from "../js/solver/linear-system.js";
 import { solveQuadraticEquation } from "../js/solver/quadratic-equation.js";
 import { solveBaseConversion } from "../js/solver/base-conversion.js";
 import { solvePercentage } from "../js/solver/percentage.js";
@@ -39,6 +40,51 @@ test("一次方程式の解なし・不定解を区別する", () => {
   const identity = solveLinearEquation("2(x+1)=2x+2");
   assertVerified(identity, "linear-equation");
   assert.equal(identity.answer, "すべての実数");
+});
+
+test("2元連立一次方程式を厳密な整数・分数で解く", () => {
+  for (const [question, expected] of [
+    ["連立方程式 x+y=3, x-y=1 を解け", "x=2, y=1"],
+    ["2x+3y=7; 4x-y=5", "x=11/7, y=9/7"],
+    ["0.5x+y=2\nx-y=1", "x=2, y=1"],
+    ["{ 2(x+y)=10, x-y=1 }", "x=3, y=2"],
+  ]) {
+    const result = solveLinearSystem(question);
+    assertVerified(result, "linear-system");
+    assert.equal(result.answer, expected);
+    assert.match(result.verification, /厳密に0/);
+  }
+});
+
+test("連立一次方程式の解なし・無数解・恒等式を区別する", () => {
+  const none = solveLinearSystem("x+y=1, 2x+2y=3");
+  assertVerified(none, "linear-system");
+  assert.equal(none.answer, "解なし");
+
+  const infinite = solveLinearSystem("x+y=1, 2x+2y=2");
+  assertVerified(infinite, "linear-system");
+  assert.equal(infinite.answer, "解は無数にある");
+
+  const all = solveLinearSystem("0=0, 0=0");
+  assertVerified(all, "linear-system");
+  assert.equal(all.answer, "すべての実数の組 (x,y)");
+});
+
+test("非線形・不足・危険な連立入力を検証済みにしない", () => {
+  const nonlinear = solveLinearSystem("xy=1, x+y=2");
+  assert.equal(nonlinear.supported, false);
+  assert.equal(nonlinear.verified, false);
+
+  const missing = solveLinearSystem("連立方程式 x+y=2");
+  assert.equal(missing.supported, true);
+  assert.equal(missing.solved, false);
+  assert.equal(missing.resultKind, "invalid");
+
+  const injection = solveLinearSystem(
+    "連立方程式 x+globalThis.process.exit()=1, x+y=2",
+  );
+  assert.equal(injection.solved, false);
+  assert.equal(injection.verified, false);
 });
 
 test("一次方程式は不正構文と危険な式を実行しない", () => {
@@ -164,6 +210,7 @@ test("図や作図を必要とする問題は推測せず未対応にする", ()
 
 test("統合ソルバーが分類結果に応じて適切な実装へ振り分ける", () => {
   assert.equal(solveQuestion("2x+3=11").solverId, "linear-equation");
+  assert.equal(solveQuestion("x+y=3, x-y=1").solverId, "linear-system");
   assert.equal(solveQuestion("x^2-5x+6=0").solverId, "quadratic-equation");
   assert.equal(solveQuestion("800円の25%").solverId, "percentage");
   assert.equal(solveQuestion("A(1,2), B(4,6)間の距離").supported, false);

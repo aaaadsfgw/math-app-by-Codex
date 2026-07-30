@@ -51,7 +51,11 @@ export function classifyCategory(question) {
   }
 
   if (/連立方程式|連立して|同時に満たす/u.test(text)) addSignal(scores, reasons, "連立方程式", 8, "連立方程式を示す語を検出");
-  if (/(?:x[^=\n]*=.*y|y[^=\n]*=.*x)/i.test(text) && (text.match(/=/g)?.length ?? 0) >= 2) {
+  if (
+    /x/iu.test(text)
+    && /y/iu.test(text)
+    && (text.match(/=/g)?.length ?? 0) >= 2
+  ) {
     addSignal(scores, reasons, "連立方程式", 6, "複数の未知数と等式を検出");
   }
 

@@ -2,6 +2,7 @@ const OUTPUT_MODES = new Set(["answer", "hint1", "hint2", "steps", "explain"]);
 
 const METHOD_HINTS = Object.freeze({
   "linear-equation": "等号の両側で同じ操作を行い、変数を含む項と定数項を分けます。",
+  "linear-system": "2本の式から一方の変数を消去し、得られた値を元の式へ戻します。",
   "quadratic-equation": "式を ax²+bx+c=0 の形に整理し、因数分解または解の公式を選びます。",
   "base-conversion": "各桁に、右端から0、1、2…乗した基数を掛けて足します。",
   percentage: "「全体×割合÷100」の形に直して計算します。",
