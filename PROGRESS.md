@@ -64,6 +64,14 @@ Last updated: 2026-07-30
   unsupported, and invalid states.
 - Migrated all four existing solver result factories through the new contract
   while retaining the current popup/history-compatible shape.
+- Added a module Web Worker boundary for all symbolic operations. Each request:
+  - uses an allow-listed operation;
+  - runs in a fresh worker;
+  - has a clamped deadline;
+  - terminates the worker on success, failure, or timeout;
+  - returns a typed error instead of blocking indefinitely.
+- Direct symbolic-adapter imports are limited to the worker and its contract
+  test. Unpacked-Chrome verification of module-worker loading remains pending.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -71,21 +79,20 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Add enforceable symbolic-computation isolation and migrate parsing to the
-  shared AST.
+- Replace the duplicate polynomial tokenizer with the shared expression AST.
 
 ## Next
 
-1. Add worker isolation or another enforceable computation deadline before
-   declaring the symbolic backend fully accepted.
-2. Replace the duplicate polynomial tokenizer with the shared expression AST.
-3. Add the first new algebra domains on top of the shared core.
-4. Enrich solution traces with typed teaching steps instead of plain strings.
+1. Replace the duplicate polynomial tokenizer with the shared expression AST.
+2. Add the first new algebra domains on top of the shared core.
+3. Enrich solution traces with typed teaching steps instead of plain strings.
+4. Verify module-worker loading in unpacked Chrome before changing D-004 from
+   provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 45 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 69 files, 8 HTML, 33 JS/MJS, and 11 CSS files
+- `npm test` - 49 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 72 files, 8 HTML, 36 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure
