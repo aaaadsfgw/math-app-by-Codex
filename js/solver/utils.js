@@ -4,6 +4,7 @@ import {
   createUnsupportedMathResult,
   toLegacySolverResult,
 } from "../math-core/result.js";
+import { parseMathExpression } from "../math-core/expression-parser.js";
 
 const EPSILON = 1e-9;
 const MAX_POLYNOMIAL_DEGREE = 4;
@@ -92,49 +93,6 @@ export function extractEquation(value) {
   return null;
 }
 
-function tokenizeExpression(source) {
-  const raw = [];
-  let index = 0;
-  while (index < source.length) {
-    const character = source[index];
-    if (/\s/.test(character)) {
-      index += 1;
-      continue;
-    }
-    if (/[0-9.]/.test(character)) {
-      const match = source.slice(index).match(/^(?:\d+(?:\.\d*)?|\.\d+)/);
-      if (!match) throw new Error("数値の形式が不正です");
-      const number = Number(match[0]);
-      if (!Number.isFinite(number)) throw new Error("数値が大きすぎます");
-      raw.push({ type: "number", value: number });
-      index += match[0].length;
-      continue;
-    }
-    if (character === "x") {
-      raw.push({ type: "variable", value: character });
-      index += 1;
-      continue;
-    }
-    if ("+-*/^()".includes(character)) {
-      raw.push({ type: character, value: character });
-      index += 1;
-      continue;
-    }
-    throw new Error(`使用できない文字「${character}」があります`);
-  }
-
-  const tokens = [];
-  const canEndFactor = (token) => token && ["number", "variable", ")"].includes(token.type);
-  const canStartFactor = (token) => token && ["number", "variable", "("].includes(token.type);
-  raw.forEach((token) => {
-    if (canEndFactor(tokens.at(-1)) && canStartFactor(token)) {
-      tokens.push({ type: "*", value: "*" });
-    }
-    tokens.push(token);
-  });
-  return tokens;
-}
-
 function zeroPolynomial() {
   return Array(MAX_POLYNOMIAL_DEGREE + 1).fill(0);
 }
@@ -196,86 +154,46 @@ function powerPolynomial(base, exponent) {
   return result;
 }
 
-function parseExpression(source) {
-  const tokens = tokenizeExpression(source);
-  if (!tokens.length) throw new Error("式が空です");
-  let cursor = 0;
-
-  const peek = () => tokens[cursor];
-  const consume = (type) => {
-    if (peek()?.type !== type) throw new Error(`「${type}」が必要です`);
-    cursor += 1;
-  };
-
-  const parsePrimary = () => {
-    const token = peek();
-    if (!token) throw new Error("式が途中で終わっています");
-    if (token.type === "number") {
-      cursor += 1;
-      return constantPolynomial(token.value);
+function astToPolynomial(node) {
+  switch (node.type) {
+    case "number": {
+      const value = Number(node.value);
+      if (!Number.isFinite(value)) throw new Error("数値が大きすぎます");
+      return constantPolynomial(value);
     }
-    if (token.type === "variable") {
-      cursor += 1;
+    case "symbol":
+      if (node.name !== "x") throw new Error(`変数${node.name}には対応していません`);
       return variablePolynomial();
+    case "constant":
+    case "call":
+      throw new Error("関数や数学定数を含む多項式にはまだ対応していません");
+    case "unary": {
+      const value = astToPolynomial(node.argument);
+      return node.operator === "-"
+        ? value.map((coefficient) => -coefficient)
+        : value;
     }
-    if (token.type === "(") {
-      cursor += 1;
-      const value = parseAdditive();
-      consume(")");
-      return value;
+    case "binary": {
+      const left = astToPolynomial(node.left);
+      const right = astToPolynomial(node.right);
+      if (node.operator === "+") return addPolynomial(left, right);
+      if (node.operator === "-") return addPolynomial(left, right, -1);
+      if (node.operator === "*") return multiplyPolynomial(left, right);
+      if (node.operator === "/") return dividePolynomial(left, right);
+      if (node.operator === "^") {
+        if (polynomialDegree(right) !== 0) throw new Error("指数に変数は使用できません");
+        return powerPolynomial(left, right[0]);
+      }
+      throw new Error(`演算子${node.operator}には対応していません`);
     }
-    throw new Error(`「${token.value}」の位置が不正です`);
-  };
-
-  const parseUnary = () => {
-    if (peek()?.type === "+") {
-      cursor += 1;
-      return parseUnary();
-    }
-    if (peek()?.type === "-") {
-      cursor += 1;
-      const value = parseUnary();
-      return value.map((coefficient) => -coefficient);
-    }
-    return parsePower();
-  };
-
-  const parsePower = () => {
-    let value = parsePrimary();
-    if (peek()?.type === "^") {
-      cursor += 1;
-      const exponentToken = peek();
-      if (exponentToken?.type !== "number") throw new Error("指数が不正です");
-      cursor += 1;
-      value = powerPolynomial(value, exponentToken.value);
-    }
-    return value;
-  };
-
-  const parseMultiplicative = () => {
-    let value = parseUnary();
-    while (["*", "/"].includes(peek()?.type)) {
-      const operator = peek().type;
-      cursor += 1;
-      const right = parseUnary();
-      value = operator === "*" ? multiplyPolynomial(value, right) : dividePolynomial(value, right);
-    }
-    return value;
-  };
-
-  function parseAdditive() {
-    let value = parseMultiplicative();
-    while (["+", "-"].includes(peek()?.type)) {
-      const operator = peek().type;
-      cursor += 1;
-      value = addPolynomial(value, parseMultiplicative(), operator === "+" ? 1 : -1);
-    }
-    return value;
+    default:
+      throw new Error("未知の数式要素です");
   }
+}
 
-  const polynomial = parseAdditive();
-  if (cursor !== tokens.length) throw new Error(`「${peek().value}」を解釈できません`);
-  return polynomial.map((coefficient) => cleanNumber(coefficient));
+function parseExpression(source) {
+  const parsed = parseMathExpression(source, { symbols: ["x"] });
+  return astToPolynomial(parsed.ast).map((coefficient) => cleanNumber(coefficient));
 }
 
 export function parsePolynomialEquation(value) {

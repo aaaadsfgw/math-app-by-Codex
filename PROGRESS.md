@@ -72,6 +72,9 @@ Last updated: 2026-07-30
   - returns a typed error instead of blocking indefinitely.
 - Direct symbolic-adapter imports are limited to the worker and its contract
   test. Unpacked-Chrome verification of module-worker loading remains pending.
+- Replaced the older polynomial solver tokenizer/parser with the shared AST.
+  Linear and quadratic solvers now consume the same precedence, implicit
+  multiplication, symbol allow-list, and complexity limits as future domains.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -79,12 +82,13 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Replace the duplicate polynomial tokenizer with the shared expression AST.
+- Add the first new algebra domain on top of the shared core.
 
 ## Next
 
-1. Replace the duplicate polynomial tokenizer with the shared expression AST.
-2. Add the first new algebra domains on top of the shared core.
+1. Add the first new algebra domains on top of the shared core.
+2. Add a service-worker-to-offscreen bridge so advanced shortcut calculations
+   retain the worker deadline.
 3. Enrich solution traces with typed teaching steps instead of plain strings.
 4. Verify module-worker loading in unpacked Chrome before changing D-004 from
    provisional to accepted.
