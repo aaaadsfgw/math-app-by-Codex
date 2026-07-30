@@ -81,6 +81,16 @@ Last updated: 2026-07-30
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
   point while keeping the original synchronous solver export for compatibility.
+- Added and ran a real-browser worker harness on 2026-07-30:
+  - `2x+3=11`;
+  - expansion of `(x+1)(x-1)`;
+  - factorization of `x^2-1`;
+  - simplification of `(x+1)^2-(x^2+2x)`.
+  All four passed through the real module-worker and symbolic bundle, with no
+  browser console warnings or errors.
+- The available browser surface cannot load unpacked Chrome extensions, so the
+  manifest, popup-as-extension, service-worker shortcut, and offscreen-document
+  integration remain explicitly unverified in real Chrome.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -88,7 +98,8 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Verify the new worker and offscreen flow in unpacked Chrome.
+- Expand algebra coverage while keeping unpacked-Chrome verification as a
+  release blocker.
 
 ## Next
 

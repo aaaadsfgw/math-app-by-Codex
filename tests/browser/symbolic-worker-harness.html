@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Symbolic worker browser harness</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; color: #172033; }
+    table { border-collapse: collapse; width: min(100%, 760px); }
+    th, td { border: 1px solid #cbd3df; padding: .6rem; text-align: left; }
+    [data-status="passed"] { color: #087443; }
+    [data-status="failed"] { color: #b42318; }
+  </style>
+</head>
+<body>
+  <h1>Symbolic worker browser harness</h1>
+  <p id="status" data-status="running">実行中</p>
+  <table>
+    <thead><tr><th>問題</th><th>期待値</th><th>結果</th><th>判定</th></tr></thead>
+    <tbody id="results"></tbody>
+  </table>
+  <script type="module">
+    import { solveQuestionAsync } from "../../js/solver/index.js";
+
+    const cases = [
+      ["2x+3=11", "x=4"],
+      ["(x+1)(x-1)を展開せよ", "x^2-1"],
+      ["x^2-1を因数分解せよ", "(x-1)*(x+1)"],
+      ["簡約: (x+1)^2-(x^2+2x)", "1"],
+    ];
+    const rows = [];
+    let passed = true;
+    for (const [question, expected] of cases) {
+      try {
+        const result = await solveQuestionAsync(question);
+        const ok = result.verified === true && result.answer === expected;
+        passed &&= ok;
+        rows.push({ question, expected, answer: result.answer, ok });
+      } catch (error) {
+        passed = false;
+        rows.push({ question, expected, answer: error.message, ok: false });
+      }
+    }
+
+    const body = document.querySelector("#results");
+    for (const row of rows) {
+      const tr = document.createElement("tr");
+      for (const value of [row.question, row.expected, row.answer, row.ok ? "PASS" : "FAIL"]) {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.append(td);
+      }
+      body.append(tr);
+    }
+    const status = document.querySelector("#status");
+    status.dataset.status = passed ? "passed" : "failed";
+    status.textContent = passed ? `${rows.length}件すべて成功` : "失敗あり";
+    document.documentElement.dataset.testStatus = passed ? "passed" : "failed";
+  </script>
+</body>
+</html>

@@ -42,3 +42,11 @@ Before completion, run the versioned 1,000+ case corpus and report:
 - browser smoke-test date and Chrome version.
 
 Zero false verification is the release gate.
+
+## Browser worker harness
+
+`tests/browser/symbolic-worker-harness.html` provides a browser-engine check
+that does not require extension APIs. Serve the repository locally, open the
+harness, and require all rows to show `PASS` with no browser console errors.
+This validates the bundled module worker and symbolic operations but does not
+replace the unpacked Chrome test above.
