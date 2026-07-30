@@ -35,7 +35,7 @@ try {
   manifest = {};
 }
 
-const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'geometry.html', 'settings.html', 'examples.html', 'help.html', 'about.html'];
+const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'settings.html', 'examples.html', 'help.html', 'about.html'];
 for (const page of expectedPages) assert(relativeFiles.has(page), `Missing HTML page: ${page}`);
 assert(relativeFiles.has('js/content-script.js'), 'Missing on-demand content script: js/content-script.js');
 assert(!manifest.content_scripts, 'Declarative content scripts are not allowed; inject on demand with activeTab');
@@ -56,9 +56,10 @@ for (const permission of allowedPermissions) {
 assert(permissions.size === allowedPermissions.size, `Unexpected permission found: ${[...permissions].filter((permission) => !allowedPermissions.has(permission)).join(', ')}`);
 assert(!permissions.has('clipboardRead'), 'Forbidden permission found: clipboardRead');
 
-const allowedHosts = new Set(['http://localhost:11434/*', 'http://127.0.0.1:11434/*']);
-for (const host of manifest.host_permissions ?? []) assert(allowedHosts.has(host), `Unsupported host permission: ${host}`);
-for (const host of allowedHosts) assert((manifest.host_permissions ?? []).includes(host), `Required local host permission is missing: ${host}`);
+assert(
+  !manifest.host_permissions?.length,
+  `Network host permissions are not allowed: ${(manifest.host_permissions ?? []).join(', ')}`,
+);
 
 const jsFiles = files.filter((file) => ['.js', '.mjs'].includes(extname(file)));
 for (const file of jsFiles) {
@@ -78,9 +79,8 @@ for (const file of jsFiles) {
 
   const urls = [...source.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((match) => match[0]);
   for (const url of urls) {
-    const isLocalOllama = /^http:\/\/(localhost|127\.0\.0\.1):11434(?:\/|$)/.test(url);
     const isStandardNamespace = url === 'http://www.w3.org/2000/svg';
-    if (!isLocalOllama && !isStandardNamespace) fail(`External URL in JavaScript: ${url} (${relative(root, file)})`);
+    if (!isStandardNamespace) fail(`External URL in JavaScript: ${url} (${relative(root, file)})`);
   }
 
   if (file !== currentFile) {

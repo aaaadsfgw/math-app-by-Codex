@@ -1,25 +1,44 @@
 # Test plan
 
-## Automated
+## Automated checks
 
-Run `npm test`, then `npm run check`. The first command verifies representative calculations, contradictions, parsing, classification, and storage behavior. The second verifies extension structure and static policy boundaries.
+Run after every coherent change:
 
-## Manual unpacked-Chrome sequence
+```powershell
+npm.cmd test
+npm.cmd run check
+```
 
-1. Load this repository through `chrome://extensions` and confirm all nine pages open without console errors.
-2. With Ollama stopped and demo mode off, solve `2x + 3 = 11`; confirm local verified `x=4` still works.
-3. Start Ollama with `qwen3:8b`; request a hint for an unsupported problem and confirm the badge says AI/unverified and does not reveal a final answer in Hint 1.
-4. On a normal page, select `2x + 3 = 11` and press the command shortcut. Confirm the analyzing toast persists until completion, the answer is copied, and a history record appears.
-5. Press the shortcut with no selection. Confirm the page says to select a problem and existing clipboard contents are not used.
-6. Change the shortcut record’s assessment in History, reload the page, and confirm persistence.
-7. Confirm Analytics uses the saved records and the 7/30-day counts change without sample data.
-8. Use “solve again” in Review, open the popup, and confirm the question plus parent link are preserved in the new record.
-9. In Geometry, set AB=5, AC=7, angle A=60 and request area. Confirm `35√3/4` (or its valid numeric equivalent) and a verified local-solver label.
-10. Enter contradictory triangle conditions and confirm no answer is produced.
-11. Export history, clear it, import the export, and confirm normalized records return.
-12. Test narrow popup and a narrow full-page viewport with keyboard-only navigation and visible focus.
+The test suite must cover successful solving, verification, malformed input,
+unsupported input, hint answer-leak prevention, storage migration, and
+imported-verification downgrade.
 
-## Long-response check
+## Unpacked Chrome smoke test
 
-Run an uncached Ollama request near the configured timeout. Keep the page and service worker console visible. Confirm the pending state remains accurate and the error is actionable if Chrome suspends or the timeout aborts.
+1. Load the repository as an unpacked extension.
+2. Confirm the manifest requests no network host permission.
+3. Solve `2x+3=11` in all five output modes.
+4. Confirm Hint 1 and Hint 2 do not reveal `x=4`.
+5. Confirm working and explanation contain the verified final answer.
+6. Confirm the result is saved and can be self-assessed.
+7. Select `2x+3=11` on an ordinary web page and press the shortcut.
+8. Confirm `x=4` is copied, a success toast appears, and history is saved.
+9. Submit an unsupported trigonometric, calculus, proof, and diagram-dependent
+   problem; confirm none receives a guessed or verified answer.
+10. Verify history filters, JSON import/export, analytics, review rerun, setting
+    reset, and full data deletion.
+11. Reload the extension and repeat the shortcut to cover service-worker
+    cold-start behavior.
 
+## Release-scale evaluation
+
+Before completion, run the versioned 1,000+ case corpus and report:
+
+- exact-answer accuracy by domain;
+- unsupported/invalid classification accuracy;
+- false-verification count;
+- hint final-answer leakage;
+- performance at median, p95, and worst case;
+- browser smoke-test date and Chrome version.
+
+Zero false verification is the release gate.

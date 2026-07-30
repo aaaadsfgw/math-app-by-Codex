@@ -1,18 +1,20 @@
-# Initial build task record
+# Current implementation task
 
-## Completed scope
+Replace the original model-assisted prototype with an offline deterministic
+mathematics engine while keeping the study-log product useful.
 
-- Standalone Manifest V3 project and main branch.
-- Shared responsive UI and nine connected pages.
-- Solver-first processing, local Ollama fallback, and distinct evidence states.
-- Learning-history schema, assessment scores, review rules, analytics, and JSON transfer.
-- Web-selection shortcut without clipboard read access.
-- Structured SVG geometry editor with triangle calculation and explicit unsupported states.
-- Automated solver, parser, classifier, and storage tests.
-- Manifest/reference/import/syntax/permission/static validation.
-- User, architecture, supported-problem, geometry-format, test, and development documentation.
+Acceptance requires:
 
-## Acceptance boundary
+- no runtime model or network dependency;
+- no diagram editor or geometry solver;
+- safe parser and common expression representation;
+- solver, verification, hint, working, and explanation coverage for the agreed
+  junior-high-to-Math-III textual scope;
+- honest unsupported/invalid states;
+- preserved history, analytics, review, shortcut, settings, data transfer, and
+  accessibility;
+- at least 1,000 curated evaluation cases plus regression tests;
+- unpacked Chrome verification and submission-readiness review.
 
-Passing Node checks demonstrates source consistency. Final release acceptance still requires the manual Chrome/Ollama sequence in `test-plan.md` on the intended machine.
-
+`PLAN.md` is authoritative for milestone order. `PROGRESS.md` is authoritative
+for the latest completed checkpoint and restart instructions.

@@ -1,20 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Math Study Log AI",
+  "name": "Math Study Log",
   "version": "0.1.0",
-  "description": "Solve high-school mathematics with verifiable local solvers and a local Ollama model, then keep a study log.",
+  "description": "Solve mathematics offline with deterministic, verifiable solvers and keep a study log.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
     "clipboardWrite"
   ],
-  "host_permissions": [
-    "http://localhost:11434/*",
-    "http://127.0.0.1:11434/*"
-  ],
   "action": {
-    "default_title": "Math Study Log AI",
+    "default_title": "Math Study Log",
     "default_popup": "popup.html"
   },
   "background": {

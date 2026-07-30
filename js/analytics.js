@@ -3,7 +3,7 @@ import { getAnalytics } from './storage.js';
 const metricDefinitions = [
   ['totalCount', '総問題数'], ['averageUnderstanding', '平均理解度'], ['selfSolvedCount', '自力正解数'],
   ['answerDisplayCount', '答え表示回数'], ['hintUsageCount', 'ヒント利用回数'],
-  ['unverifiedAiCount', '未検証AI回答数'], ['needsReviewCount', '要復習数'],
+  ['unverifiedAiCount', '旧版の未検証回答'], ['needsReviewCount', '要復習数'],
 ];
 const metricsGrid = document.querySelector('#metricsGrid');
 const categoryAnalytics = document.querySelector('#categoryAnalytics');
@@ -38,4 +38,3 @@ async function load() {
   document.querySelector('#last30Days').textContent = analytics.recent30Days;
 }
 load().catch((error) => { empty.hidden = false; content.hidden = true; empty.textContent = `分析を読み込めません: ${error.message}`; });
-

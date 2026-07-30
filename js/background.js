@@ -1,13 +1,10 @@
-import { parseAnswer } from "./answer-parser.js";
 import { classifyCategory } from "./category-classifier.js";
-import { solveDemo } from "./demo-solver.js";
-import { askOllama } from "./ollama-client.js";
+import { presentSolution } from "./solution-presenter.js";
 import { solveQuestion as solveLocally } from "./solver/index.js";
 import { addHistory, getSettings } from "./storage.js";
 
 const SOLVE_SELECTION_COMMAND = "solve-selection-to-clipboard";
 const SHORTCUT_MODE = "answer";
-const SHORTCUT_MAX_TIMEOUT_SECONDS = 25;
 const MAX_TOAST_ANSWER_LENGTH = 72;
 const activeShortcutTabs = new Set();
 
@@ -19,32 +16,6 @@ function normalizeQuestion(value) {
   return String(value || "").trim();
 }
 
-function normalizeParsedAnswer(parsed, rawContent, mode) {
-  if (typeof parsed === "string") {
-    const content = parsed.trim();
-    return { content, finalAnswer: mode === "answer" ? content : "" };
-  }
-
-  const content = String(
-    parsed?.content ?? parsed?.output ?? parsed?.answer ?? rawContent ?? ""
-  ).trim();
-  const finalAnswer = String(
-    parsed?.finalAnswer ?? parsed?.answer ?? (mode === "answer" ? content : "")
-  ).trim();
-  return { content, finalAnswer };
-}
-
-function demoContent(result, mode) {
-  const modeValue = result?.[mode];
-  if (typeof modeValue === "string" && modeValue.trim()) return modeValue.trim();
-  if (typeof result?.content === "string" && result.content.trim()) return result.content.trim();
-  if (typeof result?.output === "string" && result.output.trim()) return result.output.trim();
-  if (mode === "steps" && Array.isArray(result?.steps) && result.steps.length) {
-    return result.steps.join("\n");
-  }
-  return String(result?.answer || result?.finalAnswer || "").trim();
-}
-
 function verificationForSolver(result) {
   return {
     verified: true,
@@ -53,7 +24,7 @@ function verificationForSolver(result) {
   };
 }
 
-async function resolveAnswer(question, settings, classification) {
+async function resolveAnswer(question, classification) {
   const solverResult = solveLocally(question, { category: classification.primary });
 
   if (solverResult?.supported && !solverResult.solved) {
@@ -67,77 +38,21 @@ async function resolveAnswer(question, settings, classification) {
       && String(solverResult.answer || "").trim()
   );
 
-  if (hasVerifiedSolverAnswer) {
-    const finalAnswer = String(solverResult.answer).trim();
-    return {
-      content: finalAnswer,
-      finalAnswer,
-      solverResult,
-      solverId: solverResult.solverId || null,
-      ...verificationForSolver(solverResult)
-    };
+  if (!hasVerifiedSolverAnswer) {
+    throw new Error(
+      solverResult?.error
+        || "この問題形式は、現在のオフライン数式エンジンではまだ解けません。"
+    );
   }
-
-  if (settings.allowUnverifiedAiAnswer === false) {
-    throw new Error("この問題は自動検証できません。設定で未検証AI回答を許可するとOllamaを利用できます。");
-  }
-
-  const configuredTimeout = Number(settings.timeoutSeconds);
-  const timeoutSeconds = Math.max(
-    1,
-    Math.min(
-      Number.isFinite(configuredTimeout) ? configuredTimeout : SHORTCUT_MAX_TIMEOUT_SECONDS,
-      SHORTCUT_MAX_TIMEOUT_SECONDS
-    )
-  );
-
-  let ollamaError;
-  try {
-    const rawContent = await askOllama({
-      question,
-      mode: SHORTCUT_MODE,
-      settings: { ...settings, timeoutSeconds },
-      timeoutSeconds,
-      classification,
-      category: classification.primary,
-      solverResult
-    });
-    const parsed = normalizeParsedAnswer(parseAnswer(rawContent, SHORTCUT_MODE), rawContent, SHORTCUT_MODE);
-    if (!parsed.finalAnswer) throw new Error("Ollamaの回答から最終回答を抽出できませんでした。");
-
-    return {
-      ...parsed,
-      solverResult,
-      solverId: null,
-      verified: false,
-      verificationType: "ai-only",
-      verificationMessage: "AI回答・未検証"
-    };
-  } catch (error) {
-    ollamaError = error;
-  }
-
-  if (!settings.demoMode) throw ollamaError;
-
-  const demoResult = solveDemo(question, {
-    mode: SHORTCUT_MODE,
-    category: classification,
-    solverResult
-  });
-  if (demoResult?.matched === false || demoResult?.supported === false) throw ollamaError;
-
-  const content = demoContent(demoResult, SHORTCUT_MODE);
-  const finalAnswer = String(demoResult?.finalAnswer || demoResult?.answer || content).trim();
-  if (!finalAnswer) throw ollamaError;
 
   return {
-    content,
-    finalAnswer,
+    ...presentSolution(solverResult, {
+      mode: SHORTCUT_MODE,
+      category: classification.primary
+    }),
     solverResult,
-    solverId: demoResult?.solverId || null,
-    verified: false,
-    verificationType: "demo",
-    verificationMessage: "Ollamaに接続できなかったため、固定デモデータを使用しました。"
+    solverId: solverResult.solverId || null,
+    ...verificationForSolver(solverResult)
   };
 }
 
@@ -221,8 +136,7 @@ async function handleShortcut() {
 
     const question = await getSelectedQuestion(tab.id);
     const classification = classifyCategory(question);
-    const settings = await getSettings();
-    const result = await resolveAnswer(question, settings, classification);
+    const result = await resolveAnswer(question, classification);
 
     await copyInContentScript(tab.id, result.finalAnswer);
     await saveShortcutHistory(question, classification, result);

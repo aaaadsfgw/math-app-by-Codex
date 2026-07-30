@@ -19,14 +19,9 @@ export const STORAGE_KEYS = Object.freeze({
 });
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  apiUrl: "http://localhost:11434/api/chat",
-  modelName: "qwen3:8b",
   defaultMode: "answer",
   saveHistory: true,
-  demoMode: false,
-  timeoutSeconds: 90,
   maxHistory: 500,
-  allowUnverifiedAiAnswer: true,
 });
 
 export const ASSESSMENT_SCORES = Object.freeze({
@@ -189,26 +184,12 @@ function positiveInteger(value, fallback, maximum) {
 
 function normalizeSettings(value) {
   const candidate = isPlainObject(value) ? value : {};
-  const apiUrl = normalizeWhitespace(candidate.apiUrl);
-  const modelName = normalizeWhitespace(candidate.modelName);
   return {
-    apiUrl: apiUrl || DEFAULT_SETTINGS.apiUrl,
-    modelName: modelName || DEFAULT_SETTINGS.modelName,
     defaultMode: MODES.has(candidate.defaultMode)
       ? candidate.defaultMode
       : DEFAULT_SETTINGS.defaultMode,
     saveHistory: asBoolean(candidate.saveHistory, DEFAULT_SETTINGS.saveHistory),
-    demoMode: asBoolean(candidate.demoMode, DEFAULT_SETTINGS.demoMode),
-    timeoutSeconds: positiveInteger(
-      candidate.timeoutSeconds,
-      DEFAULT_SETTINGS.timeoutSeconds,
-      600,
-    ),
     maxHistory: positiveInteger(candidate.maxHistory, DEFAULT_SETTINGS.maxHistory, 5_000),
-    allowUnverifiedAiAnswer: asBoolean(
-      candidate.allowUnverifiedAiAnswer,
-      DEFAULT_SETTINGS.allowUnverifiedAiAnswer,
-    ),
   };
 }
 
@@ -536,71 +517,6 @@ export async function clearPendingQuestion() {
   return withStorageMutation(() => removeStorage(STORAGE_KEYS.pendingQuestion));
 }
 
-function normalizeGeometryDrafts(value) {
-  const candidates = Array.isArray(value)
-    ? value
-    : isPlainObject(value)
-      ? Object.values(value)
-      : [];
-  const drafts = [];
-  const seen = new Set();
-  for (const candidate of candidates) {
-    if (!isPlainObject(candidate)) continue;
-    const id = normalizeWhitespace(candidate.id) || generateId();
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const now = toIsoString();
-    drafts.push({
-      ...deepClone(candidate),
-      id,
-      createdAt: validIso(candidate.createdAt, now),
-      updatedAt: validIso(candidate.updatedAt, now),
-    });
-  }
-  return drafts.sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
-}
-
-export async function getGeometryDrafts() {
-  const stored = await readStorage(STORAGE_KEYS.geometryDrafts);
-  return normalizeGeometryDrafts(stored[STORAGE_KEYS.geometryDrafts]);
-}
-
-export async function saveGeometryDraft(draft) {
-  return withStorageMutation(async () => {
-    if (!isPlainObject(draft)) throw new TypeError("図形下書きはオブジェクトで指定してください。");
-    const drafts = await getGeometryDrafts();
-    const now = toIsoString();
-    const id = normalizeWhitespace(draft.id) || generateId();
-    const existing = drafts.find((item) => item.id === id);
-    const saved = {
-      ...deepClone(existing ?? {}),
-      ...deepClone(draft),
-      id,
-      createdAt: existing?.createdAt ?? validIso(draft.createdAt, now),
-      updatedAt: now,
-    };
-    const updated = normalizeGeometryDrafts([saved, ...drafts.filter((item) => item.id !== id)]);
-    await writeStorage({ [STORAGE_KEYS.geometryDrafts]: updated });
-    return deepClone(saved);
-  });
-}
-
-export async function deleteGeometryDraft(id) {
-  return withStorageMutation(async () => {
-    const targetId = normalizeWhitespace(id);
-    if (!targetId) return false;
-    const drafts = await getGeometryDrafts();
-    const updated = drafts.filter((draft) => draft.id !== targetId);
-    if (updated.length === drafts.length) return false;
-    await writeStorage({ [STORAGE_KEYS.geometryDrafts]: updated });
-    return true;
-  });
-}
-
-export async function clearGeometryDrafts() {
-  return withStorageMutation(() => writeStorage({ [STORAGE_KEYS.geometryDrafts]: [] }));
-}
-
 export async function getAppMeta() {
   const stored = await readStorage(STORAGE_KEYS.appMeta);
   return isPlainObject(stored[STORAGE_KEYS.appMeta])
@@ -623,11 +539,10 @@ export async function clearAllData() {
 }
 
 export async function exportData() {
-  const [settings, history, pendingQuestion, geometryDrafts, appMeta] = await Promise.all([
+  const [settings, history, pendingQuestion, appMeta] = await Promise.all([
     getSettings(),
     getHistory(),
     getPendingQuestion(),
-    getGeometryDrafts(),
     getAppMeta(),
   ]);
   return {
@@ -636,7 +551,6 @@ export async function exportData() {
     settings,
     history,
     pendingQuestion,
-    geometryDrafts,
     appMeta,
   };
 }
@@ -709,16 +623,7 @@ async function importDataUnlocked(payload, { mode = "replace" } = {}) {
       normalizeHistory([...base, ...incomingHistory]),
     ).slice(0, settings.maxHistory);
   }
-  if (Object.hasOwn(parsed, "geometryDrafts")) {
-    if (!Array.isArray(parsed.geometryDrafts) && !isPlainObject(parsed.geometryDrafts)) {
-      throw new StorageError("図形下書きデータの形式が正しくありません。", {
-        code: "INVALID_IMPORT",
-      });
-    }
-    const incomingDrafts = normalizeGeometryDrafts(parsed.geometryDrafts);
-    const base = mode === "merge" ? await getGeometryDrafts() : [];
-    entries[STORAGE_KEYS.geometryDrafts] = normalizeGeometryDrafts([...incomingDrafts, ...base]);
-  }
+  // geometryDrafts is accepted as a legacy top-level field but intentionally ignored.
   if (Object.hasOwn(parsed, "pendingQuestion")) {
     if (parsed.pendingQuestion === null) {
       entries[STORAGE_KEYS.pendingQuestion] = null;

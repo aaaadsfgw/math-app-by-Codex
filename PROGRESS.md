@@ -7,7 +7,7 @@ Last updated: 2026-07-30
 - Physical path: `C:\Users\kukuk\OneDrive\ドキュメント\GitHub\math-study-log-ai`
 - Branch: `feat/non-ai-math-engine`
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
-- Working milestone: 1 - Durable project state
+- Working milestone: 3 - Shared math core
 
 ## Completed
 
@@ -25,26 +25,43 @@ Last updated: 2026-07-30
   browser bundle does not contain `new Function` or direct JavaScript `eval`.
 - Added durable project rules, milestones, design decisions, and a restart
   procedure.
-- Verified the clean starting behavior:
+- Committed the durable planning checkpoint as
+  `2b6d2ea Document non-AI engine migration plan`.
+- Removed all active model runtime paths:
+  - model client, prompts, response parser, and fixed demo;
+  - model URL, model name, timeout, demo, and unverified-answer settings;
+  - local-server host permissions and all network-dependent branches.
+- Added deterministic presentation for answer, hint 1, hint 2, working, and
+  explanation modes. Hint tests ensure the final answer is not revealed.
+- Removed the geometry page, editor, styles, coordinate solver, triangle solver,
+  and geometry-draft API.
+- Preserved legacy history source and verification values so old records remain
+  readable. Obsolete stored settings are ignored and the old geometry storage
+  key is still removed by full-data deletion.
+- Renamed the visible product from Math Study Log AI to Math Study Log and
+  rewrote active documentation for the revised scope.
+- Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
     12 CSS files.
 
 ## In progress
 
-- Finish and commit milestone 1.
+- Verify and commit the completed non-AI runtime migration.
 
 ## Next
 
-1. Remove Ollama runtime paths and permissions without changing stored history.
-2. Add the project-owned CAS adapter and its first contract tests.
-3. Replace model-generated hint and explanation paths with deterministic
-   solution traces.
+1. Vendor the audited Algebrite browser bundle and license.
+2. Add the project-owned symbolic adapter and contract tests.
+3. Define the tokenizer, restricted expression AST, normalization rules, and
+   typed result states.
+4. Migrate the four existing solvers onto the shared contract.
 
 ## Last verified commands
 
-- `npm test` - 44 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed on 2026-07-30.
+- `npm test` - 31 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 59 files, 8 HTML, 25 JS/MJS, and 11 CSS files
+  on 2026-07-30.
 
 ## Restart procedure
 

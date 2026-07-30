@@ -1,26 +1,20 @@
 import { classifyCategory } from "../category-classifier.js";
 import { solveBaseConversion } from "./base-conversion.js";
-import { solveCoordinate } from "./coordinate.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solvePercentage } from "./percentage.js";
 import { solveQuadraticEquation } from "./quadratic-equation.js";
-import { solveTriangle } from "./triangle.js";
 import { unsupportedResult } from "./utils.js";
 
 export {
   solveBaseConversion,
-  solveCoordinate,
   solveLinearEquation,
   solvePercentage,
   solveQuadraticEquation,
-  solveTriangle,
 };
 
 export const SOLVERS = Object.freeze([
   solveBaseConversion,
   solvePercentage,
-  solveCoordinate,
-  solveTriangle,
   solveQuadraticEquation,
   solveLinearEquation,
 ]);
@@ -30,14 +24,13 @@ const CATEGORY_SOLVERS = Object.freeze({
   "二次方程式": [solveQuadraticEquation],
   "基数変換": [solveBaseConversion],
   "パーセント": [solvePercentage],
-  "図形": [solveCoordinate, solveTriangle],
 });
 
 function normalizedCategory(category, question) {
   if (typeof category === "string" && category) return category;
   if (category && typeof category === "object" && typeof category.primary === "string") return category.primary;
   if (typeof question === "string") return classifyCategory(question).primary;
-  return "図形";
+  return "その他";
 }
 
 function runSolvers(input, solvers, { preserveRecognizedFailure = false } = {}) {

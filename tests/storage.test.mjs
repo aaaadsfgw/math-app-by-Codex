@@ -7,19 +7,16 @@ import {
   addHistory,
   clearAllData,
   createHistoryRecord,
-  deleteGeometryDraft,
   deleteHistory,
   exportData,
   exportDataAsJson,
   getAnalytics,
-  getGeometryDrafts,
   getHistory,
   getPendingQuestion,
   getReviewItems,
   getSettings,
   importData,
   resetSettings,
-  saveGeometryDraft,
   saveSettings,
   setPendingQuestion,
   updateHistory,
@@ -49,15 +46,17 @@ test("defaults are complete and corrupt stored values degrade safely", async () 
 
 test("settings merge defaults, sanitize invalid values, and reset", async () => {
   const saved = await saveSettings({
-    demoMode: true,
-    timeoutSeconds: 45,
+    defaultMode: "hint2",
+    saveHistory: false,
     maxHistory: -10,
-    modelName: "  qwen3:8b  ",
+    apiUrl: "legacy-url",
+    modelName: "legacy-model",
   });
-  assert.equal(saved.demoMode, true);
-  assert.equal(saved.timeoutSeconds, 45);
+  assert.equal(saved.defaultMode, "hint2");
+  assert.equal(saved.saveHistory, false);
   assert.equal(saved.maxHistory, DEFAULT_SETTINGS.maxHistory);
-  assert.equal(saved.modelName, "qwen3:8b");
+  assert.equal(Object.hasOwn(saved, "apiUrl"), false);
+  assert.equal(Object.hasOwn(saved, "modelName"), false);
   assert.deepEqual(await resetSettings(), DEFAULT_SETTINGS);
 });
 
@@ -175,21 +174,10 @@ test("score and repeated-category rules produce review items in priority order",
   assert.equal((await getReviewItems()).some(({ id }) => id === "low-2"), false);
 });
 
-test("pending questions and geometry drafts retain identifiers", async () => {
+test("pending questions retain parent history identifiers", async () => {
   const pending = await setPendingQuestion("x+1=2", "history-1");
   assert.equal(pending.parentHistoryId, "history-1");
   assert.deepEqual(await getPendingQuestion(), pending);
-
-  const saved = await saveGeometryDraft({
-    id: "triangle-1",
-    template: "triangle",
-    points: { A: { x: 10, y: 20 } },
-    constraints: [],
-  });
-  assert.equal(saved.template, "triangle");
-  assert.equal((await getGeometryDrafts())[0].id, "triangle-1");
-  assert.equal(await deleteGeometryDraft("triangle-1"), true);
-  assert.deepEqual(await getGeometryDrafts(), []);
 });
 
 test("export/import are JSON-safe, validate structure, and merge without duplicate IDs", async () => {
@@ -198,6 +186,7 @@ test("export/import are JSON-safe, validate structure, and merge without duplica
   const json = await exportDataAsJson();
   assert.equal(JSON.parse(json).schemaVersion, 1);
   assert.equal(exported.history.length, 1);
+  assert.equal(Object.hasOwn(exported, "geometryDrafts"), false);
 
   const result = await importData(
     {
@@ -287,13 +276,13 @@ test("analytics reports score, verification, review, category, and recent usage"
 });
 
 test("clearAllData removes every application key and settings fall back to defaults", async () => {
-  await saveSettings({ demoMode: true });
+  await saveSettings({ defaultMode: "explain" });
   await addHistory(historyInput());
   await setPendingQuestion("question");
-  await saveGeometryDraft({ id: "draft", template: "triangle" });
+  fixture.localStorage.setItem("geometryDrafts", JSON.stringify([{ id: "legacy-draft" }]));
   await clearAllData();
   assert.deepEqual(await getHistory(), []);
   assert.equal(await getPendingQuestion(), null);
-  assert.deepEqual(await getGeometryDrafts(), []);
+  assert.equal(fixture.localStorage.getItem("geometryDrafts"), null);
   assert.deepEqual(await getSettings(), DEFAULT_SETTINGS);
 });

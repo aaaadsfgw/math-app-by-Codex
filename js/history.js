@@ -15,7 +15,7 @@ const assessmentLabels = {
   explain_understood: '解説を見て理解した', answer_seen: '答えを見た', unsolved: '解けなかった',
 };
 const modeLabels = { answer: '答え', hint1: 'ヒント1', hint2: 'ヒント2', steps: '途中式', explain: '解説' };
-const verificationLabels = { solver: '自作ソルバーで検証済み', demo: 'デモデータ', 'ai-only': 'AI回答・未検証', unsupported: '自動検証不能' };
+const verificationLabels = { solver: '数式エンジンで検証済み', demo: '旧デモ履歴', 'ai-only': '旧AI履歴・未検証', unsupported: '自動検証不能' };
 
 const elements = {
   list: document.querySelector('#historyList'), empty: document.querySelector('#historyEmpty'),

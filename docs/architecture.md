@@ -1,35 +1,45 @@
 # Architecture
 
+## Runtime flow
+
 ```text
-popup / shortcut / review / geometry
+typed or selected question
           |
           v
- category-classifier ---> solver/index ---> specialized solver ---> verification
-          |                    |
-          | unsupported        | verified result
-          v                    v
- prompt-builder ----------> presentation
+category classifier
           |
           v
- ollama-client ---> answer-parser ---> unverified presentation
-          |
-          v
-       storage ---> history / analytics / review
+solver router -> deterministic solver -> mathematical verification
+                                      |
+                                      v
+                               solution presenter
+                                      |
+                     answer / hint / steps / explanation
+                                      |
+                                      v
+                         local history and analytics
 ```
 
-## Runtime components
+The popup and keyboard shortcut use the same solver router. Unsupported input
+stops before presentation, clipboard, or verified-history creation.
 
-- `background.js` owns the Commands API flow and coordinates the active tab.
-- `content-script.js` is injected on demand under temporary `activeTab` access. It reads the current non-password selection, renders status toasts, and performs user-gesture-adjacent clipboard writes. It never reads the clipboard and is not declared as an all-page resident script.
-- `popup.js` coordinates typed/selected input, modes, solver-first processing, result evidence, copy, and assessment.
-- `storage.js` normalizes persisted values and provides the only storage interface to pages.
-- `solver/index.js` routes to isolated deterministic solvers. Solver modules return one common result shape.
-- `ollama-client.js` sends one stateless request with a timeout. It has no cloud fallback.
+## Trust boundary
 
-## Geometry separation
+- Solver results are project-owned structured objects.
+- A result is presentable only when `supported`, `solved`, and `verified` are
+  true and the final answer is non-empty.
+- Imported verification claims are downgraded until the problem is solved
+  again on the current device.
+- Legacy `demo`, `ai-only`, `geometry`, and obsolete setting fields are read
+  only for stored-data compatibility. New runtime paths never create them.
+- No input string is executed as JavaScript.
 
-Geometry documents have independent `points` for SVG display and `constraints` for mathematics. Dragging a point mutates only a display coordinate. Solvers consume explicit constraints and the query.
+## Planned math core
 
-## Failure behavior
+The next architecture layer is a project-owned parser and expression tree. It
+will normalize Japanese notation, create a restricted AST, dispatch to
+domain-specific solvers, and use an audited symbolic backend only through a
+small adapter. Exact values remain exact where possible; approximations and
+conditional answers are labeled explicitly.
 
-Unsupported input is a normal result, not a verification failure. A solver contradiction, disallowed unverified AI answer, Ollama connection error, and content-script injection restriction are distinct user-visible errors. Shortcut requests cap Ollama waiting at 25 seconds so the service worker can replace the loading toast with an actionable timeout; popup requests retain the configured longer timeout.
+See `PLAN.md` and `docs/decision-log.md`.

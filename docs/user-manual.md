@@ -1,28 +1,39 @@
 # User manual
 
-## Solve from the popup
+## Solve a problem
 
-Open the extension, type a problem or capture selected text, choose one of five modes, and run the analysis. Read the verification badge before relying on the result. Copy if needed, then record the stage at which you solved the problem.
+1. Open the extension popup.
+2. Type a textual mathematics question, or capture selected text from a normal
+   web page.
+3. Choose answer, hint 1, hint 2, working, or explanation.
+4. Select **解析する**.
+5. Check the verification label and record how independently you solved it.
 
-## Solve a web selection
+The extension shows a clear unsupported message when it cannot safely solve the
+format. It does not fill the gap with a guessed response.
 
-Select a complete problem on an ordinary HTTP/HTTPS page and press `Ctrl+Shift+Y` (`Command+Shift+Y` on macOS). The page shows a persistent “analyzing” toast. On success the final answer is copied and the toast changes for about 3.5 seconds. No selection produces an error and does not inspect existing clipboard data.
+## Shortcut
 
-## Revisit and review
+Select a question on an HTTP/HTTPS page and press `Ctrl+Shift+Y`
+(`Command+Shift+Y` on macOS). A verified final answer is copied and a toast
+confirms success. The extension never reads the existing clipboard.
 
-History supports category/mode/review filters and three sort orders. A shortcut record can be assessed later. Review lists low-scoring, unassessed, answer-mode, unverified, and repeatedly weak categories. “Solve again” sends the original question and parent record ID to the popup.
+## History and review
 
-## Use geometry
+History stores the question, output mode, generated content, verified final
+answer, category, verification evidence, self-assessment, and review state.
+Imported records lose any claimed verified state until solved again locally.
+Legacy records from the earlier prototype remain readable and are labeled as
+old unverified or demo history where applicable.
 
-Select a template, drag points for a clearer drawing, and enter side/angle conditions explicitly. Add or remove conditions and choose a requested quantity. Only values in the conditions list are used in calculation. Save stores a structured draft locally.
+## Privacy
 
-## Data management
+All calculation and storage occur in the extension. There is no model setup,
+sign-in, API key, or server connection. Use Settings to reset preferences or
+delete all application data.
 
-History export downloads only learning records as JSON; it does not include settings or geometry drafts. Import merges valid normalized records and ignores duplicate IDs. Imported verification claims are downgraded because files can be edited outside the extension. Solve an imported question again to create a new verified record. Settings can reset preferences or remove all application data after confirmation.
+## Limits
 
-## Interpreting labels
-
-- Verified local solver: checked by deterministic code.
-- Demo data: a fixed demonstration, not general validation.
-- AI answer — unverified: generated locally but not mathematically checked.
-- Automatic verification unavailable: no supported verified result was produced.
+Image recognition, diagram-dependent geometry, construction problems, and
+proof prose are outside scope. Current mathematical coverage is listed in
+`docs/supported-problems.md` and will expand incrementally.

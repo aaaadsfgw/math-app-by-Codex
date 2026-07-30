@@ -1,23 +1,23 @@
 # Development log
 
-## Why this project exists
+## 2026-07-30: non-AI migration begins
 
-The earlier answer-copy concept was useful for speed but did not capture whether a learner understood a problem. This independent project turns each use into a learning record and separates fast answer access from demonstrated understanding.
+- Confirmed the physical repository and created branch
+  `feat/non-ai-math-engine`.
+- Recorded the long-term scope, milestones, restart procedure, decisions, and
+  completion gate.
+- Audited browser-capable symbolic libraries. Algebrite is the provisional
+  backend behind a future project-owned adapter; it is not yet part of runtime.
+- Removed the model client, prompt builder, response parser, fallback demo,
+  model settings, network host permissions, and all model-dependent branches.
+- Added deterministic presentation for answer, hint 1, hint 2, working, and
+  explanation modes.
+- Removed the geometry page, editor, style sheet, coordinate solver, triangle
+  solver, and active geometry-draft API.
+- Retained normalization for old history source and verification labels so
+  existing learning records remain readable.
+- Renamed the visible product to Math Study Log.
 
-## Product decisions
-
-- “Answer seen” scores zero because viewing an answer does not prove the learner could reproduce the solution.
-- Hint 1 and Hint 2 are distinct so dependence can be measured without treating every assist as equivalent.
-- A local LLM handles natural language, but deterministic solvers own claims of mathematical verification.
-- Verified final answers cannot be replaced by conflicting model text.
-- Geometry uses templates and explicit conditions instead of image recognition, keeping the mathematical input auditable.
-- Demo data is a separate evidence type and never presented as solver verification.
-
-## Initial implementation
-
-The prototype includes nine screens, solver-first popup and shortcut flows, local Ollama integration, structured learning records, review/analytics, JSON transfer, nine geometry templates, real supported triangle calculations, documentation, tests, and static project validation.
-
-## Known limits
-
-Local verification covers a deliberate subset of high-school mathematics. Advanced symbolic manipulation, proofs, general coordinate geometry, arbitrary diagram solving, and image recognition remain outside this version. Chrome internal pages and some viewers reject content scripts. Automated tests do not constitute an unpacked-extension browser run.
-
+At this checkpoint, tests and static project checks pass. Math coverage is still
+the original small solver subset; the shared expression core and the
+junior-high-to-Math-III expansion remain future milestones.
