@@ -63,3 +63,20 @@ systems, and word-problem interpretation remain unsupported.
 
 Node tests and source validation pass. Quadratic and compound inequalities
 remain unsupported.
+
+## 2026-07-30: verified starter calculus
+
+- Added project-owned differentiation rules for arithmetic composition,
+  bounded integer powers, common trigonometric functions, exponential,
+  logarithm, and square root.
+- Preserve derivative-domain conditions for quotients, negative powers,
+  tangent, logarithm, and square root.
+- Added indefinite integration through the isolated symbolic worker.
+- Accept an antiderivative only after parsing it safely, differentiating it
+  with project-owned rules, and checking equivalence with the integrand.
+- Added a reusable loopback-only browser-harness server.
+- Expanded the real-browser worker harness from four to six cases; derivative
+  and indefinite-integral cases both passed with no console errors.
+
+Node tests and source validation pass. Definite integrals, piecewise domain
+splits, extrema, tangent lines, areas, and volumes remain unsupported.

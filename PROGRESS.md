@@ -89,6 +89,13 @@ Last updated: 2026-07-30
 - Added one-variable linear inequalities with exact fractional boundaries,
   explicit negative-coefficient reversal, and all-real/empty constant cases.
   Chained and higher-degree input is rejected without partial solving.
+- Added project-owned differentiation rules for arithmetic composition,
+  bounded integer powers, trigonometric functions, exponential, logarithm,
+  and square root. Symbolic work only simplifies and checks the rule-built
+  result.
+- Added indefinite integration with reverse verification: every candidate is
+  safely parsed, differentiated by project-owned rules, and compared with the
+  original integrand. Candidates with unresolved domain splits are rejected.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -98,7 +105,9 @@ Last updated: 2026-07-30
   - expansion of `(x+1)(x-1)`;
   - factorization of `x^2-1`;
   - simplification of `(x+1)^2-(x^2+2x)`.
-  All four passed through the real module-worker and symbolic bundle, with no
+  - differentiation of `x^3-2x`;
+  - indefinite integration of `x^2`.
+  All six passed through the real module-worker and symbolic bundle, with no
   browser console warnings or errors.
 - The available browser surface cannot load unpacked Chrome extensions, so the
   manifest, popup-as-extension, service-worker shortcut, and offscreen-document
@@ -121,11 +130,12 @@ Last updated: 2026-07-30
 3. Expand the rational-expression regression corpus before enabling more
    cancellation patterns.
 4. Define the interval result contract, then add quadratic inequalities.
+5. Add definite integrals only after endpoint-domain and discontinuity checks.
 
 ## Last verified commands
 
-- `npm test` - 70 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 85 files, 10 HTML, 47 JS/MJS, and 11 CSS files
+- `npm test` - 79 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 90 files, 10 HTML, 52 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

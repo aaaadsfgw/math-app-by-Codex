@@ -77,8 +77,14 @@ export async function runOffscreenSymbolicOperation(
 }
 
 export const OFFSCREEN_SYMBOLIC_OPERATIONS = Object.freeze({
+  differentiate: (expression, variable = "x") => (
+    runOffscreenSymbolicOperation("differentiate", [expression, variable])
+  ),
   equivalent: (left, right) => runOffscreenSymbolicOperation("equivalent", [left, right]),
   expand: (expression) => runOffscreenSymbolicOperation("expand", [expression]),
   factor: (expression) => runOffscreenSymbolicOperation("factor", [expression]),
+  integrate: (expression, variable = "x") => (
+    runOffscreenSymbolicOperation("integrate", [expression, variable])
+  ),
   simplify: (expression) => runOffscreenSymbolicOperation("simplify", [expression]),
 });

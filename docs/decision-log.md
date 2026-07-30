@@ -80,3 +80,14 @@ Finite decimals and fractional coefficients are converted to bounded reduced
 fractions before algebraic elimination. Supported equation solvers must not
 use rounded floating-point values as proof of correctness. A reported solution
 is substituted into every original equation using the same exact arithmetic.
+
+## D-007: Verify integration candidates with project-owned differentiation
+
+**Status:** accepted
+**Date:** 2026-07-30
+
+The symbolic backend may propose and simplify an antiderivative, but that
+candidate is not accepted directly. The project builds its derivative from
+explicit calculus rules and checks symbolic equivalence with the original
+integrand. Candidates requiring unresolved real-domain case splits remain
+unsupported.

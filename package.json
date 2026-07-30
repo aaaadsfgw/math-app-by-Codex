@@ -6,6 +6,7 @@
   "description": "Verified high-school math solving and learning-log Chrome extension",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "test:browser:serve": "node scripts/serve-browser-harness.mjs",
     "check": "node scripts/check-project.mjs"
   },
   "engines": {

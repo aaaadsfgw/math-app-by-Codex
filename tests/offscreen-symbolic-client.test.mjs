@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  OFFSCREEN_SYMBOLIC_OPERATIONS,
   ensureSymbolicOffscreenDocument,
   runOffscreenSymbolicOperation,
 } from "../js/math-core/offscreen-symbolic-client.js";
@@ -82,4 +83,9 @@ test("オフスクリーン側の型付きエラーを呼び出し元へ戻す",
     runOffscreenSymbolicOperation("factor", ["x^2-1"], { extensionApi: api }),
     (error) => error.code === "SYMBOLIC_TIMEOUT" && error.message === "期限超過",
   );
+});
+
+test("ショートカット経路にも微分・積分操作を公開する", () => {
+  assert.equal(typeof OFFSCREEN_SYMBOLIC_OPERATIONS.differentiate, "function");
+  assert.equal(typeof OFFSCREEN_SYMBOLIC_OPERATIONS.integrate, "function");
 });

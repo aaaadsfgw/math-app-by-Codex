@@ -1,6 +1,7 @@
 import { classifyCategory } from "../category-classifier.js";
 import { solveAlgebraTransformation } from "./algebra-transformation.js";
 import { solveBaseConversion } from "./base-conversion.js";
+import { solveDerivative, solveIndefiniteIntegral } from "./calculus.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solveLinearInequality } from "./linear-inequality.js";
 import { solveLinearSystem } from "./linear-system.js";
@@ -11,6 +12,8 @@ import { unsupportedResult } from "./utils.js";
 export {
   solveAlgebraTransformation,
   solveBaseConversion,
+  solveDerivative,
+  solveIndefiniteIntegral,
   solveLinearEquation,
   solveLinearInequality,
   solveLinearSystem,
@@ -85,9 +88,21 @@ export const solveWithLocalSolver = solveQuestion;
 export async function solveQuestionAsync(question, options = {}) {
   const immediate = solveQuestion(question, options);
   if (immediate.supported) return immediate;
-  return solveAlgebraTransformation(question, {
-    symbolicOperations: options.symbolicOperations,
-  });
+  const category = normalizedCategory(options.category, question);
+  const asynchronousSolvers = category === "微分"
+    ? [solveDerivative, solveIndefiniteIntegral, solveAlgebraTransformation]
+    : category === "積分"
+      ? [solveIndefiniteIntegral, solveDerivative, solveAlgebraTransformation]
+      : [solveAlgebraTransformation, solveDerivative, solveIndefiniteIntegral];
+  let lastUnsupported = immediate;
+  for (const solver of asynchronousSolvers) {
+    const result = await solver(question, {
+      symbolicOperations: options.symbolicOperations,
+    });
+    if (result.supported) return result;
+    lastUnsupported = result;
+  }
+  return lastUnsupported;
 }
 
 export default solveQuestion;

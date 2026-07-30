@@ -14,6 +14,10 @@ The current migration checkpoint supports:
 - linear equations in one variable;
 - systems of two linear equations in `x` and `y`, with exact fractions;
 - one-variable linear inequalities;
+- verified derivatives for bounded algebraic and standard elementary-function
+  expressions;
+- indefinite integrals whose candidate can be differentiated back over the
+  whole supported domain;
 - quadratic equations over the real numbers;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
