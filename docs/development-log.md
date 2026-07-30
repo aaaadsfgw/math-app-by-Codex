@@ -168,3 +168,22 @@ coefficients, and higher-degree equations remain unsupported.
 Node tests and source validation pass. Higher-degree rational equations,
 rational inequalities, parameterized denominators, and function-valued
 denominators remain unsupported.
+
+## 2026-07-30: bounded exact exponential equations
+
+- Added a separate `分数方程式` classification and normalized existing locally
+  verified `rational-equation` history records at read time without changing
+  the storage schema.
+- Restored exact cancellation of third- and fourth-degree intermediate terms
+  while keeping every final linear/quadratic degree gate unchanged.
+- Added positive-rational-base exponential equations with affine exponents.
+- Factor numerator and denominator into a bounded prime-exponent vector, solve
+  only when one exact rational value makes every exponent difference zero, and
+  verify that certificate again before returning an answer.
+- Keep negative or zero variable bases, nonlinear exponents, exponential sums,
+  and answers requiring a logarithm ratio safely unsupported.
+- Added 250 generated exponential-equation cases, bringing the generated
+  baseline to 2,000.
+
+Node tests and source validation pass. Typed logarithm expressions, logarithmic
+equations, and exponential substitutions remain unsupported.

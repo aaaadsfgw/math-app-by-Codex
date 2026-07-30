@@ -15,6 +15,7 @@ Classification alone never means a problem can be solved.
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
+| Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Algebraic transformation | `(x+1)(x-1)を展開せよ`, `x²-1を因数分解せよ` | simplify the symbolic difference to zero |
 | Base conversion | `1011(2)を10進数に変換` | convert the result back to the source base |
 | Direct percentage | `800円の25%` | reverse ratio check |
@@ -22,7 +23,7 @@ Classification alone never means a problem can be solved.
 ## Planned textual domains
 
 - chained, simultaneous, rational, and higher-degree inequalities;
-- powers, roots, exponentials, logarithms, and complex numbers;
+- broader powers and exponentials, roots, logarithms, and complex numbers;
 - trigonometric values, identities, equations, and inequalities;
 - sequences and common finite/infinite sums;
 - counting, probability, statistics, and data summaries;
@@ -62,3 +63,10 @@ cleared equation must reduce to degree two or below; larger intermediate or
 domain polynomials fail safely. Slash notation followed by implicit
 multiplication, such as `1/x(x+1)`, is rejected until the denominator is made
 explicit with parentheses.
+
+Exponential equations currently require positive rational bases other than
+one and affine exponents in `x`. The solver accepts only identities,
+contradictions, or rational solutions that make every prime-factor exponent
+match exactly. Forms whose exact answer requires a logarithm ratio, such as
+`2^x=3` or `e^x=2`, remain unsupported until typed transcendental expressions
+and their verification rules are implemented.

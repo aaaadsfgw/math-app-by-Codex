@@ -2,6 +2,7 @@ import { classifyCategory } from "../category-classifier.js";
 import { solveAlgebraTransformation } from "./algebra-transformation.js";
 import { solveBaseConversion } from "./base-conversion.js";
 import { solveDerivative, solveIndefiniteIntegral } from "./calculus.js";
+import { solveExponentialEquation } from "./exponential-equation.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solveLinearInequality } from "./linear-inequality.js";
 import { solveLinearSystem } from "./linear-system.js";
@@ -15,6 +16,7 @@ export {
   solveAlgebraTransformation,
   solveBaseConversion,
   solveDerivative,
+  solveExponentialEquation,
   solveIndefiniteIntegral,
   solveLinearEquation,
   solveLinearInequality,
@@ -31,6 +33,7 @@ export const SOLVERS = Object.freeze([
   solveLinearInequality,
   solveBaseConversion,
   solvePercentage,
+  solveExponentialEquation,
   solveRationalEquation,
   solveQuadraticEquation,
   solveLinearEquation,
@@ -38,9 +41,11 @@ export const SOLVERS = Object.freeze([
 
 const CATEGORY_SOLVERS = Object.freeze({
   "一次方程式": [solveRationalEquation, solveLinearEquation],
+  "分数方程式": [solveRationalEquation],
   "不等式": [solveQuadraticInequality, solveLinearInequality],
   "連立方程式": [solveLinearSystem],
   "二次方程式": [solveRationalEquation, solveQuadraticEquation],
+  "指数・対数": [solveExponentialEquation],
   "基数変換": [solveBaseConversion],
   "パーセント": [solvePercentage],
 });

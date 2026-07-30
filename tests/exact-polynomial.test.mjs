@@ -25,8 +25,18 @@ test("二次式を厳密分数係数へ展開し評価する", () => {
   );
 });
 
-test("三次式・変数分母・0除算を二次多項式として受理しない", () => {
-  for (const expression of ["x^3", "1/x"]) {
+test("四次までを厳密展開し、変数分母・上限超過・0除算を受理しない", () => {
+  const cancelled = subtractExactPolynomials(
+    exactPolynomialFromAst(
+      parseMathExpression("x^4-x^3+x", { symbols: ["x"] }).ast,
+    ),
+    exactPolynomialFromAst(
+      parseMathExpression("x^4-x^3", { symbols: ["x"] }).ast,
+    ),
+  );
+  assert.deepEqual(cancelled.map(String), ["0", "1"]);
+
+  for (const expression of ["x^5", "1/x"]) {
     assert.throws(
       () => exactPolynomialFromAst(
         parseMathExpression(expression, { symbols: ["x"] }).ast,

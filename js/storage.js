@@ -239,6 +239,11 @@ function validIso(value, fallback = null) {
   return Number.isNaN(date.getTime()) ? fallback : date.toISOString();
 }
 
+const VERIFIED_SOLVER_CATEGORIES = Object.freeze({
+  "exponential-equation": "指数・対数",
+  "rational-equation": "分数方程式",
+});
+
 function normalizeClassification(input) {
   const candidate = isPlainObject(input.categoryClassification)
     ? input.categoryClassification
@@ -249,7 +254,37 @@ function normalizeClassification(input) {
         : null;
 
   const explicitCategory = typeof input.category === "string" ? normalizeWhitespace(input.category) : "";
-  const primary = explicitCategory || normalizeWhitespace(candidate?.primary) || "その他";
+  const solverId = normalizeWhitespace(input.solverId);
+  const verificationType = VERIFICATION_TYPES.has(input.verificationType)
+    ? input.verificationType
+    : input.verified
+      ? "solver"
+      : "unsupported";
+  const verifiedSolverCategory = (
+    input.verified === true
+    && verificationType === "solver"
+    && VERIFIED_SOLVER_CATEGORIES[solverId]
+  ) || "";
+  const primary = (
+    verifiedSolverCategory
+    || explicitCategory
+    || normalizeWhitespace(candidate?.primary)
+    || "その他"
+  );
+  if (verifiedSolverCategory) {
+    const originalCandidates = Array.isArray(candidate?.candidates)
+      ? candidate.candidates.map(normalizeWhitespace).filter(Boolean)
+      : [explicitCategory || normalizeWhitespace(candidate?.primary)].filter(Boolean);
+    return {
+      primary,
+      details: {
+        primary,
+        candidates: [...new Set([primary, ...originalCandidates])],
+        confidence: 1,
+        reason: `検証済みソルバー ${solverId} に基づく分類`,
+      },
+    };
+  }
   if (!candidate) return { primary, details: null };
 
   const candidates = Array.isArray(candidate.candidates)
@@ -426,19 +461,22 @@ function normalizeImportedHistory(value) {
   for (const candidate of value) {
     if (!isPlainObject(candidate)) continue;
     try {
-      let record = createHistoryRecord(candidate);
+      const claimsLocalVerification = (
+        candidate.verified === true
+        || candidate.verificationType === "solver"
+      );
+      const record = createHistoryRecord(claimsLocalVerification
+        ? {
+            ...candidate,
+            solverId: null,
+            verified: false,
+            verificationType: "unsupported",
+            verificationMessage:
+              "インポートされたソルバー検証状態は引き継いでいません。再実行して検証してください。",
+          }
+        : candidate);
       if (seen.has(record.id)) continue;
       seen.add(record.id);
-      if (candidate.verified === true || candidate.verificationType === "solver") {
-        record = createHistoryRecord({
-          ...record,
-          solverId: null,
-          verified: false,
-          verificationType: "unsupported",
-          verificationMessage:
-            "インポートされたソルバー検証状態は引き継いでいません。再実行して検証してください。",
-        });
-      }
       records.push(record);
     } catch {
       // Invalid imported entries are counted as skipped by the caller.

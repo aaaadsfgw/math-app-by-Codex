@@ -120,6 +120,37 @@ test("createHistoryRecord derives score, category details, verification, and rev
   assert.equal(shortcut.selfAssessment, "unassessed");
   assert.equal(shortcut.score, null);
   assert.equal(shortcut.needsReview, true);
+
+  const rational = createHistoryRecord(historyInput({
+    category: {
+      primary: "一次方程式",
+      candidates: ["一次方程式"],
+      confidence: 0.7,
+      reason: "旧分類",
+    },
+    solverId: "rational-equation",
+  }));
+  assert.equal(rational.category, "分数方程式");
+  assert.equal(rational.categoryClassification.primary, "分数方程式");
+  assert.deepEqual(
+    rational.categoryClassification.candidates,
+    ["分数方程式", "一次方程式"],
+  );
+
+  const unverifiedSpoof = createHistoryRecord(historyInput({
+    category: "一次方程式",
+    solverId: "rational-equation",
+    verified: false,
+    verificationType: "unsupported",
+  }));
+  assert.equal(unverifiedSpoof.category, "一次方程式");
+
+  const exponential = createHistoryRecord(historyInput({
+    category: "一次方程式",
+    solverId: "exponential-equation",
+  }));
+  assert.equal(exponential.category, "指数・対数");
+  assert.equal(exponential.categoryClassification.primary, "指数・対数");
 });
 
 test("unverified and malformed result metadata cannot retain solver conditions", () => {
@@ -297,10 +328,37 @@ test("imported solver verification claims are downgraded while existing local re
   assert.equal(forged.verified, false);
   assert.equal(forged.verificationType, "unsupported");
   assert.equal(forged.solverId, null);
+  assert.equal(forged.category, "一次方程式");
   assert.match(forged.verificationMessage, /インポートされたソルバー検証状態/);
   assert.equal(verifiedFlagOnly.verified, false);
   assert.equal(verifiedFlagOnly.verificationType, "unsupported");
   assert.match(verifiedFlagOnly.verificationMessage, /インポートされたソルバー検証状態/);
+});
+
+test("既存の検証済み分数方程式を破壊的移行なしで再分類する", async () => {
+  fixture.localStorage.setItem("history", JSON.stringify([
+    historyInput({
+      id: "legacy-rational",
+      question: "1/(x-1)=2",
+      category: "二次方程式",
+      solverId: "rational-equation",
+      verificationType: undefined,
+    }),
+  ]));
+
+  const [record] = await getHistory();
+  assert.equal(record.category, "分数方程式");
+  assert.equal(record.categoryClassification.primary, "分数方程式");
+  assert.deepEqual(
+    record.categoryClassification.candidates,
+    ["分数方程式", "二次方程式"],
+  );
+
+  const analytics = await getAnalytics();
+  assert.deepEqual(
+    analytics.byCategory.map(({ category, count }) => ({ category, count })),
+    [{ category: "分数方程式", count: 1 }],
+  );
 });
 
 test("analytics reports score, verification, review, category, and recent usage", async () => {

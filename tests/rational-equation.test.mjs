@@ -216,6 +216,10 @@ test("全体ルーターが有理式だけを新ソルバーへ渡す", () => {
   assert.equal(solveQuestion("1/2x=1").verified, false);
   assert.equal(solveQuestion("1/xx=2").verified, false);
   assert.equal(solveQuestion("1/xX=2").verified, false);
+  assert.equal(
+    solveQuestion("1/(x-1)=2", { category: "分数方程式" }).solverId,
+    "rational-equation",
+  );
 });
 
 test("巨大な方程式入力を正規化前に拒否する", () => {

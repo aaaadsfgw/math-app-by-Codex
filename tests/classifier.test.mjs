@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { CATEGORIES, classifyCategory } from "../js/category-classifier.js";
 
 test("定義された全ジャンル名は重複しない", () => {
-  assert.equal(CATEGORIES.length, 17);
+  assert.equal(CATEGORIES.length, 18);
   assert.equal(new Set(CATEGORIES).size, CATEGORIES.length);
   assert.equal(CATEGORIES.at(-1), "その他");
 });
@@ -15,6 +15,11 @@ test("主要ジャンルの問題を分類する", () => {
     ["x+y=3, x-y=1", "連立方程式"],
     ["2x+3<11", "不等式"],
     ["x² - 5x + 6 = 0", "二次方程式"],
+    ["1/(x-1)=2", "分数方程式"],
+    ["x^-1=2", "分数方程式"],
+    ["(1/3)x+1=0", "一次方程式"],
+    ["1/(2)*x=1", "一次方程式"],
+    ["1/(2)+(x)=1", "一次方程式"],
     ["x²-1を因数分解せよ", "式の計算"],
     ["1011(2)を10進数に変換", "基数変換"],
     ["800円の25%", "パーセント"],
@@ -29,6 +34,7 @@ test("高校数学の未検証ジャンルを分類する", () => {
     ["連立方程式 x+y=3, x-y=1 を解け", "連立方程式"],
     ["log_2 x = 3 を解け", "指数・対数"],
     ["2^x = 16 を解け", "指数・対数"],
+    ["2^-x = 8 を解け", "指数・対数"],
     ["e^x = 2 を解け", "指数・対数"],
     ["sin 30°の値を求めよ", "三角関数"],
     ["f(x)=x^3を微分せよ", "微分"],

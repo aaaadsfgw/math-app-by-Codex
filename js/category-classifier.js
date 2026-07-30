@@ -1,6 +1,10 @@
+import { parseMathExpression } from "./math-core/expression-parser.js";
+import { parseEquationInput } from "./solver/equation-input.js";
+
 const CATEGORIES = Object.freeze([
   "一次方程式",
   "二次方程式",
+  "分数方程式",
   "式の計算",
   "連立方程式",
   "不等式",
@@ -42,6 +46,52 @@ function hasEquationWithX(text) {
   return text.includes("=") && /(?:^|[^a-z])x(?:[^a-z]|$)/i.test(text);
 }
 
+function containsX(node) {
+  if (node?.type === "symbol") return node.name === "x";
+  if (node?.type === "unary") return containsX(node.argument);
+  if (node?.type === "binary") return containsX(node.left) || containsX(node.right);
+  if (node?.type === "call") return node.args.some(containsX);
+  return false;
+}
+
+function negativeIntegerLiteral(node) {
+  if (node?.type === "number" && /^\d+$/u.test(node.value)) {
+    return false;
+  }
+  return Boolean(
+    node?.type === "unary"
+    && node.operator === "-"
+    && node.argument?.type === "number"
+    && /^\d+$/u.test(node.argument.value)
+    && node.argument.value !== "0",
+  );
+}
+
+function containsVariableDenominator(node) {
+  if (node?.type === "binary") {
+    if (node.operator === "/" && containsX(node.right)) return true;
+    if (node.operator === "^" && containsX(node.left) && negativeIntegerLiteral(node.right)) {
+      return true;
+    }
+    return containsVariableDenominator(node.left) || containsVariableDenominator(node.right);
+  }
+  if (node?.type === "unary") return containsVariableDenominator(node.argument);
+  if (node?.type === "call") return node.args.some(containsVariableDenominator);
+  return false;
+}
+
+function hasParsedVariableDenominator(question) {
+  try {
+    const equation = parseEquationInput(question);
+    if (!equation.ok) return false;
+    const left = parseMathExpression(equation.leftSource, { symbols: ["x"] }).ast;
+    const right = parseMathExpression(equation.rightSource, { symbols: ["x"] }).ast;
+    return containsVariableDenominator(left) || containsVariableDenominator(right);
+  } catch {
+    return false;
+  }
+}
+
 export function classifyCategory(question) {
   const text = normalizedText(question);
   const scores = new Map();
@@ -70,16 +120,23 @@ export function classifyCategory(question) {
   if (/二次方程式/u.test(text)) addSignal(scores, reasons, "二次方程式", 9, "「二次方程式」を検出");
   if (/(?:x\s*\^\s*2|x2)(?=[^0-9]|$)/i.test(text)) addSignal(scores, reasons, "二次方程式", 7, "xの2乗項を検出");
 
+  if (/分数方程式|有理方程式/u.test(text)) {
+    addSignal(scores, reasons, "分数方程式", 12, "分数方程式を示す語を検出");
+  }
+  if (hasParsedVariableDenominator(question)) {
+    addSignal(scores, reasons, "分数方程式", 11, "変数を含む分母を検出");
+  }
+
   if (/一次方程式/u.test(text)) addSignal(scores, reasons, "一次方程式", 9, "「一次方程式」を検出");
   if (
     hasEquationWithX(text) &&
-    !/(?:x\s*\^\s*[2-9]|x2(?=[^0-9]|$)|[a-z0-9)]\s*\^\s*x|\b(?:log|ln|sin|cos|tan)\b|√)/i.test(text)
+    !/(?:x\s*\^\s*[2-9]|x2(?=[^0-9]|$)|[a-z0-9)]\s*\^\s*[+-]?\s*(?:x|\([^)]*x)|\b(?:log|ln|sin|cos|tan)\b|√)/i.test(text)
   ) {
     addSignal(scores, reasons, "一次方程式", 5, "xを含む一次形式の等式を検出");
   }
 
   if (/対数|log\s*[_({]?|ln\s*[(]/i.test(text)) addSignal(scores, reasons, "指数・対数", 8, "logまたは対数表記を検出");
-  if (/指数関数|指数法則|累乗|べき乗|[a-z0-9)]\s*\^\s*[a-z(]/i.test(text)) {
+  if (/指数関数|指数法則|累乗|べき乗|[a-z0-9)]\s*\^\s*[+-]?\s*(?:[a-z]|\()/i.test(text)) {
     addSignal(scores, reasons, "指数・対数", 5, "指数・累乗表記を検出");
   }
 

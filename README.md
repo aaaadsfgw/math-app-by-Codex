@@ -20,6 +20,8 @@ The current migration checkpoint supports:
   boundaries;
 - quadratic equations with exact rational or radical roots and separately
   labeled numerical approximations;
+- exponential equations with positive rational bases and affine exponents when
+  a rational solution can be certified by exact prime-exponent comparison;
 - verified derivatives for bounded algebraic and standard elementary-function
   expressions;
 - indefinite integrals whose candidate can be differentiated back over the

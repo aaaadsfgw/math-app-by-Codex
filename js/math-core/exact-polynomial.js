@@ -1,6 +1,6 @@
 import { ExactRational } from "./exact-rational.js";
 
-const MAX_DEGREE = 2;
+const MAX_INTERMEDIATE_DEGREE = 4;
 
 export class ExactPolynomialError extends Error {
   constructor(message, { code = "EXACT_POLYNOMIAL_ERROR", unsupported = false } = {}) {
@@ -11,53 +11,57 @@ export class ExactPolynomialError extends Error {
   }
 }
 
-function zeroCoefficients() {
-  return Array.from({ length: MAX_DEGREE + 1 }, () => ExactRational.zero());
+function trimCoefficients(coefficients) {
+  let last = coefficients.length - 1;
+  while (last > 0 && coefficients[last].isZero()) last -= 1;
+  return coefficients.slice(0, last + 1);
 }
 
-function polynomial(coefficients = zeroCoefficients()) {
-  return Object.freeze(coefficients);
+function polynomial(coefficients = [ExactRational.zero()]) {
+  return Object.freeze(trimCoefficients(coefficients));
 }
 
 function degree(value) {
-  for (let index = MAX_DEGREE; index >= 0; index -= 1) {
-    if (!value[index].isZero()) return index;
-  }
-  return 0;
+  return value.length - 1;
 }
 
 function constant(value) {
-  const coefficients = zeroCoefficients();
-  coefficients[0] = value;
-  return polynomial(coefficients);
+  return polynomial([value]);
 }
 
 function variable() {
-  const coefficients = zeroCoefficients();
-  coefficients[1] = ExactRational.one();
-  return polynomial(coefficients);
+  return polynomial([ExactRational.zero(), ExactRational.one()]);
 }
 
 function add(left, right, sign = 1n) {
   const multiplier = new ExactRational(sign);
-  return polynomial(left.map((coefficient, index) => (
-    coefficient.add(right[index].multiply(multiplier))
+  const length = Math.max(left.length, right.length);
+  return polynomial(Array.from({ length }, (_, index) => (
+    (left[index] ?? ExactRational.zero())
+      .add((right[index] ?? ExactRational.zero()).multiply(multiplier))
   )));
 }
 
 function multiply(left, right) {
-  const coefficients = zeroCoefficients();
-  for (let leftDegree = 0; leftDegree <= MAX_DEGREE; leftDegree += 1) {
-    for (let rightDegree = 0; rightDegree <= MAX_DEGREE; rightDegree += 1) {
+  const resultDegree = degree(left) + degree(right);
+  if (resultDegree > MAX_INTERMEDIATE_DEGREE) {
+    throw new ExactPolynomialError(
+      `多項式の途中次数が${MAX_INTERMEDIATE_DEGREE}を超えます。`,
+      {
+        code: "DEGREE_TOO_HIGH",
+        unsupported: true,
+      },
+    );
+  }
+  const coefficients = Array.from(
+    { length: resultDegree + 1 },
+    () => ExactRational.zero(),
+  );
+  for (let leftDegree = 0; leftDegree < left.length; leftDegree += 1) {
+    for (let rightDegree = 0; rightDegree < right.length; rightDegree += 1) {
       if (left[leftDegree].isZero() || right[rightDegree].isZero()) continue;
-      const resultDegree = leftDegree + rightDegree;
-      if (resultDegree > MAX_DEGREE) {
-        throw new ExactPolynomialError("三次以上の式には対応していません。", {
-          code: "DEGREE_TOO_HIGH",
-          unsupported: true,
-        });
-      }
-      coefficients[resultDegree] = coefficients[resultDegree]
+      const termDegree = leftDegree + rightDegree;
+      coefficients[termDegree] = coefficients[termDegree]
         .add(left[leftDegree].multiply(right[rightDegree]));
     }
   }
@@ -79,17 +83,23 @@ function divide(left, right) {
 
 function power(base, exponentPolynomial) {
   if (degree(exponentPolynomial) !== 0 || exponentPolynomial[0].denominator !== 1n) {
-    throw new ExactPolynomialError("指数は0以上2以下の整数にしてください。", {
-      code: "UNSUPPORTED_EXPONENT",
-      unsupported: true,
-    });
+    throw new ExactPolynomialError(
+      `指数は0以上${MAX_INTERMEDIATE_DEGREE}以下の整数にしてください。`,
+      {
+        code: "UNSUPPORTED_EXPONENT",
+        unsupported: true,
+      },
+    );
   }
   const exponent = exponentPolynomial[0].numerator;
-  if (exponent < 0n || exponent > BigInt(MAX_DEGREE)) {
-    throw new ExactPolynomialError("指数は0以上2以下の整数にしてください。", {
-      code: "UNSUPPORTED_EXPONENT",
-      unsupported: true,
-    });
+  if (exponent < 0n || exponent > BigInt(MAX_INTERMEDIATE_DEGREE)) {
+    throw new ExactPolynomialError(
+      `指数は0以上${MAX_INTERMEDIATE_DEGREE}以下の整数にしてください。`,
+      {
+        code: "UNSUPPORTED_EXPONENT",
+        unsupported: true,
+      },
+    );
   }
   if (exponent === 0n && degree(base) === 0 && base[0].isZero()) {
     throw new ExactPolynomialError("0の0乗は扱えません。", {

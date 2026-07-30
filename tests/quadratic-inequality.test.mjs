@@ -42,6 +42,7 @@ test("有理根・無理根・有限小数係数を厳密な端点で返す", ()
     ["0.1x^2-0.3x+0.2<=0", "1≤x≤2"],
     ["x^2-2<0", "-√2<x<√2"],
     ["x^2-8<=0", "-2√2≤x≤2√2"],
+    ["x^4-x^4+x^2-1>=0", "x≤-1 または 1≤x"],
     ["2x^2-4x+1>=0", "x≤(2-√2)/2 または (2+√2)/2≤x"],
     [
       "x^2-2000000000x+999999999999999999<0",
@@ -66,6 +67,7 @@ test("日本語指示・全角・左右を入れ替えた表記を全面一致�
 test("一次式は一次ソルバーへ渡し、他分野・部分一致・不正入力は検証しない", () => {
   assert.equal(solveQuadraticInequality("2x+3<11").supported, false);
   assert.equal(solveQuestion("2x+3<11").answer, "x<4");
+  assert.equal(solveQuestion("x^3+x=1").verified, false);
 
   for (const question of [
     "x^3-x<0",
@@ -86,4 +88,3 @@ test("一次式は一次ソルバーへ渡し、他分野・部分一致・不�
     assert.equal(result.answer, "", question);
   }
 });
-

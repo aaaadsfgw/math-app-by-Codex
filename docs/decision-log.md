@@ -130,3 +130,17 @@ when the cleared equation is exactly zero and every ledger factor is exactly
 nonzero. Real exclusion values make the result conditional so they survive
 history storage. Ambiguous slash notation followed by implicit multiplication
 is rejected rather than assigned one of multiple textbook interpretations.
+
+## D-011: Certify rational-base exponentials with prime-exponent vectors
+
+**Status:** accepted
+**Date:** 2026-07-30
+
+A positive rational base is factored into bounded integer prime exponents.
+Affine exponents in `x` turn those entries into exact rational linear forms.
+An exponential-equation answer is accepted only when one rational candidate
+makes every prime exponent difference exactly zero, or when the full vector
+proves an identity or constant contradiction. If a solution requires a
+logarithm ratio, the equation remains unsupported until a typed
+transcendental-expression contract exists; a decimal approximation must not be
+presented as an exact proof.

@@ -13,7 +13,7 @@ export function normalizeEquationNotation(value) {
 function removeInstructionWrapper(value) {
   return value
     .replace(
-      /^(?:次の)?(?:一次|二次|有理|分数)?方程式\s*(?:を\s*(?:解け|解きなさい|解いて|解いてください|解きましょう))?\s*[:：]?\s*/u,
+      /^(?:次の)?(?:一次|二次|有理|分数|指数|対数)?方程式\s*(?:を\s*(?:解け|解きなさい|解いて|解いてください|解きましょう))?\s*[:：]?\s*/u,
       "",
     )
     .replace(/^次の式\s*[:：]?\s*/u, "")

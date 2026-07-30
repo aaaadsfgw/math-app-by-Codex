@@ -108,16 +108,15 @@ test("未対応の関数・指数・根号を式の一部だけで検証しな�
   }
 });
 
-test("将来対応の指数・対数はソルバーエラーではなく未対応として返す", () => {
-  for (const [question, category] of [
-    ["2^x = 16 を解け", "指数・対数"],
-    ["log₂8 を求めよ", "指数・対数"],
-  ]) {
-    const result = solveQuestion(question, { category });
-    assert.equal(result.supported, false, question);
-    assert.equal(result.solved, false, question);
-    assert.equal(result.verified, false, question);
-  }
+test("対応済み指数は検証し、未対応の対数は安全に拒否する", () => {
+  const exponential = solveQuestion("2^x = 16 を解け", { category: "指数・対数" });
+  assertVerified(exponential, "exponential-equation");
+  assert.equal(exponential.answer, "x=4");
+
+  const logarithm = solveQuestion("log₂8 を求めよ", { category: "指数・対数" });
+  assert.equal(logarithm.supported, false);
+  assert.equal(logarithm.solved, false);
+  assert.equal(logarithm.verified, false);
 
   assert.equal(solveBaseConversion("log₂8 を求めよ").supported, false);
 });

@@ -146,6 +146,20 @@ Last updated: 2026-07-30
   as verified identities.
 - Added 250 generated rational-equation cases, bringing the generated corpus
   to 1,750 cases total.
+- Added `分数方程式` as a first-class category. Existing locally verified
+  rational-equation records are normalized into that category when read, while
+  imported verification claims remain untrusted and are not promoted.
+- Restored exact third- and fourth-degree intermediate cancellation, including
+  `x^3-x^3+x=1`, while final cubic/quartic equations remain unsupported.
+- Added bounded exact exponential equations:
+  - positive rational bases other than one;
+  - affine rational exponents;
+  - exact prime-exponent-vector comparison and candidate substitution;
+  - identities, constant contradictions, fractional bases, and dependent
+    integer bases;
+  - safe refusal when the exact answer requires a logarithm ratio.
+- Added 250 generated exponential-equation cases, bringing the generated
+  corpus to 2,000 cases total.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -174,21 +188,21 @@ Last updated: 2026-07-30
 
 ## Next
 
-1. Add standard exponential and logarithmic equations with positive-base and
-   domain checks.
+1. Add logarithmic equations only after explicit-base syntax, positive-argument
+   domain ledgers, and exact sign checks are complete.
 2. Add rational inequalities only after exact sign charts can include poles as
    separate open endpoints.
 3. Add definite integrals only after endpoint-domain and discontinuity checks.
 4. Extend the evaluation corpus across every newly supported curriculum
-   domain instead of treating the current 1,750 algebra-heavy cases as final.
+   domain instead of treating the current 2,000 algebra-heavy cases as final.
 5. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 124 passed, 0 failed on 2026-07-30, including 1,750 generated
+- `npm test` - 133 passed, 0 failed on 2026-07-30, including 2,000 generated
   evaluation cases.
-- `npm run check` - passed for 107 files, 10 HTML, 69 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 111 files, 10 HTML, 73 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

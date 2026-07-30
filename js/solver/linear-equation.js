@@ -5,6 +5,7 @@ import {
   exactPolynomialFromAst,
   subtractExactPolynomials,
 } from "../math-core/exact-polynomial.js";
+import { ExactRational } from "../math-core/exact-rational.js";
 import { MathParseError, parseMathExpression } from "../math-core/expression-parser.js";
 import {
   hasAmbiguousDivisionMultiplication,
@@ -40,7 +41,10 @@ function parseExactLinear(source) {
       unsupported: true,
     });
   }
-  return coefficients;
+  return Object.freeze([
+    coefficients[0],
+    coefficients[1] ?? ExactRational.zero(),
+  ]);
 }
 
 export function solveLinearEquation(question) {

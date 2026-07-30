@@ -150,6 +150,22 @@ function generatedRationalEquations() {
   });
 }
 
+function generatedExponentialEquations() {
+  const bases = [2, 3, 5, 6, 10];
+  return Array.from({ length: 250 }, (_, index) => {
+    const base = bases[index % bases.length];
+    const coefficient = (index % 9) - 4 || 5;
+    const root = (index % 25) - 12;
+    const constant = ((index * 5) % 15) - 7;
+    const exponent = coefficient * root + constant;
+    return {
+      family: "exponential-equation",
+      question: `${base}^(${linearExpression(coefficient, constant)})=${base}^(${exponent})`,
+      answer: `x=${root}`,
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -177,12 +193,13 @@ const positiveCorpus = [
   ...generatedQuadraticEquations(),
   ...generatedRationalEquations(),
   ...generatedQuadraticInequalities(),
+  ...generatedExponentialEquations(),
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("1,750問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 1_750);
+test("2,000問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 2_000);
 
   for (const item of positiveCorpus) {
     const result = solveQuestion(item.question);
