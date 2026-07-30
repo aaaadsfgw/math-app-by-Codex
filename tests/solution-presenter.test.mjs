@@ -54,6 +54,25 @@ test("未知の出力モードは答えモードへ安全に戻す", () => {
   assert.equal(presentSolution(verifiedResult, { mode: "unknown" }).content, "x=4");
 });
 
+test("厳密解を最終回答に保ったまま近似値を補助表示する", () => {
+  const result = {
+    ...verifiedResult,
+    answer: "x=-√2,√2",
+    exactAnswer: "x=-√2,√2",
+    approximateAnswer: "x≈-1.41421356237,1.41421356237",
+  };
+  const answer = presentSolution(result, { mode: "answer" });
+  assert.equal(
+    answer.content,
+    "x=-√2,√2\nx≈-1.41421356237,1.41421356237",
+  );
+  assert.equal(answer.finalAnswer, "x=-√2,√2");
+
+  const explanation = presentSolution(result, { mode: "explain" }).content;
+  assert.match(explanation, /最終回答: x=-√2,√2/u);
+  assert.match(explanation, /近似値: x≈-1\.414/u);
+});
+
 test("型付き解法履歴の結論行と回答を含む行をヒントへ漏らさない", () => {
   const typed = {
     ...verifiedResult,

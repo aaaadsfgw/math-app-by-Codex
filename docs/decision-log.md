@@ -103,3 +103,16 @@ singletons, and disjoint rays remain structurally distinct through popup,
 shortcut, and history storage. Quadratic sign decisions use exact rational
 coefficients and a BigInt discriminant; endpoint approximations are display
 metadata only.
+
+## D-009: Share an exact algebraic certificate for quadratic roots
+
+**Status:** accepted
+**Date:** 2026-07-30
+
+Quadratic equations and inequalities use one project-owned root analysis.
+Finite-decimal and fractional coefficients are reduced to a primitive integer
+ratio, and the discriminant is evaluated with BigInt. Every reported root is
+represented as `(p+q√r)/d`; substitution must reduce both its rational part and
+its radical coefficient to exactly zero. Decimal approximations may accompany
+an exact root for readability, but never replace `exactAnswer` or serve as
+verification evidence.

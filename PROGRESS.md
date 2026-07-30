@@ -7,7 +7,7 @@ Last updated: 2026-07-30
 - Physical path: `C:\Users\kukuk\OneDrive\ドキュメント\GitHub\math-study-log-ai`
 - Branch: `feat/non-ai-math-engine`
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
-- Working milestone: 3 - Shared math core
+- Working milestone: 4 - Algebra expansion
 
 ## Completed
 
@@ -111,8 +111,23 @@ Last updated: 2026-07-30
 - Fixed inequality parsing to require the entire normalized input. Inputs such
   as `sin x<2`, `y+x<2`, assignments, trailing text, and ambiguous `x2` can no
   longer be partially solved as a different inequality.
-- Expanded the generated corpus with 250 quadratic inequalities, for 1,250
-  generated cases total.
+- Replaced the floating-point quadratic-equation path with the same exact
+  quadratic core used by inequalities:
+  - finite decimals and fractions are reduced to a primitive integer ratio;
+  - the discriminant and perfect-square decision use BigInt;
+  - rational roots remain reduced fractions and irrational roots remain exact
+    radicals;
+  - every reported root is substituted symbolically, with both rational and
+    radical parts required to be exactly zero;
+  - numerical approximations are retained only as separately labeled display
+    data.
+- Fixed false verified answers caused by tolerance-based zero tests, including
+  near-zero discriminants, tiny leading coefficients, catastrophic
+  cancellation, and display rounding to a different value.
+- Added whole-input quadratic-equation parsing and blocked ambiguous `x2`
+  notation across both quadratic and legacy linear equation paths.
+- Expanded the generated corpus with 250 quadratic equations and 250 quadratic
+  inequalities, for 1,500 generated cases total.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -141,19 +156,21 @@ Last updated: 2026-07-30
 
 ## Next
 
-1. Verify module-worker and offscreen loading in unpacked Chrome before
-   changing D-004 from provisional to accepted.
+1. Add rational equations with explicit denominator exclusions and exact
+   substitution into the original equation.
 2. Expand the rational-expression regression corpus before enabling more
    cancellation patterns.
 3. Add definite integrals only after endpoint-domain and discontinuity checks.
 4. Extend the evaluation corpus across every newly supported curriculum
-   domain instead of treating the current 1,000 algebra-heavy cases as final.
+   domain instead of treating the current 1,500 algebra-heavy cases as final.
+5. Verify module-worker and offscreen loading in unpacked Chrome before
+   changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 90 passed, 0 failed on 2026-07-30, including 1,250 generated
+- `npm test` - 104 passed, 0 failed on 2026-07-30, including 1,500 generated
   evaluation cases.
-- `npm run check` - passed for 98 files, 10 HTML, 60 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 102 files, 10 HTML, 64 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

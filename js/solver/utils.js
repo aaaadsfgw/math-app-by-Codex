@@ -216,6 +216,13 @@ function parseExpression(source) {
 export function parsePolynomialEquation(value) {
   const equation = extractEquation(value);
   if (!equation) return { ok: false, unsupported: true, error: "方程式を検出できません" };
+  if (/[xX]\d/u.test(equation)) {
+    return {
+      ok: false,
+      unsupported: false,
+      error: "xの直後の数字は曖昧です。係数なら2x、累乗ならx^2と入力してください。",
+    };
+  }
   const equalsCount = [...equation].filter((character) => character === "=").length;
   if (equalsCount !== 1) return { ok: false, unsupported: false, error: "等号は1つにしてください" };
   const [leftSource, rightSource] = equation.split("=");

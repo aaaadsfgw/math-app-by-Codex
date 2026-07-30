@@ -16,11 +16,12 @@ The current migration checkpoint supports:
 - one-variable linear inequalities;
 - one-variable quadratic inequalities with exact rational or radical
   boundaries;
+- quadratic equations with exact rational or radical roots and separately
+  labeled numerical approximations;
 - verified derivatives for bounded algebraic and standard elementary-function
   expressions;
 - indefinite integrals whose candidate can be differentiated back over the
   whole supported domain;
-- quadratic equations over the real numbers;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;

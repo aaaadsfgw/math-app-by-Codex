@@ -13,7 +13,7 @@ Classification alone never means a problem can be solved.
 | One-variable quadratic inequality | `x^2-5x+6<=0`, `x^2-2<0` | exact discriminant and sign chart |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
-| Quadratic equation | `x^2-5x+6=0`, `x²-2=0` | substitute every reported real root |
+| Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Algebraic transformation | `(x+1)(x-1)を展開せよ`, `x²-1を因数分解せよ` | simplify the symbolic difference to zero |
 | Base conversion | `1011(2)を10進数に変換` | convert the result back to the source base |
 | Direct percentage | `800円の25%` | reverse ratio check |

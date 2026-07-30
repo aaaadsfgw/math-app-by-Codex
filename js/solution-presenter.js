@@ -105,9 +105,28 @@ function explanationContent(result, category) {
     `計算:\n${explainedStepContent(result)}`,
     `最終回答: ${cleanText(result.answer)}`,
   ];
+  const approximateAnswer = cleanText(result.approximateAnswer);
+  if (
+    approximateAnswer
+    && !comparable(result.answer).includes(comparable(approximateAnswer))
+  ) {
+    sections.push(`近似値: ${approximateAnswer}`);
+  }
   const verification = cleanText(result.verification);
   if (verification) sections.push(`検算: ${verification}`);
   return sections.join("\n\n");
+}
+
+function answerContent(result) {
+  const finalAnswer = cleanText(result.answer);
+  const approximateAnswer = cleanText(result.approximateAnswer);
+  if (
+    !approximateAnswer
+    || comparable(finalAnswer).includes(comparable(approximateAnswer))
+  ) {
+    return finalAnswer;
+  }
+  return `${finalAnswer}\n${approximateAnswer}`;
 }
 
 export function presentSolution(result, { mode = "answer", category = "その他" } = {}) {
@@ -115,7 +134,7 @@ export function presentSolution(result, { mode = "answer", category = "その他
   const selectedMode = OUTPUT_MODES.has(mode) ? mode : "answer";
   const finalAnswer = cleanText(result.answer);
   const contentByMode = {
-    answer: finalAnswer,
+    answer: answerContent(result),
     hint1: methodHint(result),
     hint2: secondHint(result),
     steps: stepContent(result),

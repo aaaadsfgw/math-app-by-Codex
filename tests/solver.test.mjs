@@ -150,7 +150,7 @@ test("二次方程式の異なる実数解と重解を解く", () => {
 
   const coefficient = solveQuadraticEquation("2x^2 + 3x - 2 = 0");
   assertVerified(coefficient, "quadratic-equation");
-  assert.equal(coefficient.answer, "x=-2,0.5");
+  assert.equal(coefficient.answer, "x=-2,1/2");
 });
 
 test("二次方程式の無理数解と実数解なしを扱う", () => {

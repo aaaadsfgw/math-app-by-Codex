@@ -127,3 +127,23 @@ remaining curriculum.
 
 Node tests and source validation pass. Rational, chained, simultaneous, and
 higher-degree inequalities remain unsupported.
+
+## 2026-07-30: exact quadratic equations
+
+- Extracted the quadratic discriminant, integer-ratio normalization, BigInt
+  square-root test, radical formatting, root ordering, and algebraic
+  substitution into a shared exact quadratic-root module.
+- Migrated quadratic equations away from `Number`, epsilon-based degree and
+  discriminant tests, floating residuals, and rounded final answers.
+- Keep exact fractions or radicals in `exactAnswer`; optional decimal values
+  are stored in `approximateAnswer` and shown as a labeled supplement.
+- Added whole-input equation parsing and reject ambiguous `x2` notation before
+  it can fall through to the linear solver.
+- Added adversarial coverage for near-zero discriminants, tiny leading
+  coefficients, large cancellation, unsimplified-input fractions, full-width
+  Japanese notation, malformed input, and coefficient limits.
+- Added 250 generated quadratic-equation cases, bringing the generated
+  baseline to 1,500.
+
+Node tests and source validation pass. Complex roots, parameterized
+coefficients, and higher-degree equations remain unsupported.
