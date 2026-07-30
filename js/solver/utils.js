@@ -68,6 +68,8 @@ export function solvedResult({
   approximateAnswer = "",
   conditions = [],
   kind = "exact",
+  metadata = {},
+  solutionSet = null,
   steps = [],
   verification,
   solverId,
@@ -78,6 +80,8 @@ export function solvedResult({
     exactAnswer,
     approximateAnswer,
     conditions,
+    metadata,
+    solutionSet,
     steps,
     verification: {
       method: "solver-specific-check",

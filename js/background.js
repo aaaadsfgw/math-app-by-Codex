@@ -59,6 +59,7 @@ async function resolveAnswer(question, classification) {
     resultKind: solverResult.resultKind || "exact",
     conditions: Array.isArray(solverResult.conditions) ? solverResult.conditions : [],
     solutionTrace: Array.isArray(solverResult.solutionTrace) ? solverResult.solutionTrace : [],
+    solutionSet: solverResult.solutionSet || null,
     ...verificationForSolver(solverResult)
   };
 }
@@ -127,6 +128,7 @@ async function saveShortcutHistory(question, classification, result) {
     resultKind: result.resultKind,
     conditions: result.conditions,
     solutionTrace: result.solutionTrace,
+    solutionSet: result.solutionSet,
     selfAssessment: "answer_seen",
     source: "shortcut"
   });

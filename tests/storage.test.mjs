@@ -98,6 +98,22 @@ test("createHistoryRecord derives score, category details, verification, and rev
     { type: "result", content: "x+1", explanation: "約分" },
   ]);
 
+  const intervalRecord = createHistoryRecord(
+    historyInput({
+      solutionSet: {
+        kind: "intervals",
+        intervals: [{
+          lower: { exact: "2", approximate: 2 },
+          upper: { exact: "3", approximate: 3 },
+          lowerClosed: true,
+          upperClosed: true,
+        }],
+      },
+    }),
+  );
+  assert.equal(intervalRecord.solutionSet.kind, "intervals");
+  assert.equal(intervalRecord.solutionSet.intervals[0].lower.exact, "2");
+
   const shortcut = createHistoryRecord(
     historyInput({ selfAssessment: undefined, source: "shortcut" }),
   );
@@ -114,11 +130,13 @@ test("unverified and malformed result metadata cannot retain solver conditions",
       resultKind: "conditional",
       conditions: ["x≠0"],
       solutionTrace: [{ type: "result", content: "forged" }],
+      solutionSet: { kind: "all-real", intervals: [] },
     }),
   );
   assert.equal(unverified.resultKind, "unsupported");
   assert.deepEqual(unverified.conditions, []);
   assert.deepEqual(unverified.solutionTrace, []);
+  assert.equal(unverified.solutionSet, null);
 
   assert.throws(
     () => createHistoryRecord(

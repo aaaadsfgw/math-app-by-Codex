@@ -15,6 +15,7 @@ function assertVerified(result, expected) {
   assert.equal(result.solverId, LINEAR_INEQUALITY_SOLVER_ID);
   assert.equal(result.resultKind, "exact");
   assert.equal(result.answer, expected);
+  assert.ok(result.solutionSet);
 }
 
 test("一次不等式を厳密な境界値で解く", () => {
@@ -55,3 +56,18 @@ test("分類と統合ルーターが一次不等式へ接続される", () => {
   assert.equal(solveQuestion("-2x+1≥5").answer, "x<=-2");
 });
 
+test("関数・別変数・末尾文字列を部分的な一次不等式として解かない", () => {
+  for (const question of [
+    "sin x<2",
+    "sqrt(x)<2",
+    "y+x<2",
+    "ax+1<2",
+    "f(x)=x<2",
+    "x<2 garbage",
+    "ｘ２－５ｘ＋６＜０",
+  ]) {
+    const result = solveLinearInequality(question);
+    assert.equal(result.verified, false, question);
+    assert.equal(result.answer, "", question);
+  }
+});

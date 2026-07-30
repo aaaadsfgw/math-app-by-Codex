@@ -1,3 +1,5 @@
+import { createRealSet } from "./real-set.js";
+
 export const RESULT_KINDS = Object.freeze({
   EXACT: "exact",
   APPROXIMATE: "approximate",
@@ -45,6 +47,7 @@ export function createSolvedMathResult({
   domain,
   solverId,
   metadata = {},
+  solutionSet = null,
 } = {}) {
   if (!SOLVED_KINDS.has(kind)) throw new TypeError("解答結果の種類が正しくありません。");
   const finalAnswer = text(answer);
@@ -55,6 +58,9 @@ export function createSolvedMathResult({
     throw new TypeError("解答結果には検証方法と検証根拠が必要です。");
   }
   const normalizedConditions = Object.freeze(conditions.map(text).filter(Boolean));
+  const normalizedSolutionSet = solutionSet === null
+    ? null
+    : createRealSet(solutionSet);
   if (kind === RESULT_KINDS.CONDITIONAL && !normalizedConditions.length) {
     throw new TypeError("条件付き結果には条件が必要です。");
   }
@@ -83,6 +89,7 @@ export function createSolvedMathResult({
     solverId: text(solverId) || null,
     error: null,
     metadata: Object.freeze({ ...metadata }),
+    solutionSet: normalizedSolutionSet,
   });
 }
 
@@ -116,6 +123,7 @@ function createUnsolvedMathResult(kind, {
       message,
     }),
     metadata: Object.freeze({ ...metadata }),
+    solutionSet: null,
   });
 }
 
@@ -158,6 +166,7 @@ export function toLegacySolverResult(result) {
       error: null,
       resultKind: result.kind,
       conditions: [...result.conditions],
+      solutionSet: result.solutionSet,
     };
   }
   return {
@@ -174,5 +183,6 @@ export function toLegacySolverResult(result) {
     error: text(result?.error?.message) || "問題を解けませんでした。",
     resultKind: result?.kind || RESULT_KINDS.INVALID,
     conditions: [],
+    solutionSet: null,
   };
 }

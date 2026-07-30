@@ -103,5 +103,6 @@ test("共通結果を既存UI用ソルバー形式へ移行できる", () => {
     error: null,
     resultKind: "exact",
     conditions: [],
+    solutionSet: null,
   });
 });

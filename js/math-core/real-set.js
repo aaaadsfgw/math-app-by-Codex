@@ -4,7 +4,10 @@ function endpoint(value) {
   if (value === null || value === undefined) return null;
   const exact = String(value.exact ?? value).trim();
   if (!exact) throw new TypeError("区間端点には厳密値が必要です。");
-  const approximate = value && typeof value === "object"
+  const approximate = value
+    && typeof value === "object"
+    && value.approximate !== null
+    && value.approximate !== undefined
     ? Number(value.approximate)
     : Number.NaN;
   return Object.freeze({
@@ -18,7 +21,12 @@ function interval(value) {
   const upper = endpoint(value?.upper);
   const lowerClosed = lower ? value?.lowerClosed === true : false;
   const upperClosed = upper ? value?.upperClosed === true : false;
-  if (lower?.approximate !== null && upper?.approximate !== null) {
+  if (
+    lower
+    && upper
+    && lower.approximate !== null
+    && upper.approximate !== null
+  ) {
     if (lower.approximate > upper.approximate) {
       throw new TypeError("区間の下端が上端を超えています。");
     }
@@ -78,4 +86,3 @@ export function formatRealSet(realSet, { variable = "x" } = {}) {
 }
 
 export { REAL_SET_KINDS };
-

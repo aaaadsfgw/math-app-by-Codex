@@ -9,6 +9,7 @@ import {
   toFiniteNumber,
   toIsoString,
 } from "./utils.js";
+import { createRealSet } from "./math-core/real-set.js";
 
 export const STORAGE_KEYS = Object.freeze({
   settings: "settings",
@@ -330,6 +331,21 @@ function normalizeSolutionTrace(input, verificationType) {
   });
 }
 
+function normalizeSolutionSet(input, verificationType) {
+  if (
+    verificationType !== "solver"
+    || input.verified !== true
+    || !isPlainObject(input.solutionSet)
+  ) {
+    return null;
+  }
+  try {
+    return createRealSet(input.solutionSet);
+  } catch {
+    return null;
+  }
+}
+
 export function createHistoryRecord(input = {}) {
   if (!isPlainObject(input)) throw new TypeError("履歴データはオブジェクトで指定してください。");
   const question = normalizeWhitespace(input.question);
@@ -369,6 +385,7 @@ export function createHistoryRecord(input = {}) {
     resultKind: resultMetadata.resultKind,
     conditions: resultMetadata.conditions,
     solutionTrace: normalizeSolutionTrace(input, verificationType),
+    solutionSet: normalizeSolutionSet(input, verificationType),
     selfAssessment,
     score,
     needsReview: reviewWasCompleted ? false : input.needsReview === true || computedReview,

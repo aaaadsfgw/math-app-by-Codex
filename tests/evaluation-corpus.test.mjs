@@ -97,6 +97,32 @@ function generatedBaseConversions() {
   });
 }
 
+function factorAt(root) {
+  return `(x${root < 0 ? "+" : "-"}${Math.abs(root)})`;
+}
+
+function generatedQuadraticInequalities() {
+  const operators = ["<", "<=", ">", ">="];
+  return Array.from({ length: 250 }, (_, index) => {
+    const lower = (index % 19) - 12;
+    const upper = lower + (index % 7) + 1;
+    const leading = index % 2 === 0 ? (index % 5) + 1 : -((index % 5) + 1);
+    const operator = operators[index % operators.length];
+    const outsidePositive = leading > 0;
+    const wantsPositive = operator.startsWith(">");
+    const outside = outsidePositive === wantsPositive;
+    const inclusive = operator.includes("=");
+    const answer = outside
+      ? `x${inclusive ? "≤" : "<"}${lower} または ${upper}${inclusive ? "≤" : "<"}x`
+      : `${lower}${inclusive ? "≤" : "<"}x${inclusive ? "≤" : "<"}${upper}`;
+    return {
+      family: "quadratic-inequality",
+      question: `${leading}${factorAt(lower)}${factorAt(upper)}${operator}0`,
+      answer,
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -121,12 +147,13 @@ const positiveCorpus = [
   ...generatedLinearInequalities(),
   ...generatedLinearSystems(),
   ...generatedBaseConversions(),
+  ...generatedQuadraticInequalities(),
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("1,000問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 1_000);
+test("1,250問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 1_250);
 
   for (const item of positiveCorpus) {
     const result = solveQuestion(item.question);
@@ -140,4 +167,3 @@ test("1,000問の生成評価コーパスで厳密解と安全な未対応を維
     assert.equal(result.answer, "", `${item.family}: ${item.question}`);
   }
 });
-

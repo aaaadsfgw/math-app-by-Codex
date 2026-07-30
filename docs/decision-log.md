@@ -91,3 +91,15 @@ candidate is not accepted directly. The project builds its derivative from
 explicit calculus rules and checks symbolic equivalence with the original
 integrand. Candidates requiring unresolved real-domain case splits remain
 unsupported.
+
+## D-008: Represent inequality answers as exact real sets
+
+**Status:** accepted
+**Date:** 2026-07-30
+
+Inequality solvers construct a validated union of real intervals before
+formatting answer text. Open and closed endpoints, empty sets, all-real sets,
+singletons, and disjoint rays remain structurally distinct through popup,
+shortcut, and history storage. Quadratic sign decisions use exact rational
+coefficients and a BigInt discriminant; endpoint approximations are display
+metadata only.

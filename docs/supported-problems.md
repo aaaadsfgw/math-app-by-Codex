@@ -10,6 +10,7 @@ Classification alone never means a problem can be solved.
 | Linear equation | `2x+3=11`, `3(x+2)=15` | substitute into the original equation |
 | Two-variable linear system | `x+y=3, x-y=1` | exact substitution into both equations |
 | One-variable linear inequality | `-3x+6>=0`, `0.5x>1` | exact boundary and coefficient-sign check |
+| One-variable quadratic inequality | `x^2-5x+6<=0`, `x^2-2<0` | exact discriminant and sign chart |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Quadratic equation | `x^2-5x+6=0`, `x²-2=0` | substitute every reported real root |
@@ -19,7 +20,7 @@ Classification alone never means a problem can be solved.
 
 ## Planned textual domains
 
-- quadratic, chained, and simultaneous inequalities;
+- chained, simultaneous, rational, and higher-degree inequalities;
 - powers, roots, exponentials, logarithms, and complex numbers;
 - trigonometric values, identities, equations, and inequalities;
 - sequences and common finite/infinite sums;

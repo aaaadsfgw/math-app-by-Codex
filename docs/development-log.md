@@ -108,3 +108,22 @@ default transformation type until their domain-specific traces are enriched.
 All 1,000 generated cases pass. The corpus is intentionally algebra-heavy and
 does not yet close the release evaluation milestone for calculus and the
 remaining curriculum.
+
+## 2026-07-30: exact quadratic inequalities
+
+- Added a bounded exact quadratic-polynomial reducer over the shared AST.
+- Added a validated real-set contract for empty, all-real, singleton, bounded,
+  half-infinite, and disjoint interval unions.
+- Added all 24 combinations of discriminant sign, leading-coefficient sign,
+  and strict/inclusive inequality direction.
+- Preserve rational and simplified radical roots as exact endpoints.
+- Replaced partial inequality substring extraction with whole-input parsing;
+  function, other-variable, assignment, trailing-text, and ambiguous `x2`
+  inputs can no longer be reduced to a misleading linear tail.
+- Persist verified solution sets and remove them when imported verification is
+  downgraded.
+- Added 250 generated quadratic-inequality cases, bringing the generated
+  baseline to 1,250.
+
+Node tests and source validation pass. Rational, chained, simultaneous, and
+higher-degree inequalities remain unsupported.

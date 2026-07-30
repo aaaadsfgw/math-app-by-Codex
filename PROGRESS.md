@@ -105,6 +105,14 @@ Last updated: 2026-07-30
   conversions, and 100 malformed/unsupported/safety cases. This establishes
   the quantity baseline; new curriculum domains still need their own balanced
   corpus sections.
+- Added a validated real-set/interval-union contract and exact quadratic
+  inequalities. All discriminant and leading-sign branches preserve open or
+  closed rational/radical endpoints through UI and history.
+- Fixed inequality parsing to require the entire normalized input. Inputs such
+  as `sin x<2`, `y+x<2`, assignments, trailing text, and ambiguous `x2` can no
+  longer be partially solved as a different inequality.
+- Expanded the generated corpus with 250 quadratic inequalities, for 1,250
+  generated cases total.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -137,16 +145,15 @@ Last updated: 2026-07-30
    changing D-004 from provisional to accepted.
 2. Expand the rational-expression regression corpus before enabling more
    cancellation patterns.
-3. Define the interval result contract, then add quadratic inequalities.
-4. Add definite integrals only after endpoint-domain and discontinuity checks.
-5. Extend the evaluation corpus across every newly supported curriculum
+3. Add definite integrals only after endpoint-domain and discontinuity checks.
+4. Extend the evaluation corpus across every newly supported curriculum
    domain instead of treating the current 1,000 algebra-heavy cases as final.
 
 ## Last verified commands
 
-- `npm test` - 81 passed, 0 failed on 2026-07-30, including 1,000 generated
+- `npm test` - 90 passed, 0 failed on 2026-07-30, including 1,250 generated
   evaluation cases.
-- `npm run check` - passed for 91 files, 10 HTML, 53 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 98 files, 10 HTML, 60 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure
