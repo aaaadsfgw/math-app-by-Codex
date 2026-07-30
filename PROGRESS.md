@@ -100,6 +100,11 @@ Last updated: 2026-07-30
   `transformation`, `result`, and related states) through presentation and
   history storage. Hint modes structurally exclude conclusion rows and any row
   containing the final answer.
+- Added a generated 1,000-case regression corpus: 250 linear equations, 250
+  linear inequalities, 250 nonsingular two-variable systems, 150 binary base
+  conversions, and 100 malformed/unsupported/safety cases. This establishes
+  the quantity baseline; new curriculum domains still need their own balanced
+  corpus sections.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -134,11 +139,14 @@ Last updated: 2026-07-30
    cancellation patterns.
 3. Define the interval result contract, then add quadratic inequalities.
 4. Add definite integrals only after endpoint-domain and discontinuity checks.
+5. Extend the evaluation corpus across every newly supported curriculum
+   domain instead of treating the current 1,000 algebra-heavy cases as final.
 
 ## Last verified commands
 
-- `npm test` - 80 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 90 files, 10 HTML, 52 JS/MJS, and 11 CSS files
+- `npm test` - 81 passed, 0 failed on 2026-07-30, including 1,000 generated
+  evaluation cases.
+- `npm run check` - passed for 91 files, 10 HTML, 53 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

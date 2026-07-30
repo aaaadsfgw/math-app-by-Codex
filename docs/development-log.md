@@ -94,3 +94,17 @@ splits, extrema, tangent lines, areas, and volumes remain unsupported.
 
 Node tests and source validation pass. Older solvers still receive a compatible
 default transformation type until their domain-specific traces are enriched.
+
+## 2026-07-30: generated evaluation baseline
+
+- Added 250 parameterized linear-equation cases.
+- Added 250 parameterized exact linear-inequality cases covering positive and
+  negative coefficient directions.
+- Added 250 nonsingular exact two-variable systems.
+- Added 150 binary-to-decimal conversions.
+- Added 100 malformed, unsupported, geometry, proof, nonlinear, chained, and
+  unsafe cases that must never become verified answers.
+
+All 1,000 generated cases pass. The corpus is intentionally algebra-heavy and
+does not yet close the release evaluation milestone for calculus and the
+remaining curriculum.
