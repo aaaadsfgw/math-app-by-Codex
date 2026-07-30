@@ -62,9 +62,22 @@ export function failedResult(solverId, error) {
   }));
 }
 
-export function solvedResult({ answer, steps = [], verification, solverId }) {
+export function solvedResult({
+  answer,
+  exactAnswer = "",
+  approximateAnswer = "",
+  conditions = [],
+  kind = "exact",
+  steps = [],
+  verification,
+  solverId,
+}) {
   return toLegacySolverResult(createSolvedMathResult({
+    kind,
     answer,
+    exactAnswer,
+    approximateAnswer,
+    conditions,
     steps,
     verification: {
       method: "solver-specific-check",

@@ -152,6 +152,8 @@ async function resolveQuestion(question, mode, classification) {
   return {
     ...presentSolution(solverResult, { mode, category: classification.primary }),
     solverId: solverResult.solverId || null,
+    resultKind: solverResult.resultKind || "exact",
+    conditions: Array.isArray(solverResult.conditions) ? solverResult.conditions : [],
     solverResult,
     ...verificationForSolver(solverResult)
   };
@@ -179,6 +181,8 @@ async function persistResult(question, mode, classification, result) {
       verified: result.verified,
       verificationType: result.verificationType,
       verificationMessage: result.verificationMessage,
+      resultKind: result.resultKind,
+      conditions: result.conditions,
       selfAssessment: assessment,
       source: pendingSource,
       parentHistoryId: pendingParentHistoryId

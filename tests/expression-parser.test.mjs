@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   MathParseError,
+  collectNonzeroDomainConditions,
   parseMathExpression,
   tokenizeMathExpression,
 } from "../js/math-core/expression-parser.js";
@@ -32,6 +33,14 @@ test("括弧付き関数と教材でよくある関数の空白表記を解釈�
   assert.equal(parseMathExpression("sqrt(x²+1)").cas, "sqrt(((x^2)+1))");
   assert.equal(parseMathExpression("sin x + cos(x)").cas, "(sin(x)+cos(x))");
   assert.equal(parseMathExpression("sinx").cas, "sin(x)");
+});
+
+test("分母と負の指数から失ってはいけない定義域条件を抽出する", () => {
+  const rational = parseMathExpression("(x^2-1)/(x-1)");
+  assert.deepEqual(collectNonzeroDomainConditions(rational.ast), ["(x-1)≠0"]);
+
+  const negativePower = parseMathExpression("x^-2+1/x");
+  assert.deepEqual(collectNonzeroDomainConditions(negativePower.ast), ["x≠0"]);
 });
 
 test("トークン位置を保持し、危険・曖昧・未許可の入力を拒否する", () => {

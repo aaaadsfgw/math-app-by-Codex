@@ -1,4 +1,8 @@
-import { MathParseError, parseMathExpression } from "../math-core/expression-parser.js";
+import {
+  MathParseError,
+  collectNonzeroDomainConditions,
+  parseMathExpression,
+} from "../math-core/expression-parser.js";
 import {
   equivalentInWorker,
   expandInWorker,
@@ -88,14 +92,23 @@ export async function solveAlgebraTransformation(
       return failedResult(ALGEBRA_TRANSFORMATION_SOLVER_ID, "元の式との同値性を確認できませんでした");
     }
     const label = ACTION_LABELS[request.action];
+    const conditions = collectNonzeroDomainConditions(parsed.ast);
+    const displayAnswer = conditions.length
+      ? `${answer}（ただし ${conditions.join("、")}）`
+      : answer;
     return solvedResult({
-      answer,
+      answer: displayAnswer,
+      exactAnswer: answer,
+      kind: conditions.length ? "conditional" : "exact",
+      conditions,
       steps: [
         `入力式: ${parsed.normalized}`,
         `${label}規則を順に適用`,
-        `${label}結果: ${answer}`,
+        `${label}結果: ${displayAnswer}`,
       ],
-      verification: `元の式と${label}結果の差を記号的に簡約し、0になることを確認しました`,
+      verification: conditions.length
+        ? `定義域「${conditions.join("、")}」で元の式と${label}結果の差が0になることを確認しました`
+        : `元の式と${label}結果の差を記号的に簡約し、0になることを確認しました`,
       solverId: ALGEBRA_TRANSFORMATION_SOLVER_ID,
     });
   } catch (error) {

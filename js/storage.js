@@ -38,6 +38,7 @@ export const ASSESSMENT_SCORES = Object.freeze({
 const MODES = new Set(["answer", "hint1", "hint2", "steps", "explain"]);
 const SOURCES = new Set(["popup", "shortcut", "geometry", "review"]);
 const VERIFICATION_TYPES = new Set(["solver", "demo", "ai-only", "unsupported"]);
+const SOLVED_RESULT_KINDS = new Set(["exact", "approximate", "conditional"]);
 const ALL_STORAGE_KEYS = Object.values(STORAGE_KEYS);
 const STORAGE_MUTATION_LOCK = "math-study-log-ai-storage-mutation";
 let mutationQueue = Promise.resolve();
@@ -270,6 +271,35 @@ function calculateBaseReview({ score, mode, verificationType }) {
   );
 }
 
+function normalizeResultMetadata(input, verificationType) {
+  const isVerifiedSolver = verificationType === "solver" && input.verified === true;
+  if (!isVerifiedSolver) {
+    return {
+      resultKind: "unsupported",
+      conditions: [],
+    };
+  }
+
+  const resultKind = SOLVED_RESULT_KINDS.has(input.resultKind)
+    ? input.resultKind
+    : "exact";
+  const conditions = resultKind === "conditional" && Array.isArray(input.conditions)
+    ? [...new Set(
+        input.conditions
+          .map((condition) => normalizeWhitespace(condition))
+          .filter(Boolean),
+      )].slice(0, 20)
+    : [];
+  if (resultKind === "conditional" && !conditions.length) {
+    throw new TypeError("条件付きの解答結果には条件が必要です。");
+  }
+
+  return {
+    resultKind,
+    conditions,
+  };
+}
+
 export function createHistoryRecord(input = {}) {
   if (!isPlainObject(input)) throw new TypeError("履歴データはオブジェクトで指定してください。");
   const question = normalizeWhitespace(input.question);
@@ -286,6 +316,7 @@ export function createHistoryRecord(input = {}) {
     : input.verified
       ? "solver"
       : "unsupported";
+  const resultMetadata = normalizeResultMetadata(input, verificationType);
   const reviewCount = Math.max(0, Math.trunc(toFiniteNumber(input.reviewCount, 0)));
   const lastReviewedAt = validIso(input.lastReviewedAt);
   const reviewWasCompleted = input.needsReview === false && reviewCount > 0 && lastReviewedAt;
@@ -305,6 +336,8 @@ export function createHistoryRecord(input = {}) {
     verificationMessage: normalizeWhitespace(
       input.verificationMessage ?? input.verification ?? "",
     ),
+    resultKind: resultMetadata.resultKind,
+    conditions: resultMetadata.conditions,
     selfAssessment,
     score,
     needsReview: reviewWasCompleted ? false : input.needsReview === true || computedReview,

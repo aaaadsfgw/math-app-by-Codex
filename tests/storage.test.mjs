@@ -78,6 +78,17 @@ test("createHistoryRecord derives score, category details, verification, and rev
   assert.equal(record.category, "一次方程式");
   assert.equal(record.categoryClassification.reason, "xを含む等式");
   assert.equal(record.verified, true);
+  assert.equal(record.resultKind, "exact");
+  assert.deepEqual(record.conditions, []);
+
+  const conditional = createHistoryRecord(
+    historyInput({
+      resultKind: "conditional",
+      conditions: ["(x-1)≠0", " (x-1)≠0 "],
+    }),
+  );
+  assert.equal(conditional.resultKind, "conditional");
+  assert.deepEqual(conditional.conditions, ["(x-1)≠0"]);
 
   const shortcut = createHistoryRecord(
     historyInput({ selfAssessment: undefined, source: "shortcut" }),
@@ -85,6 +96,29 @@ test("createHistoryRecord derives score, category details, verification, and rev
   assert.equal(shortcut.selfAssessment, "unassessed");
   assert.equal(shortcut.score, null);
   assert.equal(shortcut.needsReview, true);
+});
+
+test("unverified and malformed result metadata cannot retain solver conditions", () => {
+  const unverified = createHistoryRecord(
+    historyInput({
+      verified: false,
+      verificationType: "unsupported",
+      resultKind: "conditional",
+      conditions: ["x≠0"],
+    }),
+  );
+  assert.equal(unverified.resultKind, "unsupported");
+  assert.deepEqual(unverified.conditions, []);
+
+  assert.throws(
+    () => createHistoryRecord(
+      historyInput({
+        resultKind: "conditional",
+        conditions: [],
+      }),
+    ),
+    /条件が必要/,
+  );
 });
 
 test("history add enforces newest-first max count and supports update/delete", async () => {

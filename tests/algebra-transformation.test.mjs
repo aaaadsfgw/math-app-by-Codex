@@ -79,3 +79,14 @@ test("不正入力・等式・同値性失敗を検証済みにしない", async
   assert.equal(mismatch.verified, false);
   assert.match(mismatch.error, /同値性/);
 });
+
+test("約分で消える分母条件を保持し、条件付き結果として返す", async () => {
+  const result = await solveAlgebraTransformation("(x^2-1)/(x-1)を簡約せよ", {
+    symbolicOperations: fakeOperations({ simplify: async () => "x+1" }),
+  });
+  assert.equal(result.verified, true);
+  assert.equal(result.resultKind, "conditional");
+  assert.deepEqual(result.conditions, ["(x-1)≠0"]);
+  assert.equal(result.answer, "x+1（ただし (x-1)≠0）");
+  assert.match(result.verification, /定義域/);
+});

@@ -77,6 +77,9 @@ Last updated: 2026-07-30
   multiplication, symbol allow-list, and complexity limits as future domains.
 - Added the first new shared-core domain: verified algebraic expansion,
   factorization, and simplification.
+- Rational-expression simplification now preserves nonzero restrictions from
+  original denominators and negative powers. Conditional results retain those
+  restrictions in both the displayed answer and the history record.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -106,14 +109,14 @@ Last updated: 2026-07-30
 1. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 2. Enrich solution traces with typed teaching steps instead of plain strings.
-3. Add rational-expression domain constraints and cancellation safeguards.
+3. Expand the rational-expression regression corpus before enabling more
+   cancellation patterns.
 4. Add systems and inequalities after the algebra corpus is stable.
-   provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 57 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 78 files, 9 HTML, 41 JS/MJS, and 11 CSS files
+- `npm test` - 60 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 79 files, 10 HTML, 41 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure

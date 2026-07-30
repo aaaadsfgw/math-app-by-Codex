@@ -37,3 +37,7 @@ and regression tests are complete.
   explicit mathematical interpretation.
 
 Unsupported input returns no answer and is never marked verified.
+
+For rational-expression simplification, restrictions from every original
+denominator are preserved in the displayed answer and history record. For
+example, `(x^2-1)/(x-1)` may simplify to `x+1`, but only under `(x-1)≠0`.

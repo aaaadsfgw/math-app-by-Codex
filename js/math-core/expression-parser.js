@@ -343,6 +343,38 @@ function collectSymbols(node, symbols = new Set()) {
   return symbols;
 }
 
+function numericAstValue(node) {
+  if (node.type === "number") return Number(node.value);
+  if (node.type === "unary") {
+    const value = numericAstValue(node.argument);
+    if (!Number.isFinite(value)) return null;
+    return node.operator === "-" ? -value : value;
+  }
+  return null;
+}
+
+export function collectNonzeroDomainConditions(node, conditions = new Set()) {
+  if (!node || typeof node !== "object") return Object.freeze([...conditions]);
+  if (node.type === "binary") {
+    if (node.operator === "/") {
+      conditions.add(`${serializeExpressionAst(node.right)}≠0`);
+    }
+    if (node.operator === "^") {
+      const exponent = numericAstValue(node.right);
+      if (exponent !== null && exponent < 0) {
+        conditions.add(`${serializeExpressionAst(node.left)}≠0`);
+      }
+    }
+    collectNonzeroDomainConditions(node.left, conditions);
+    collectNonzeroDomainConditions(node.right, conditions);
+  }
+  if (node.type === "unary") collectNonzeroDomainConditions(node.argument, conditions);
+  if (node.type === "call") {
+    node.args.forEach((argument) => collectNonzeroDomainConditions(argument, conditions));
+  }
+  return Object.freeze([...conditions]);
+}
+
 export function parseMathExpression(value, { symbols = DEFAULT_SYMBOLS } = {}) {
   const tokenized = tokenizeMathExpression(value);
   const allowedSymbols = new Set(symbols.map((symbol) => String(symbol).toLowerCase()));
