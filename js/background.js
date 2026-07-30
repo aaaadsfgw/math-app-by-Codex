@@ -1,6 +1,7 @@
 import { classifyCategory } from "./category-classifier.js";
+import { OFFSCREEN_SYMBOLIC_OPERATIONS } from "./math-core/offscreen-symbolic-client.js";
 import { presentSolution } from "./solution-presenter.js";
-import { solveQuestion as solveLocally } from "./solver/index.js";
+import { solveQuestionAsync as solveLocally } from "./solver/index.js";
 import { addHistory, getSettings } from "./storage.js";
 
 const SOLVE_SELECTION_COMMAND = "solve-selection-to-clipboard";
@@ -25,7 +26,10 @@ function verificationForSolver(result) {
 }
 
 async function resolveAnswer(question, classification) {
-  const solverResult = solveLocally(question, { category: classification.primary });
+  const solverResult = await solveLocally(question, {
+    category: classification.primary,
+    symbolicOperations: OFFSCREEN_SYMBOLIC_OPERATIONS
+  });
 
   if (solverResult?.supported && !solverResult.solved) {
     throw new Error(solverResult.error || "この問題は条件を満たさないため解けませんでした。");

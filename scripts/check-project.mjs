@@ -51,7 +51,7 @@ try {
   manifest = {};
 }
 
-const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'settings.html', 'examples.html', 'help.html', 'about.html'];
+const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'settings.html', 'examples.html', 'help.html', 'about.html', 'offscreen.html'];
 for (const page of expectedPages) assert(relativeFiles.has(page), `Missing HTML page: ${page}`);
 assert(relativeFiles.has('js/content-script.js'), 'Missing on-demand content script: js/content-script.js');
 assert(!manifest.content_scripts, 'Declarative content scripts are not allowed; inject on demand with activeTab');
@@ -65,7 +65,7 @@ const manifestRefs = [
 for (const ref of manifestRefs) assert(relativeFiles.has(ref), `Manifest reference is missing: ${ref}`);
 
 const permissions = new Set(manifest.permissions ?? []);
-const allowedPermissions = new Set(['storage', 'activeTab', 'scripting', 'clipboardWrite']);
+const allowedPermissions = new Set(['storage', 'activeTab', 'scripting', 'clipboardWrite', 'offscreen']);
 for (const permission of allowedPermissions) {
   assert(permissions.has(permission), `Required permission is missing: ${permission}`);
 }

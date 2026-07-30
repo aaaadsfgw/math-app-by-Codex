@@ -20,8 +20,12 @@ solver router -> deterministic solver -> mathematical verification
                          local history and analytics
 ```
 
-The popup and keyboard shortcut use the same solver router. Unsupported input
-stops before presentation, clipboard, or verified-history creation.
+The popup and keyboard shortcut use the same asynchronous solver router.
+Symbolic requests from a visible extension page run in a fresh module worker.
+Shortcut requests travel through a bundled offscreen document, which creates
+the same deadline-controlled worker because the service worker does not own a
+window context. Unsupported input stops before presentation, clipboard, or
+verified-history creation.
 
 ## Trust boundary
 

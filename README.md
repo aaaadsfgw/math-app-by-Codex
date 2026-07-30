@@ -13,6 +13,7 @@ The current migration checkpoint supports:
 
 - linear equations in one variable;
 - quadratic equations over the real numbers;
+- algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
 - answer, two hint levels, working, and explanation output;
@@ -65,7 +66,9 @@ The manifest requests only:
 
 - `storage` for settings and learning records;
 - `activeTab` and `scripting` for user-triggered selection capture;
-- `clipboardWrite` for copying a verified answer.
+- `clipboardWrite` for copying a verified answer;
+- `offscreen` for running shortcut-triggered symbolic work in a disposable,
+  time-limited Web Worker.
 
 It does not request `clipboardRead` or any host permission. Questions and
 history remain on the device.

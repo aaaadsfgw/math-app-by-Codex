@@ -7,6 +7,8 @@ import {
   areSymbolicallyEquivalent,
   assertSafeSymbolicExpression,
   differentiateSymbolic,
+  expandSymbolic,
+  factorSymbolic,
   integrateSymbolic,
   rootsSymbolic,
   simplifySymbolic,
@@ -20,8 +22,10 @@ test("監査済み記号計算エンジンの版とライセンスを固定す�
   });
 });
 
-test("式の簡約・微分・積分・多項式の根を計算する", () => {
+test("式の簡約・展開・因数分解・微分・積分・多項式の根を計算する", () => {
   assert.equal(simplifySymbolic("(x^2-1)/(x-1)"), "x+1");
+  assert.equal(expandSymbolic("(x+1)*(x-1)"), "x^2-1");
+  assert.equal(factorSymbolic("x^2-1"), "(x-1)*(x+1)");
   assert.equal(differentiateSymbolic("x^3-3*x", "x"), "3*x^2-3");
   assert.equal(integrateSymbolic("sin(x)", "x"), "-cos(x)");
   assert.equal(rootsSymbolic("x^2-5*x+6", "x"), "[2,3]");

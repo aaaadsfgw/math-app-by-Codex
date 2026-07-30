@@ -4,6 +4,8 @@ const MAX_TIMEOUT_MS = 10_000;
 const ALLOWED_OPERATIONS = new Set([
   "differentiate",
   "equivalent",
+  "expand",
+  "factor",
   "integrate",
   "roots",
   "simplify",
@@ -119,6 +121,14 @@ export function runSymbolicOperation(
 
 export function simplifyInWorker(expression, options) {
   return runSymbolicOperation("simplify", [expression], options);
+}
+
+export function expandInWorker(expression, options) {
+  return runSymbolicOperation("expand", [expression], options);
+}
+
+export function factorInWorker(expression, options) {
+  return runSymbolicOperation("factor", [expression], options);
 }
 
 export function differentiateInWorker(expression, variable = "x", options) {

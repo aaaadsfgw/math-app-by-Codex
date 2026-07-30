@@ -1,7 +1,7 @@
 import { classifyCategory } from "./category-classifier.js";
 import { copyText } from "./clipboard.js";
 import { presentSolution } from "./solution-presenter.js";
-import { solveQuestion as solveLocally } from "./solver/index.js";
+import { solveQuestionAsync as solveLocally } from "./solver/index.js";
 import {
   addHistory,
   clearPendingQuestion,
@@ -129,7 +129,7 @@ function verificationForSolver(result) {
 }
 
 async function resolveQuestion(question, mode, classification) {
-  const solverResult = solveLocally(question, { category: classification.primary });
+  const solverResult = await solveLocally(question, { category: classification.primary });
 
   if (solverResult?.supported && !solverResult.solved) {
     throw new Error(solverResult.error || "この問題は条件を満たさないため解けませんでした。");

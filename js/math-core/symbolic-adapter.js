@@ -138,6 +138,16 @@ export function simplifySymbolic(expression, options = {}) {
   return runEngine(`simplify(${safeExpression})`);
 }
 
+export function expandSymbolic(expression, options = {}) {
+  const safeExpression = assertSafeSymbolicExpression(expression, options);
+  return runEngine(`expand(${safeExpression})`);
+}
+
+export function factorSymbolic(expression, options = {}) {
+  const safeExpression = assertSafeSymbolicExpression(expression, options);
+  return runEngine(`factor(${safeExpression})`);
+}
+
 export function differentiateSymbolic(expression, variable = "x") {
   const safeVariable = normalizeVariable(variable);
   const safeExpression = assertSafeSymbolicExpression(expression, {

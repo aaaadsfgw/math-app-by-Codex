@@ -1,6 +1,8 @@
 import {
   areSymbolicallyEquivalent,
   differentiateSymbolic,
+  expandSymbolic,
+  factorSymbolic,
   integrateSymbolic,
   rootsSymbolic,
   simplifySymbolic,
@@ -9,6 +11,8 @@ import {
 const operations = Object.freeze({
   differentiate: differentiateSymbolic,
   equivalent: areSymbolicallyEquivalent,
+  expand: expandSymbolic,
+  factor: factorSymbolic,
   integrate: integrateSymbolic,
   roots: rootsSymbolic,
   simplify: simplifySymbolic,

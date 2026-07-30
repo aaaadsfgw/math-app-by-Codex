@@ -5,6 +5,7 @@ const METHOD_HINTS = Object.freeze({
   "quadratic-equation": "式を ax²+bx+c=0 の形に整理し、因数分解または解の公式を選びます。",
   "base-conversion": "各桁に、右端から0、1、2…乗した基数を掛けて足します。",
   percentage: "「全体×割合÷100」の形に直して計算します。",
+  "algebra-transformation": "項と因数の構造を確認し、指定された形へ同値変形します。",
 });
 
 function cleanText(value) {

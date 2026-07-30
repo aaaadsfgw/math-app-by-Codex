@@ -1,4 +1,5 @@
 import { classifyCategory } from "../category-classifier.js";
+import { solveAlgebraTransformation } from "./algebra-transformation.js";
 import { solveBaseConversion } from "./base-conversion.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solvePercentage } from "./percentage.js";
@@ -6,6 +7,7 @@ import { solveQuadraticEquation } from "./quadratic-equation.js";
 import { unsupportedResult } from "./utils.js";
 
 export {
+  solveAlgebraTransformation,
   solveBaseConversion,
   solveLinearEquation,
   solvePercentage,
@@ -71,4 +73,13 @@ export function solveQuestion(question, options = {}) {
 export const solveProblem = solveQuestion;
 export const trySolve = solveQuestion;
 export const solveWithLocalSolver = solveQuestion;
+
+export async function solveQuestionAsync(question, options = {}) {
+  const immediate = solveQuestion(question, options);
+  if (immediate.supported) return immediate;
+  return solveAlgebraTransformation(question, {
+    symbolicOperations: options.symbolicOperations,
+  });
+}
+
 export default solveQuestion;

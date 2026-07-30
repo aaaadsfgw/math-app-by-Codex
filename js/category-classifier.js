@@ -1,6 +1,7 @@
 const CATEGORIES = Object.freeze([
   "一次方程式",
   "二次方程式",
+  "式の計算",
   "連立方程式",
   "指数・対数",
   "三角関数",
@@ -52,6 +53,10 @@ export function classifyCategory(question) {
   if (/連立方程式|連立して|同時に満たす/u.test(text)) addSignal(scores, reasons, "連立方程式", 8, "連立方程式を示す語を検出");
   if (/(?:x[^=\n]*=.*y|y[^=\n]*=.*x)/i.test(text) && (text.match(/=/g)?.length ?? 0) >= 2) {
     addSignal(scores, reasons, "連立方程式", 6, "複数の未知数と等式を検出");
+  }
+
+  if (/展開|因数分解|式を簡単に|簡約|式を整理/u.test(text)) {
+    addSignal(scores, reasons, "式の計算", 10, "式変形を示す語を検出");
   }
 
   if (/二次方程式/u.test(text)) addSignal(scores, reasons, "二次方程式", 9, "「二次方程式」を検出");

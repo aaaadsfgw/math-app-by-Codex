@@ -21,3 +21,19 @@
 At this checkpoint, tests and static project checks pass. Math coverage is still
 the original small solver subset; the shared expression core and the
 junior-high-to-Math-III expansion remain future milestones.
+
+## 2026-07-30: shared core and first new domain
+
+- Added notation normalization, bounded tokenization, immutable expression AST,
+  safe symbolic serialization, and typed result states.
+- Migrated the original polynomial solvers to the shared parser and result
+  contract.
+- Vendored and hash-pinned Algebrite 1.4.0 behind an allow-listed adapter.
+- Added per-request module workers with enforceable deadlines.
+- Added an offscreen `WORKERS` bridge so service-worker shortcut requests use
+  the same isolation boundary.
+- Added verified algebraic expansion, factorization, and simplification.
+
+Node tests and source validation pass. An unpacked-Chrome test of the module
+worker and offscreen bridge is still required before accepting the backend for
+release.

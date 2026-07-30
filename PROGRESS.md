@@ -75,6 +75,12 @@ Last updated: 2026-07-30
 - Replaced the older polynomial solver tokenizer/parser with the shared AST.
   Linear and quadratic solvers now consume the same precedence, implicit
   multiplication, symbol allow-list, and complexity limits as future domains.
+- Added the first new shared-core domain: verified algebraic expansion,
+  factorization, and simplification.
+- Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
+  extension service worker retain the same fresh-worker deadline.
+- Switched popup and shortcut routing to the shared asynchronous solver entry
+  point while keeping the original synchronous solver export for compatibility.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -82,21 +88,21 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Add the first new algebra domain on top of the shared core.
+- Verify the new worker and offscreen flow in unpacked Chrome.
 
 ## Next
 
-1. Add the first new algebra domains on top of the shared core.
-2. Add a service-worker-to-offscreen bridge so advanced shortcut calculations
-   retain the worker deadline.
-3. Enrich solution traces with typed teaching steps instead of plain strings.
-4. Verify module-worker loading in unpacked Chrome before changing D-004 from
+1. Verify module-worker and offscreen loading in unpacked Chrome before
+   changing D-004 from provisional to accepted.
+2. Enrich solution traces with typed teaching steps instead of plain strings.
+3. Add rational-expression domain constraints and cancellation safeguards.
+4. Add systems and inequalities after the algebra corpus is stable.
    provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 49 passed, 0 failed on 2026-07-30.
-- `npm run check` - passed for 72 files, 8 HTML, 36 JS/MJS, and 11 CSS files
+- `npm test` - 57 passed, 0 failed on 2026-07-30.
+- `npm run check` - passed for 78 files, 9 HTML, 41 JS/MJS, and 11 CSS files
   on 2026-07-30.
 
 ## Restart procedure
