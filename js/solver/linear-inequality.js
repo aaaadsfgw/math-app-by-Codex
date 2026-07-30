@@ -123,9 +123,13 @@ export function solveLinearInequality(question) {
     return solvedResult({
       answer,
       steps: [
-        extracted.matches[0],
-        `${expression.constant}${operator}0`,
-        answer,
+        { type: "input", content: extracted.matches[0] },
+        {
+          type: "transformation",
+          content: `${expression.constant}${operator}0`,
+          explanation: "xの項が消えるため、定数不等式の真偽だけを調べます。",
+        },
+        { type: "result", content: answer },
       ],
       verification: `xの項が消えた定数不等式を厳密分数で評価し、「${answer}」になることを確認しました。`,
       solverId: LINEAR_INEQUALITY_SOLVER_ID,
@@ -139,14 +143,26 @@ export function solveLinearInequality(question) {
   const boundary = expression.constant.negate().divide(expression.x);
   const answer = `x${solvedOperator}${boundary}`;
   const steps = [
-    extracted.matches[0],
-    standardForm(expression, operator),
-    `${expression.x}x${operator}${expression.constant.negate()}`,
+    { type: "input", content: extracted.matches[0] },
+    {
+      type: "transformation",
+      content: standardForm(expression, operator),
+      explanation: "すべての項を左辺へ移して係数を確認します。",
+    },
+    {
+      type: "transformation",
+      content: `${expression.x}x${operator}${expression.constant.negate()}`,
+      explanation: "定数項を右辺へ移します。",
+    },
   ];
   if (coefficientIsNegative) {
-    steps.push("負の係数で両辺を割るため、不等号の向きを反転");
+    steps.push({
+      type: "rule",
+      content: "負の係数で両辺を割るため、不等号の向きを反転",
+      explanation: "負の数を掛けたり割ったりすると大小関係が逆になります。",
+    });
   }
-  steps.push(answer);
+  steps.push({ type: "result", content: answer });
 
   return solvedResult({
     answer,

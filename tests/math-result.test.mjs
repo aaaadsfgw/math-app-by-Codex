@@ -90,7 +90,13 @@ test("共通結果を既存UI用ソルバー形式へ移行できる", () => {
     supported: true,
     solved: true,
     answer: "x=4",
+    exactAnswer: "x=4",
+    approximateAnswer: "",
     steps: ["2x=8", "x=4"],
+    solutionTrace: [
+      { type: "transformation", content: "2x=8", explanation: "" },
+      { type: "transformation", content: "x=4", explanation: "" },
+    ],
     verified: true,
     verification: verification.evidence,
     solverId: "linear-equation",

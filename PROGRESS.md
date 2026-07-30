@@ -96,6 +96,10 @@ Last updated: 2026-07-30
 - Added indefinite integration with reverse verification: every candidate is
   safely parsed, differentiated by project-owned rules, and compared with the
   original integrand. Candidates with unresolved domain splits are rejected.
+- Preserved typed solution traces (`input`, `strategy`, `rule`,
+  `transformation`, `result`, and related states) through presentation and
+  history storage. Hint modes structurally exclude conclusion rows and any row
+  containing the final answer.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -126,15 +130,14 @@ Last updated: 2026-07-30
 
 1. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
-2. Enrich solution traces with typed teaching steps instead of plain strings.
-3. Expand the rational-expression regression corpus before enabling more
+2. Expand the rational-expression regression corpus before enabling more
    cancellation patterns.
-4. Define the interval result contract, then add quadratic inequalities.
-5. Add definite integrals only after endpoint-domain and discontinuity checks.
+3. Define the interval result contract, then add quadratic inequalities.
+4. Add definite integrals only after endpoint-domain and discontinuity checks.
 
 ## Last verified commands
 
-- `npm test` - 79 passed, 0 failed on 2026-07-30.
+- `npm test` - 80 passed, 0 failed on 2026-07-30.
 - `npm run check` - passed for 90 files, 10 HTML, 52 JS/MJS, and 11 CSS files
   on 2026-07-30.
 

@@ -39,6 +39,16 @@ const MODES = new Set(["answer", "hint1", "hint2", "steps", "explain"]);
 const SOURCES = new Set(["popup", "shortcut", "geometry", "review"]);
 const VERIFICATION_TYPES = new Set(["solver", "demo", "ai-only", "unsupported"]);
 const SOLVED_RESULT_KINDS = new Set(["exact", "approximate", "conditional"]);
+const TRACE_TYPES = new Set([
+  "answer",
+  "conclusion",
+  "input",
+  "result",
+  "rule",
+  "strategy",
+  "transformation",
+  "verification",
+]);
 const ALL_STORAGE_KEYS = Object.values(STORAGE_KEYS);
 const STORAGE_MUTATION_LOCK = "math-study-log-ai-storage-mutation";
 let mutationQueue = Promise.resolve();
@@ -300,6 +310,26 @@ function normalizeResultMetadata(input, verificationType) {
   };
 }
 
+function normalizeSolutionTrace(input, verificationType) {
+  if (
+    verificationType !== "solver"
+    || input.verified !== true
+    || !Array.isArray(input.solutionTrace)
+  ) {
+    return [];
+  }
+  return input.solutionTrace.slice(0, 50).flatMap((step) => {
+    if (!isPlainObject(step)) return [];
+    const content = normalizeWhitespace(step.content).slice(0, 2_000);
+    if (!content) return [];
+    return [{
+      type: TRACE_TYPES.has(step.type) ? step.type : "transformation",
+      content,
+      explanation: normalizeWhitespace(step.explanation).slice(0, 2_000),
+    }];
+  });
+}
+
 export function createHistoryRecord(input = {}) {
   if (!isPlainObject(input)) throw new TypeError("履歴データはオブジェクトで指定してください。");
   const question = normalizeWhitespace(input.question);
@@ -338,6 +368,7 @@ export function createHistoryRecord(input = {}) {
     ),
     resultKind: resultMetadata.resultKind,
     conditions: resultMetadata.conditions,
+    solutionTrace: normalizeSolutionTrace(input, verificationType),
     selfAssessment,
     score,
     needsReview: reviewWasCompleted ? false : input.needsReview === true || computedReview,

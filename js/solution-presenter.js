@@ -24,13 +24,40 @@ function comparable(value) {
 }
 
 function usableSteps(result) {
+  return usableTrace(result).map((step) => step.content);
+}
+
+function usableTrace(result) {
+  if (Array.isArray(result?.solutionTrace) && result.solutionTrace.length) {
+    return result.solutionTrace
+      .map((step) => ({
+        type: cleanText(step?.type) || "transformation",
+        content: cleanText(step?.content),
+        explanation: cleanText(step?.explanation),
+      }))
+      .filter((step) => step.content);
+  }
   if (!Array.isArray(result?.steps)) return [];
-  return result.steps.map(cleanText).filter(Boolean);
+  return result.steps
+    .map((step) => ({
+      type: "transformation",
+      content: cleanText(step),
+      explanation: "",
+    }))
+    .filter((step) => step.content);
 }
 
 function stepsWithoutFinalAnswer(result) {
-  const answer = comparable(result?.answer);
-  return usableSteps(result).filter((step) => comparable(step) !== answer);
+  const answers = [
+    result?.answer,
+    result?.exactAnswer,
+    result?.approximateAnswer,
+  ].map(comparable).filter(Boolean);
+  return usableTrace(result).filter((step) => {
+    if (["answer", "conclusion", "result"].includes(step.type)) return false;
+    const content = comparable(step.content);
+    return !answers.some((answer) => content === answer || content.includes(answer));
+  });
 }
 
 function assertVerifiedResult(result) {
@@ -42,13 +69,16 @@ function assertVerifiedResult(result) {
 
 function methodHint(result) {
   return METHOD_HINTS[result.solverId]
-    || stepsWithoutFinalAnswer(result)[0]
+    || stepsWithoutFinalAnswer(result)[0]?.explanation
+    || stepsWithoutFinalAnswer(result)[0]?.content
     || "問題文から既知の値・未知の値・求めるものを整理します。";
 }
 
 function secondHint(result) {
   const method = methodHint(result);
-  const progress = stepsWithoutFinalAnswer(result).slice(0, 3);
+  const progress = stepsWithoutFinalAnswer(result)
+    .map((step) => step.explanation || step.content)
+    .slice(0, 3);
   if (!progress.length) return method;
   return `${method}\n\nここまで進めてみましょう:\n${progress.join("\n")}`;
 }
@@ -59,11 +89,19 @@ function stepContent(result) {
   return steps.join("\n");
 }
 
+function explainedStepContent(result) {
+  const trace = usableTrace(result);
+  if (!trace.length) return stepContent(result);
+  return trace.map((step) => (
+    step.explanation ? `${step.content}\n  ${step.explanation}` : step.content
+  )).join("\n");
+}
+
 function explanationContent(result, category) {
   const sections = [
     `分類: ${cleanText(category) || "その他"}`,
     `考え方: ${methodHint(result)}`,
-    `計算:\n${stepContent(result)}`,
+    `計算:\n${explainedStepContent(result)}`,
     `最終回答: ${cleanText(result.answer)}`,
   ];
   const verification = cleanText(result.verification);

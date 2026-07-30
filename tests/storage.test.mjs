@@ -85,10 +85,18 @@ test("createHistoryRecord derives score, category details, verification, and rev
     historyInput({
       resultKind: "conditional",
       conditions: ["(x-1)≠0", " (x-1)≠0 "],
+      solutionTrace: [
+        { type: "input", content: " (x^2-1)/(x-1) " },
+        { type: "result", content: "x+1", explanation: "約分" },
+      ],
     }),
   );
   assert.equal(conditional.resultKind, "conditional");
   assert.deepEqual(conditional.conditions, ["(x-1)≠0"]);
+  assert.deepEqual(conditional.solutionTrace, [
+    { type: "input", content: "(x^2-1)/(x-1)", explanation: "" },
+    { type: "result", content: "x+1", explanation: "約分" },
+  ]);
 
   const shortcut = createHistoryRecord(
     historyInput({ selfAssessment: undefined, source: "shortcut" }),
@@ -105,10 +113,12 @@ test("unverified and malformed result metadata cannot retain solver conditions",
       verificationType: "unsupported",
       resultKind: "conditional",
       conditions: ["x≠0"],
+      solutionTrace: [{ type: "result", content: "forged" }],
     }),
   );
   assert.equal(unverified.resultKind, "unsupported");
   assert.deepEqual(unverified.conditions, []);
+  assert.deepEqual(unverified.solutionTrace, []);
 
   assert.throws(
     () => createHistoryRecord(

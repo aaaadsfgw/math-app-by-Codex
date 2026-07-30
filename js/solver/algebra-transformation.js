@@ -102,9 +102,13 @@ export async function solveAlgebraTransformation(
       kind: conditions.length ? "conditional" : "exact",
       conditions,
       steps: [
-        `入力式: ${parsed.normalized}`,
-        `${label}規則を順に適用`,
-        `${label}結果: ${displayAnswer}`,
+        { type: "input", content: `入力式: ${parsed.normalized}` },
+        {
+          type: "rule",
+          content: `${label}規則を順に適用`,
+          explanation: "元の式と値が変わらない規則だけを使用します。",
+        },
+        { type: "result", content: `${label}結果: ${displayAnswer}` },
       ],
       verification: conditions.length
         ? `定義域「${conditions.join("、")}」で元の式と${label}結果の差が0になることを確認しました`

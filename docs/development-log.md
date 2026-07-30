@@ -80,3 +80,17 @@ remain unsupported.
 
 Node tests and source validation pass. Definite integrals, piecewise domain
 splits, extrema, tangent lines, areas, and volumes remain unsupported.
+
+## 2026-07-30: typed teaching traces
+
+- Preserve structured input, strategy, rule, transformation, result, and
+  verification steps through the common result adapter.
+- Use the trace in hints, working, and explanations while retaining legacy
+  string-step compatibility.
+- Exclude result/conclusion steps and answer-bearing text from both hint
+  levels.
+- Save only locally verified structured traces; imported or unverified claims
+  cannot retain trusted trace metadata.
+
+Node tests and source validation pass. Older solvers still receive a compatible
+default transformation type until their domain-specific traces are enriched.

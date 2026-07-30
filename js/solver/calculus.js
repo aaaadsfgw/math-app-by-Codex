@@ -123,9 +123,13 @@ export async function solveDerivative(
       kind: ruleResult.conditions.length ? "conditional" : "exact",
       conditions: ruleResult.conditions,
       steps: [
-        `入力関数: ${parsed.normalized}`,
-        "項ごとに積・商・合成関数の微分規則を適用",
-        `導関数: ${displayAnswer}`,
+        { type: "input", content: `入力関数: ${parsed.normalized}` },
+        {
+          type: "rule",
+          content: "項ごとに積・商・合成関数の微分規則を適用",
+          explanation: "合成関数では外側を微分し、内側の導関数を掛けます。",
+        },
+        { type: "result", content: `導関数: ${displayAnswer}` },
       ],
       verification: "プロジェクト側の微分規則で構成した式と、整理後の導関数との差が0になることを確認しました。",
       solverId: DERIVATIVE_SOLVER_ID,
@@ -187,9 +191,13 @@ export async function solveIndefiniteIntegral(
       answer,
       exactAnswer: answer,
       steps: [
-        `被積分関数: ${parsed.normalized}`,
-        "基本積分公式と線形性を適用",
-        `不定積分: ${answer}`,
+        { type: "input", content: `被積分関数: ${parsed.normalized}` },
+        {
+          type: "rule",
+          content: "基本積分公式と線形性を適用",
+          explanation: "和は項ごとに積分し、定数倍はそのまま外へ出します。",
+        },
+        { type: "result", content: `不定積分: ${answer}` },
       ],
       verification: "積分候補をプロジェクト側の微分規則で微分し、元の被積分関数との差が0になることを確認しました。",
       solverId: INDEFINITE_INTEGRAL_SOLVER_ID,
@@ -204,4 +212,3 @@ export async function solveIndefiniteIntegral(
     );
   }
 }
-

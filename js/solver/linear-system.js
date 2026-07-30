@@ -111,7 +111,14 @@ export function solveLinearSystem(question) {
   if (solution.kind === "none") {
     return solvedResult({
       answer: "解なし",
-      steps: [...extracted.equations, "係数を消去すると矛盾する等式になります"],
+      steps: [
+        ...extracted.equations.map((equation) => ({ type: "input", content: equation })),
+        {
+          type: "conclusion",
+          content: "係数を消去すると矛盾する等式になります",
+          explanation: "2本を同時に満たす点はありません。",
+        },
+      ],
       verification: "2本の式の係数関係と定数項の関係が一致しないため、共通する解はありません。",
       solverId: LINEAR_SYSTEM_SOLVER_ID,
     });
@@ -119,7 +126,10 @@ export function solveLinearSystem(question) {
   if (solution.kind === "all") {
     return solvedResult({
       answer: "すべての実数の組 (x,y)",
-      steps: [...extracted.equations, "2本とも恒等式です"],
+      steps: [
+        ...extracted.equations.map((equation) => ({ type: "input", content: equation })),
+        { type: "conclusion", content: "2本とも恒等式です" },
+      ],
       verification: "両方の式を整理すると0=0となるため、すべての実数の組で成立します。",
       solverId: LINEAR_SYSTEM_SOLVER_ID,
     });
@@ -127,7 +137,14 @@ export function solveLinearSystem(question) {
   if (solution.kind === "infinite") {
     return solvedResult({
       answer: "解は無数にある",
-      steps: [...extracted.equations, "2本の式は同じ直線を表します"],
+      steps: [
+        ...extracted.equations.map((equation) => ({ type: "input", content: equation })),
+        {
+          type: "conclusion",
+          content: "2本の式は同じ直線を表します",
+          explanation: "独立な条件が1本だけなので、解の組は無数にあります。",
+        },
+      ],
       verification: "係数と定数項が比例し、独立な条件が1本だけになることを確認しました。",
       solverId: LINEAR_SYSTEM_SOLVER_ID,
     });
@@ -144,9 +161,13 @@ export function solveLinearSystem(question) {
     answer,
     exactAnswer: answer,
     steps: [
-      ...extracted.equations,
-      `係数行列の行列式: ${solution.determinant}`,
-      answer,
+      ...extracted.equations.map((equation) => ({ type: "input", content: equation })),
+      {
+        type: "strategy",
+        content: `係数行列の行列式: ${solution.determinant}`,
+        explanation: "行列式が0でないため、解はただ1組に決まります。",
+      },
+      { type: "result", content: answer },
     ],
     verification: `${answer}を元の2本の式へ分数のまま代入し、両方の差が厳密に0になることを確認しました。`,
     solverId: LINEAR_SYSTEM_SOLVER_ID,
@@ -154,4 +175,3 @@ export function solveLinearSystem(question) {
 }
 
 export default solveLinearSystem;
-

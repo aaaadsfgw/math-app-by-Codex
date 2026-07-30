@@ -53,3 +53,24 @@ test("未検証・未対応・空回答は表示生成へ通さない", () => {
 test("未知の出力モードは答えモードへ安全に戻す", () => {
   assert.equal(presentSolution(verifiedResult, { mode: "unknown" }).content, "x=4");
 });
+
+test("型付き解法履歴の結論行と回答を含む行をヒントへ漏らさない", () => {
+  const typed = {
+    ...verifiedResult,
+    answer: "x=4（ただし a>0）",
+    exactAnswer: "x=4",
+    solutionTrace: [
+      { type: "input", content: "2x+3=11", explanation: "元の式を確認" },
+      { type: "rule", content: "両辺から3を引く", explanation: "xの項を孤立させる" },
+      { type: "transformation", content: "この後は x=4 を得る" },
+      { type: "result", content: "x=4（ただし a>0）" },
+    ],
+  };
+  const hint2 = presentSolution(typed, { mode: "hint2" }).content;
+  assert.match(hint2, /xの項を孤立/);
+  assert.doesNotMatch(hint2, /x=4/u);
+
+  const explanation = presentSolution(typed, { mode: "explain" }).content;
+  assert.match(explanation, /元の式を確認/);
+  assert.match(explanation, /最終回答: x=4/);
+});
