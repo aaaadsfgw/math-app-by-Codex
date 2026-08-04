@@ -130,12 +130,16 @@ export function classifyCategory(question) {
   if (/一次方程式/u.test(text)) addSignal(scores, reasons, "一次方程式", 9, "「一次方程式」を検出");
   if (
     hasEquationWithX(text) &&
-    !/(?:x\s*\^\s*[2-9]|x2(?=[^0-9]|$)|[a-z0-9)]\s*\^\s*[+-]?\s*(?:x|\([^)]*x)|\b(?:log|ln|sin|cos|tan)\b|√)/i.test(text)
+    !/(?:x\s*\^\s*[2-9]|x2(?=[^0-9]|$)|[a-z0-9)]\s*\^\s*[+-]?\s*(?:x|\([^)]*x)|(?:^|[^a-z_])(?:log|ln|sin|cos|tan)(?![a-z])|√)/i.test(text)
   ) {
     addSignal(scores, reasons, "一次方程式", 5, "xを含む一次形式の等式を検出");
   }
 
-  if (/対数|log\s*[_({]?|ln\s*[(]/i.test(text)) addSignal(scores, reasons, "指数・対数", 8, "logまたは対数表記を検出");
+  if (
+    /対数|(?:^|[^a-z_])(?:log(?![a-z])\s*[_({]?|ln(?![a-z])\s*[(])/i.test(text)
+  ) {
+    addSignal(scores, reasons, "指数・対数", 8, "logまたは対数表記を検出");
+  }
   if (/指数関数|指数法則|累乗|べき乗|[a-z0-9)]\s*\^\s*[+-]?\s*(?:[a-z]|\()/i.test(text)) {
     addSignal(scores, reasons, "指数・対数", 5, "指数・累乗表記を検出");
   }
@@ -144,8 +148,8 @@ export function classifyCategory(question) {
     addSignal(scores, reasons, "三角関数", 8, "三角関数の語または記号を検出");
   }
 
-  if (/微分|導関数|接線の傾き|d\s*\/\s*dx|[a-z]\s*['′]/i.test(text)) addSignal(scores, reasons, "微分", 8, "微分を示す語または記号を検出");
-  if (/積分|不定積分|定積分|∫/u.test(text)) addSignal(scores, reasons, "積分", 8, "積分を示す語または記号を検出");
+  if (/微分|導関数|接線の傾き|d\s*\/\s*dx|[a-z]\s*['′]/i.test(text)) addSignal(scores, reasons, "微分", 10, "微分を示す語または記号を検出");
+  if (/積分|不定積分|定積分|∫/u.test(text)) addSignal(scores, reasons, "積分", 10, "積分を示す語または記号を検出");
   if (/極限|\blim\b|収束値/u.test(text)) addSignal(scores, reasons, "極限", 10, "極限を示す語またはlimを検出");
   if (/数列|等差|等比|漸化式|一般項|初項|公差|公比|a[_ₙn]|Σ/u.test(text)) addSignal(scores, reasons, "数列", 7, "数列を示す語または記号を検出");
   if (/確率|場合の数|順列|組合せ|組み合わせ|サイコロ|硬貨|カードを引/u.test(text)) addSignal(scores, reasons, "確率", 7, "確率・場合の数を示す語を検出");

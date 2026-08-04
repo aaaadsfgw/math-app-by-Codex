@@ -16,6 +16,7 @@ Classification alone never means a problem can be solved.
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
+| Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
 | Algebraic transformation | `(x+1)(x-1)を展開せよ`, `x²-1を因数分解せよ` | simplify the symbolic difference to zero |
 | Base conversion | `1011(2)を10進数に変換` | convert the result back to the source base |
 | Direct percentage | `800円の25%` | reverse ratio check |
@@ -23,7 +24,7 @@ Classification alone never means a problem can be solved.
 ## Planned textual domains
 
 - chained, simultaneous, rational, and higher-degree inequalities;
-- broader powers and exponentials, roots, logarithms, and complex numbers;
+- broader powers, exponential substitutions, roots, and complex numbers;
 - trigonometric values, identities, equations, and inequalities;
 - sequences and common finite/infinite sums;
 - counting, probability, statistics, and data summaries;
@@ -70,3 +71,23 @@ contradictions, or rational solutions that make every prime-factor exponent
 match exactly. Forms whose exact answer requires a logarithm ratio, such as
 `2^x=3` or `e^x=2`, remain unsupported until typed transcendental expressions
 and their verification rules are implemented.
+
+Logarithmic equations currently accept an explicit integer base from 2 through
+`10^12` as `log_2(x)` or `log₂(x)`. Bare `log(x)` and `ln(x)` are both the
+natural logarithm. All effective logarithms must have the same base. The outer
+expression must be a rational linear combination of logarithm terms, each
+argument must be a polynomial of degree at most two, and the exact product-law
+transformation must finish at degree two or below. Every original argument's
+strict-positive condition remains in a separate ledger even after cancellation
+or multiplication by zero; rational and quadratic-radical candidates are
+checked against that ledger without floating-point sign decisions. Nested
+logs, variable or fractional bases, rational-function arguments, mixed bases,
+logarithm products, cubic-root answers, and logarithmic inequalities remain
+unsupported. Write ambiguous coefficients explicitly, for example
+`(1/2)*log_2(x)`; suffix multiplication such as `log_2(x)2` is rejected.
+To keep expansion deterministic and bounded, one equation may contain at most
+12 logarithm occurrences and 9 distinct logarithm arguments. Argument powers
+are limited to absolute exponent 4, and exact constant-side base powers to 32.
+An identity may retain at most one genuinely quadratic positivity condition;
+forms requiring the exact intersection of unrelated quadratic-root families
+are reported as unsupported rather than approximated.

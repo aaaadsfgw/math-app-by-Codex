@@ -187,3 +187,30 @@ denominators remain unsupported.
 
 Node tests and source validation pass. Typed logarithm expressions, logarithmic
 equations, and exponential substitutions remain unsupported.
+
+## 2026-08-05: bounded exact logarithmic equations
+
+- Added explicit integer-base syntax `log_2(x)` and Unicode-subscript syntax
+  `log₂(x)` while protecting subscripts before NFKC normalization.
+- Treat bare `log` and `ln` consistently as natural logarithms.
+- Reduce rational linear combinations of same-base logarithms to bounded exact
+  polynomial products, with quadratic-or-lower arguments and final equations.
+- Preserve every original positive-argument condition independently through
+  cancellation and zero multiplication.
+- Check rational and quadratic-radical candidates with exact polynomial
+  substitution and exact `A+B√r` sign comparison.
+- Reject ambiguous suffix multiplication, nested logarithms, mixed bases,
+  rational-function arguments, unsafe text, and degree-limit overflows without
+  falling through to an unrelated equation solver.
+- Fixed Unicode base concatenation such as `log₂8(x)` from changing into a
+  different verified base, and kept ordinary identifiers such as `catalog` and
+  `login` outside logarithm recognition.
+- Prioritize explicit differentiation and integration instructions before
+  synchronous equation solvers, so `f(x)=log(x)を微分せよ` reaches the verified
+  calculus path.
+- Added 250 generated logarithmic-equation cases, bringing the generated
+  baseline to 2,250.
+
+Node tests and source validation pass. Logarithmic inequalities, variable or
+fractional bases, nested logarithms, mixed-base transformations, cubic-root
+answers, and higher-degree product equations remain unsupported.

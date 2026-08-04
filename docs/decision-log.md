@@ -144,3 +144,22 @@ proves an identity or constant contradiction. If a solution requires a
 logarithm ratio, the equation remains unsupported until a typed
 transcendental-expression contract exists; a decimal approximation must not be
 presented as an exact proof.
+
+## D-012: Preserve logarithm domains before applying product laws
+
+**Status:** accepted
+**Date:** 2026-08-05
+
+Each parsed logarithm argument is recorded in a separate strict-positive domain
+ledger before like terms are combined. Cancellation, multiplication by zero,
+and algebraic normalization may remove a logarithm coefficient but must never
+remove its original domain condition. Within that common domain, rational
+coefficients are cleared to bounded integer exponents and a same-base equation
+is converted to equality between exact polynomial products. A result is
+accepted only when the candidate polynomial has degree at most two, every
+candidate satisfies it exactly, and every original logarithm argument is
+strictly positive. Signs of quadratic-radical substitutions are decided by
+exact comparison of `A+B√r`, never by their decimal approximations. Bare
+`log` and `ln` both denote the natural logarithm so equation and calculus
+notation remain consistent; an integer base uses `log_n` or Unicode subscript
+notation.

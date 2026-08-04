@@ -64,6 +64,13 @@ test("定義域が必要な微分結果を条件付きとして保持する", as
   assert.equal(result.resultKind, "conditional");
   assert.deepEqual(result.conditions, ["x>0"]);
   assert.match(result.answer, /ただし x>0/);
+
+  const routed = await solveQuestionAsync("f(x)=log(x)を微分せよ", {
+    symbolicOperations: operations(),
+  });
+  verified(routed, DERIVATIVE_SOLVER_ID);
+  assert.equal(routed.resultKind, "conditional");
+  assert.deepEqual(routed.conditions, ["x>0"]);
 });
 
 test("不定積分候補を独自微分規則で戻してから採用する", async () => {
@@ -108,4 +115,3 @@ test("危険な識別子や不完全な微積分指示を実行しない", async
     assert.equal(result.verified, false);
   }
 });
-

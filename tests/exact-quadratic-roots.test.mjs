@@ -5,6 +5,7 @@ import {
   analyzeExactQuadraticRoots,
   evaluateExactPolynomialAtQuadraticRoot,
   integerSquareRoot,
+  signOfExactQuadraticValue,
   verifyExactQuadraticRoot,
 } from "../js/math-core/exact-quadratic-roots.js";
 import { ExactRational } from "../js/math-core/exact-rational.js";
@@ -123,4 +124,21 @@ test("二次根へ任意の有界多項式を有理部・根号部に分けて�
     );
     assert.equal(nonzero.isZero, false);
   }
+});
+
+test("二次体 a+b√d の符号を浮動小数なしで比較する", () => {
+  const value = (rationalPart, radicalPart) => ({
+    rationalPart: ExactRational.parse(rationalPart),
+    radicalPart: ExactRational.parse(radicalPart),
+  });
+  assert.equal(signOfExactQuadraticValue(value("2", "-1"), 2n), 1);
+  assert.equal(signOfExactQuadraticValue(value("1", "-1"), 2n), -1);
+  assert.equal(signOfExactQuadraticValue(value("-2", "1"), 2n), -1);
+  assert.equal(signOfExactQuadraticValue(value("-1", "1"), 2n), 1);
+  assert.equal(signOfExactQuadraticValue(value("0", "1"), 2n), 1);
+  assert.equal(signOfExactQuadraticValue(value("0", "0"), 2n), 0);
+  assert.equal(
+    signOfExactQuadraticValue(value(`1${"0".repeat(400)}`, "-1"), 2n),
+    1,
+  );
 });

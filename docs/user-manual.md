@@ -12,6 +12,10 @@
 The extension shows a clear unsupported message when it cannot safely solve the
 format. It does not fill the gap with a guessed response.
 
+For logarithmic equations, use forms such as `log_2(x)=3`, `log₂(x)=3`, or
+`ln(x)=0`. The argument parentheses are required. Bare `log(x)` and `ln(x)`
+both mean the natural logarithm; use `log_10(x)` for an explicit base 10.
+
 ## Shortcut
 
 Select a question on an HTTP/HTTPS page and press `Ctrl+Shift+Y`

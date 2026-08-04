@@ -98,7 +98,7 @@ test("一次方程式は不正構文と危険な式を実行しない", () => {
 });
 
 test("未対応の関数・指数・根号を式の一部だけで検証しない", () => {
-  for (const question of ["sin x = 0", "tan x = 1", "log x = 2", "e^x = 2", "√x = 3"]) {
+  for (const question of ["sin x = 0", "tan x = 1", "e^x = 2", "√x = 3"]) {
     const result = solveQuestion(question);
     assert.equal(result.supported, false, question);
     assert.equal(result.solved, false, question);
@@ -106,12 +106,27 @@ test("未対応の関数・指数・根号を式の一部だけで検証しな�
     assert.equal(result.answer, "", question);
     assert.equal(result.resultKind, "unsupported", question);
   }
+
+  const malformedLogarithm = solveQuestion("log x = 2");
+  assert.equal(malformedLogarithm.supported, true);
+  assert.equal(malformedLogarithm.solved, false);
+  assert.equal(malformedLogarithm.verified, false);
+  assert.equal(malformedLogarithm.answer, "");
+  assert.equal(malformedLogarithm.resultKind, "invalid");
 });
 
-test("対応済み指数は検証し、未対応の対数は安全に拒否する", () => {
+test("対応済み指数・対数を検証し、値だけを求める対数は安全に拒否する", () => {
   const exponential = solveQuestion("2^x = 16 を解け", { category: "指数・対数" });
   assertVerified(exponential, "exponential-equation");
   assert.equal(exponential.answer, "x=4");
+
+  const logarithmic = solveQuestion("log_2(x)=3", { category: "指数・対数" });
+  assert.equal(logarithmic.supported, true, logarithmic.error);
+  assert.equal(logarithmic.solved, true, logarithmic.error);
+  assert.equal(logarithmic.verified, true, logarithmic.error);
+  assert.equal(logarithmic.solverId, "logarithmic-equation");
+  assert.equal(logarithmic.resultKind, "conditional");
+  assert.equal(logarithmic.exactAnswer, "x=8");
 
   const logarithm = solveQuestion("log₂8 を求めよ", { category: "指数・対数" });
   assert.equal(logarithm.supported, false);

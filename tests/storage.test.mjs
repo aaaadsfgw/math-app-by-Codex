@@ -151,6 +151,17 @@ test("createHistoryRecord derives score, category details, verification, and rev
   }));
   assert.equal(exponential.category, "指数・対数");
   assert.equal(exponential.categoryClassification.primary, "指数・対数");
+
+  const logarithmic = createHistoryRecord(historyInput({
+    category: "一次方程式",
+    solverId: "logarithmic-equation",
+    resultKind: "conditional",
+    conditions: ["x>0"],
+  }));
+  assert.equal(logarithmic.category, "指数・対数");
+  assert.equal(logarithmic.categoryClassification.primary, "指数・対数");
+  assert.equal(logarithmic.resultKind, "conditional");
+  assert.deepEqual(logarithmic.conditions, ["x>0"]);
 });
 
 test("unverified and malformed result metadata cannot retain solver conditions", () => {

@@ -22,6 +22,10 @@ The current migration checkpoint supports:
   labeled numerical approximations;
 - exponential equations with positive rational bases and affine exponents when
   a rational solution can be certified by exact prime-exponent comparison;
+- same-base logarithmic equations whose rational log coefficients, arguments
+  of degree two or lower, and final quadratic-or-lower candidate equation can
+  all be checked exactly with every original positive-argument condition
+  retained;
 - verified derivatives for bounded algebraic and standard elementary-function
   expressions;
 - indefinite integrals whose candidate can be differentiated back over the
@@ -60,6 +64,10 @@ verified final answer, and optionally records the attempt.
 
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result.
+
+For logarithmic equations, write an explicit integer base as `log_2(x)` or
+`log₂(x)`. Bare `log(x)` and `ln(x)` both mean the natural logarithm, matching
+the calculus parser. Parentheses around every logarithm argument are required.
 
 ## Development
 

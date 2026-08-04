@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-07-30
+Last updated: 2026-08-05
 
 ## Repository checkpoint
 
@@ -160,6 +160,25 @@ Last updated: 2026-07-30
   - safe refusal when the exact answer requires a logarithm ratio.
 - Added 250 generated exponential-equation cases, bringing the generated
   corpus to 2,000 cases total.
+- Added bounded exact logarithmic equations:
+  - explicit integer bases through `10^12` with ASCII or Unicode-subscript
+    notation, plus natural-logarithm `log`/`ln` aliases;
+  - rational linear combinations of same-base logarithms;
+  - quadratic-or-lower polynomial arguments and candidate equations;
+  - a separate strict-positive ledger for every original argument, retained
+    after cancellation and multiplication by zero;
+  - exact rational and quadratic-radical candidate substitution, including
+    `A+B√r` sign decisions without decimal evidence;
+  - exact intersections between one quadratic positive region and any number
+    of rational linear bounds for logarithmic identities.
+- Blocked subscript/digit concatenation, identifier substring matches, suffix
+  implicit multiplication, mixed bases, degree overflows, and unrelated solver
+  fallthrough from becoming verified logarithm answers.
+- Prioritized explicit calculus instructions in the asynchronous router so
+  assignment-form derivatives such as `f(x)=log(x)を微分せよ` are not captured
+  by the equation path.
+- Added 250 generated logarithmic-equation cases, bringing the generated
+  corpus to 2,250 cases total.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -183,27 +202,25 @@ Last updated: 2026-07-30
 
 ## In progress
 
-- Expand algebra coverage while keeping unpacked-Chrome verification as a
+- Add rational inequalities while keeping unpacked-Chrome verification as a
   release blocker.
 
 ## Next
 
-1. Add logarithmic equations only after explicit-base syntax, positive-argument
-   domain ledgers, and exact sign checks are complete.
-2. Add rational inequalities only after exact sign charts can include poles as
+1. Add rational inequalities only after exact sign charts can include poles as
    separate open endpoints.
-3. Add definite integrals only after endpoint-domain and discontinuity checks.
-4. Extend the evaluation corpus across every newly supported curriculum
-   domain instead of treating the current 2,000 algebra-heavy cases as final.
-5. Verify module-worker and offscreen loading in unpacked Chrome before
+2. Add definite integrals only after endpoint-domain and discontinuity checks.
+3. Extend the evaluation corpus across every newly supported curriculum
+   domain instead of treating the current 2,250 algebra-heavy cases as final.
+4. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 133 passed, 0 failed on 2026-07-30, including 2,000 generated
+- `npm test` - 148 passed, 0 failed on 2026-08-05, including 2,250 generated
   evaluation cases.
-- `npm run check` - passed for 111 files, 10 HTML, 73 JS/MJS, and 11 CSS files
-  on 2026-07-30.
+- `npm run check` - passed for 115 files, 10 HTML, 77 JS/MJS, and 11 CSS files
+  on 2026-08-05.
 
 ## Restart procedure
 

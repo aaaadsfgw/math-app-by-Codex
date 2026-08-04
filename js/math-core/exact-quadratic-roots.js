@@ -215,6 +215,44 @@ export function evaluateExactPolynomialAtQuadraticRoot(coefficients, root) {
   });
 }
 
+function rationalSign(value) {
+  return value.numerator < 0n ? -1 : value.numerator > 0n ? 1 : 0;
+}
+
+export function signOfExactQuadraticValue(value, radicand) {
+  const rationalPart = value?.rationalPart;
+  const radicalPart = value?.radicalPart;
+  if (
+    !(rationalPart instanceof ExactRational)
+    || !(radicalPart instanceof ExactRational)
+    || typeof radicand !== "bigint"
+    || radicand < 0n
+  ) {
+    throw new TypeError("二次体の値と非負の被開平数を指定してください。");
+  }
+  const rationalPartSign = rationalSign(rationalPart);
+  const radicalPartSign = radicand === 0n ? 0 : rationalSign(radicalPart);
+  if (rationalPartSign === 0) return radicalPartSign;
+  if (radicalPartSign === 0 || rationalPartSign === radicalPartSign) {
+    return rationalPartSign;
+  }
+
+  const rationalMagnitude = rationalPart.numerator * rationalPart.numerator
+    * radicalPart.denominator * radicalPart.denominator;
+  const radicalMagnitude = radicalPart.numerator * radicalPart.numerator
+    * rationalPart.denominator * rationalPart.denominator
+    * radicand;
+  const magnitudeComparison = rationalMagnitude < radicalMagnitude
+    ? -1
+    : rationalMagnitude > radicalMagnitude
+      ? 1
+      : 0;
+  if (magnitudeComparison === 0) return 0;
+  return rationalPartSign > 0
+    ? magnitudeComparison
+    : -magnitudeComparison;
+}
+
 function rootComponents(integerCoefficients, discriminant) {
   const [cOriginal, bOriginal, aOriginal] = integerCoefficients;
   let a = aOriginal;

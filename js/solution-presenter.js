@@ -8,6 +8,7 @@ const METHOD_HINTS = Object.freeze({
   "quadratic-equation": "式を ax²+bx+c=0 の形に整理し、因数分解または解の公式を選びます。",
   "rational-equation": "元の分母が0でない条件を先に保ち、通分後の候補を元の式で検査します。",
   "exponential-equation": "正の有理数の底を素因数の累乗へ分け、すべての指数が一致するxを求めます。",
+  "logarithmic-equation": "元の全引数を正に保ち、同じ底の対数法則で二次以下の方程式へ変換します。",
   "base-conversion": "各桁に、右端から0、1、2…乗した基数を掛けて足します。",
   percentage: "「全体×割合÷100」の形に直して計算します。",
   "algebra-transformation": "項と因数の構造を確認し、指定された形へ同値変形します。",

@@ -166,6 +166,24 @@ function generatedExponentialEquations() {
   });
 }
 
+function generatedLogarithmicEquations() {
+  const bases = [2, 3, 5, 10];
+  return Array.from({ length: 250 }, (_, index) => {
+    const base = bases[index % bases.length];
+    const exponent = index % 5;
+    const shift = ((index * 7) % 41) - 20;
+    const root = shift + base ** exponent;
+    const argument = shift === 0
+      ? "x"
+      : `x${shift < 0 ? "+" : "-"}${Math.abs(shift)}`;
+    return {
+      family: "logarithmic-equation",
+      question: `log_${base}(${argument})=${exponent}`,
+      answer: `x=${root}（ただし ${argument}>0）`,
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -194,12 +212,13 @@ const positiveCorpus = [
   ...generatedRationalEquations(),
   ...generatedQuadraticInequalities(),
   ...generatedExponentialEquations(),
+  ...generatedLogarithmicEquations(),
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("2,000問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 2_000);
+test("2,250問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 2_250);
 
   for (const item of positiveCorpus) {
     const result = solveQuestion(item.question);
