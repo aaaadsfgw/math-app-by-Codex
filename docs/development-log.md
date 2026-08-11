@@ -269,3 +269,30 @@ Node tests and source validation pass. Transcendental integrands, variable
 denominators, algebraic or variable bounds, and improper integrals remain the
 next continuity-aware extension rather than being inferred from endpoint
 substitution alone.
+
+## 2026-08-11: exact affine-exponential definite integrals
+
+- Extended the exact finite definite-integral path from polynomials to
+  `P(x)+Σq*exp(ax+b)` with rational coefficients, affine rational exponents,
+  rational bounds, and at most 32 syntactic exponential terms.
+- Constructed primitive coefficients and endpoint exponents using exact BigInt
+  fractions, then combined equal `exp(rational)` atoms without CAS integration,
+  numerical quadrature, or floating-point verification.
+- Added `e^(ax+b)` as an alias, including constant exponentials and `a=0`,
+  while rejecting nonlinear arguments, exponential products, variable
+  denominators, and all improper or non-rational-bound cases.
+- Required parentheses for `exp`, `sin`, and `cos` in definite-integral input,
+  rejected suffix digits and ambiguous division/multiplication, and quarantined
+  scientific notation such as `1e2` after an adversarial review found it could
+  otherwise be misread as multiplication by Euler's constant.
+- Added direct core tests, solver/router/presentation/history tests, and 250
+  independently generated exponential-integral cases, bringing the evaluation
+  corpus to 3,000 unique cases.
+- Independently audited 7,000 valid randomized integrals and 3,400 unsupported
+  or invalid mutations, with no exact-answer mismatch or false verification
+  inside that corpus. A separate adversarial parser review found the
+  scientific-notation case; targeted regressions pass after its repair.
+
+Node tests and source validation pass. Affine sine/cosine terms, exact special
+angles, rational-function interval domains, non-rational bounds, and improper
+integrals remain unsupported.

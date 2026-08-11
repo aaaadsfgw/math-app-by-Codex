@@ -122,6 +122,15 @@ test("境界記号を欠く定積分風表記を不定積分0+Cとして検証�
     "∫0^1 x dx",
     "∫(0)^(1) x dx",
     "∫(-1)^(2) x^2 dx",
+    "∫pi^2 x dx",
+    "∫(pi)^(2*pi) x dx",
+    "∫PI^2 x dx",
+    "∫ＰＩ^2 x dx",
+    "∫Pi^2 x dx",
+    "∫2pi^3 x dx",
+    "∫3π/4^2 x dx",
+    "∫0.5*pi^2 x dx",
+    "∫pi/-2^3 x dx",
   ]) {
     const direct = await solveIndefiniteIntegral(question, { symbolicOperations });
     assert.equal(direct.verified, false, question);

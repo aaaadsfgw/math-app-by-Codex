@@ -3,6 +3,10 @@ import {
   differentiateExpressionAst,
 } from "../math-core/calculus-rules.js";
 import {
+  ExactExponentialIntegralError,
+  evaluateExactExponentialIntegral,
+} from "../math-core/exact-exponential-integral.js";
+import {
   ExactPolynomialIntegralError,
   evaluateExactDefinitePolynomialIntegral,
   exactPolynomialForIntegralFromAst,
@@ -115,10 +119,23 @@ function compareRationals(left, right) {
 }
 
 function definiteIntegralFailure(error) {
-  if (error instanceof ExactPolynomialIntegralError && error.unsupported) {
+  if (error instanceof MathParseError && error.code === "UNSUPPORTED_SYMBOL") {
     return recognizedResult(unsupportedResult(error.message));
   }
-  if (error instanceof MathParseError || error instanceof ExactPolynomialIntegralError) {
+  if (
+    (
+      error instanceof ExactPolynomialIntegralError
+      || error instanceof ExactExponentialIntegralError
+    )
+    && error.unsupported
+  ) {
+    return recognizedResult(unsupportedResult(error.message));
+  }
+  if (
+    error instanceof MathParseError
+    || error instanceof ExactPolynomialIntegralError
+    || error instanceof ExactExponentialIntegralError
+  ) {
     return recognizedResult(failedResult(DEFINITE_INTEGRAL_SOLVER_ID, error.message));
   }
   if (error instanceof RangeError && /大きすぎ|長すぎ/u.test(error.message)) {
@@ -180,13 +197,119 @@ export async function solveDerivative(
   }
 }
 
+function definiteIntervalExplanation(lower, upper, equalScope) {
+  const direction = compareRationals(lower, upper);
+  if (direction < 0) return "下端から上端へ通常の向きで評価します。";
+  if (direction > 0) {
+    return "上下限が逆でも入れ替えて符号を推測せず、指定どおり F(上端)-F(下端) を計算します。";
+  }
+  return `上下限は同じですが、${equalScope}を確認してから0とします。`;
+}
+
+function solvedPolynomialDefiniteIntegral(parsedIntegrand, lower, upper) {
+  const coefficients = exactPolynomialForIntegralFromAst(parsedIntegrand.ast);
+  const evaluated = evaluateExactDefinitePolynomialIntegral(coefficients, lower, upper);
+  const antiderivative = formatExactPolynomialForIntegral(evaluated.antiderivative);
+  const exactAnswer = evaluated.value.toString();
+  return solvedResult({
+    answer: exactAnswer,
+    exactAnswer,
+    metadata: {
+      integrand: parsedIntegrand.normalized,
+      lowerBound: lower.toString(),
+      upperBound: upper.toString(),
+      antiderivative,
+      family: "polynomial",
+    },
+    steps: [
+      { type: "input", content: `∫_${lower}^${upper} ${parsedIntegrand.normalized} dx` },
+      {
+        type: "constraint",
+        content: "被積分関数は区間全体で定義された有理係数多項式",
+        explanation: "変数分母・負の累乗・0乗で消える穴・未証明の関数は検証済みにしません。",
+      },
+      {
+        type: "rule",
+        content: `F(x)=${antiderivative}`,
+        explanation: "各 x^n の係数を n+1 で厳密に割り、次数を1つ上げます。",
+      },
+      {
+        type: "transformation",
+        content: `F(${upper})-F(${lower})=${evaluated.upperValue}-(${evaluated.lowerValue})`,
+        explanation: definiteIntervalExplanation(
+          lower,
+          upper,
+          "被積分関数が区間上で定義された多項式であること",
+        ),
+      },
+      {
+        type: "verification",
+        content: "全係数と両端代入を厳密分数で再計算",
+        explanation: "有限小数も最初に分数へ直し、途中でNumberや丸め誤差を使っていません。",
+      },
+      { type: "result", content: `定積分: ${exactAnswer}` },
+    ],
+    verification: "有理係数をBigInt分数のまま項別積分し、原始関数を両端へ厳密代入して F(上端)-F(下端) を再計算しました。浮動小数点近似は使っていません。",
+    solverId: DEFINITE_INTEGRAL_SOLVER_ID,
+  });
+}
+
+function solvedExponentialDefiniteIntegral(parsedIntegrand, lower, upper) {
+  const evaluated = evaluateExactExponentialIntegral(parsedIntegrand.ast, lower, upper);
+  const exactAnswer = evaluated.exact;
+  return solvedResult({
+    answer: exactAnswer,
+    exactAnswer,
+    metadata: {
+      integrand: parsedIntegrand.normalized,
+      lowerBound: lower.toString(),
+      upperBound: upper.toString(),
+      antiderivative: evaluated.antiderivative,
+      family: "affine-exponential",
+    },
+    steps: [
+      { type: "input", content: `∫_${lower}^${upper} ${parsedIntegrand.normalized} dx` },
+      {
+        type: "constraint",
+        content: "有理係数多項式と q*exp(ax+b) の有限和（a,b,qは有理数）",
+        explanation: "expは全実数で連続です。非線形指数、関数同士の積、変数分母は検証済みにしません。",
+      },
+      {
+        type: "rule",
+        content: `F(x)=${evaluated.antiderivative}`,
+        explanation: "a≠0では q*exp(ax+b) を積分するとき係数をaで割り、a=0は定数関数として扱います。",
+      },
+      {
+        type: "transformation",
+        content: `F(${upper})-F(${lower})=${exactAnswer}`,
+        explanation: definiteIntervalExplanation(
+          lower,
+          upper,
+          "多項式とexpの全項が全実数で定義されること",
+        ),
+      },
+      {
+        type: "verification",
+        content: "各原始関数の係数と同じexp指数の項を厳密分数で再照合",
+        explanation: "原始関数の係数に内側の傾きaを掛けると元の係数qへ戻ることをBigInt分数で確認しました。",
+      },
+      { type: "result", content: `定積分: ${exactAnswer}` },
+    ],
+    verification: "多項式係数と各exp(ax+b)の傾き・係数をBigInt分数で検算し、両端のexp(有理数)を同一原子ごとに厳密結合しました。CAS・数値積分・浮動小数点近似は使っていません。",
+    solverId: DEFINITE_INTEGRAL_SOLVER_ID,
+  });
+}
+
 export async function solveDefiniteIntegral(question) {
   const request = parseDefiniteIntegralInput(question);
   if (!request.recognized) {
     return unsupportedResult("上下限を持つ定積分を検出できません。");
   }
   if (!request.ok) {
-    if (/上下限は、符号付き整数|積分区間の上下限/u.test(request.error)) {
+    if (
+      request.errorCode === "UNSUPPORTED_SYMBOL"
+      || /上下限は、符号付き整数|積分区間の上下限/u.test(request.error)
+    ) {
       return recognizedResult(unsupportedResult(request.error));
     }
     return recognizedResult(failedResult(
@@ -201,60 +324,14 @@ export async function solveDefiniteIntegral(question) {
     const upperParsed = parseMathExpression(request.upperSource, { symbols: [] });
     const lower = exactRationalConstantFromAst(lowerParsed.ast);
     const upper = exactRationalConstantFromAst(upperParsed.ast);
-    const coefficients = exactPolynomialForIntegralFromAst(parsedIntegrand.ast);
-    const evaluated = evaluateExactDefinitePolynomialIntegral(
-      coefficients,
-      lower,
-      upper,
-    );
-    const antiderivative = formatExactPolynomialForIntegral(evaluated.antiderivative);
-    const exactAnswer = evaluated.value.toString();
-    const direction = compareRationals(lower, upper);
-    const intervalExplanation = direction < 0
-      ? "下端から上端へ通常の向きで評価します。"
-      : direction > 0
-        ? "上下限が逆でも入れ替えて符号を推測せず、指定どおり F(上端)-F(下端) を計算します。"
-        : "上下限は同じですが、被積分関数が区間上で定義された多項式であることを確認してから0とします。";
-
-    return solvedResult({
-      answer: exactAnswer,
-      exactAnswer,
-      metadata: {
-        integrand: parsedIntegrand.normalized,
-        lowerBound: lower.toString(),
-        upperBound: upper.toString(),
-        antiderivative,
-      },
-      steps: [
-        {
-          type: "input",
-          content: `∫_${lower}^${upper} ${parsedIntegrand.normalized} dx`,
-        },
-        {
-          type: "constraint",
-          content: "被積分関数は区間全体で定義された有理係数多項式",
-          explanation: "変数分母・負の累乗・0乗で消える穴・未証明の関数は検証済みにしません。",
-        },
-        {
-          type: "rule",
-          content: `F(x)=${antiderivative}`,
-          explanation: "各 x^n の係数を n+1 で厳密に割り、次数を1つ上げます。",
-        },
-        {
-          type: "transformation",
-          content: `F(${upper})-F(${lower})=${evaluated.upperValue}-(${evaluated.lowerValue})`,
-          explanation: intervalExplanation,
-        },
-        {
-          type: "verification",
-          content: "全係数と両端代入を厳密分数で再計算",
-          explanation: "有限小数も最初に分数へ直し、途中でNumberや丸め誤差を使っていません。",
-        },
-        { type: "result", content: `定積分: ${exactAnswer}` },
-      ],
-      verification: "有理係数をBigInt分数のまま項別積分し、原始関数を両端へ厳密代入して F(上端)-F(下端) を再計算しました。浮動小数点近似は使っていません。",
-      solverId: DEFINITE_INTEGRAL_SOLVER_ID,
-    });
+    try {
+      return solvedPolynomialDefiniteIntegral(parsedIntegrand, lower, upper);
+    } catch (error) {
+      if (!(error instanceof ExactPolynomialIntegralError) || !error.unsupported) {
+        throw error;
+      }
+    }
+    return solvedExponentialDefiniteIntegral(parsedIntegrand, lower, upper);
   } catch (error) {
     return definiteIntegralFailure(error);
   }

@@ -15,7 +15,7 @@ Classification alone never means a problem can be solved.
 | One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
-| Definite polynomial integral | `∫_0^1 x^2 dx`, `-1から2まで(3x^2+1)を定積分せよ` | exact coefficient integration and rational endpoint substitution with BigInt fractions |
+| Definite polynomial/exponential integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and formal `exp(rational)` atoms |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
@@ -56,19 +56,29 @@ are retained as conditional results. Indefinite integrals are accepted only
 when the returned candidate parses safely, has no unresolved domain split, and
 differentiates back to the original integrand.
 
-Definite integrals currently accept one variable `x`, rational coefficients,
-polynomial degree at most 32, and finite rational bounds written as signed
-integers, finite decimals, or explicit fractions. Accepted full-input forms
-are `∫_a^b f(x) dx`, `aからbまでf(x)を定積分せよ`, and
-`f(x)をaからbまで定積分せよ`. Coefficients are integrated term by term and
-the result is computed as `F(b)-F(a)` entirely with BigInt fractions. Reversed
-bounds retain their sign, and equal bounds return zero only after the
-integrand has been certified as an everywhere-defined polynomial. Variable
-denominators, negative variable powers, zero powers that can erase original
-holes, functions, mathematical constants, non-rational or variable bounds,
-infinite bounds, and all improper integrals remain unsupported. They are not
-accepted merely because a symbolic antiderivative happens to have endpoint
-values.
+Definite integrals currently accept one variable `x` and finite rational
+bounds written as signed integers, finite decimals, or explicit fractions.
+The integrand may be a rational-coefficient polynomial of degree at most 32
+plus a finite sum of `q*exp(ax+b)`, where `q`, `a`, and `b` are rational and
+there are at most 32 exponential terms before like-term cancellation.
+Accepted full-input forms are `∫_a^b f(x) dx`,
+`aからbまでf(x)を定積分せよ`, and `f(x)をaからbまで定積分せよ`.
+Write `exp(2x+1)` with argument parentheses; `e^(2x+1)` is an alias. The
+solver constructs each primitive coefficient exactly, computes
+`F(b)-F(a)`, and combines equal `exp(rational)` atoms with BigInt fractions.
+It does not use CAS integration, numerical quadrature, or floating-point
+values as proof. Reversed bounds retain their sign, and equal bounds return
+zero only after the complete integrand has passed the supported all-real
+certificate.
+
+Variable denominators, negative variable powers, zero powers that can erase
+original holes, nonlinear exponential arguments, products such as
+`x*exp(x)` or `exp(x)*exp(x)`, trigonometric and other unsupported functions,
+non-rational or variable bounds, infinite bounds, and all improper integrals
+remain unsupported. Scientific-notation-like input such as `1e2` is rejected
+rather than interpreted as multiplication by Euler's constant. These forms
+are not accepted merely because a symbolic antiderivative happens to have
+endpoint values.
 
 For rational-expression simplification, restrictions from every original
 denominator are preserved in the displayed answer and history record. For

@@ -25,12 +25,15 @@ imported-verification downgrade.
 8. Confirm `x=4` is copied, a success toast appears, and history is saved.
 9. Solve `∫_0^1 x^2 dx` and confirm the exact answer is `1/3`, both hints hide
    that answer, and the typed working is retained in history.
-10. Submit an unsupported trigonometric problem, an improper integral such as
+10. Solve `∫_0^1 2exp(2x+1) dx` and confirm the exact answer is
+    `exp(3)-exp(1)`, then confirm `∫_0^1 x*exp(x) dx` and `∫_0^1 1e2 dx`
+    receive no verified answer.
+11. Submit an unsupported trigonometric problem, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-11. Verify history filters, JSON import/export, analytics, review rerun, setting
+12. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-12. Reload the extension and repeat the shortcut to cover service-worker
+13. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation

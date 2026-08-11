@@ -199,3 +199,23 @@ until their continuity and endpoint domains can be proved over the entire
 closed interval. Reversed bounds are evaluated in their written order, and an
 equal-bound result is zero only after the integrand passes the same domain-safe
 polynomial certificate.
+
+## D-015: Treat affine exponentials as exact formal endpoint atoms
+
+**Status:** accepted
+**Date:** 2026-08-11
+
+A finite definite integral may extend the exact polynomial path with at most
+32 syntactic terms `q*exp(ax+b)`, where `q`, `a`, `b`, and both bounds are
+rational. Because every such term is continuous on the whole real line, the
+project-owned solver constructs `q/a*exp(ax+b)` when `a` is nonzero and treats
+`a=0` as a constant function. Endpoint values are represented as formal
+`exp(rational)` atoms whose coefficients are combined with exact BigInt
+fractions. Distinct rational exponents are never merged through a decimal
+approximation, and CAS integration or numerical quadrature is not verification
+evidence. Nonlinear exponents, products involving exponentials, variable
+denominators, non-rational bounds, and improper integrals remain unsupported.
+The 32-term bound is applied before cancellation as a conservative complexity
+limit. Function arguments require parentheses, and scientific-notation-like
+input such as `1e2` is rejected so Euler's constant cannot create a false
+verified interpretation.

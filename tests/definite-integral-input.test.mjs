@@ -99,6 +99,15 @@ test("不完全・曖昧な境界記号を認識済みinvalidにする", () => {
     "∫^1_0 x^2 dx",
     "∫_0^1^2 x dx",
     "∫0^1 x dx",
+    "∫pi^2 x dx",
+    "∫(pi)^(2*pi) x dx",
+    "∫PI^2 x dx",
+    "∫ＰＩ^2 x dx",
+    "∫Pi^2 x dx",
+    "∫2pi^3 x dx",
+    "∫3π/4^2 x dx",
+    "∫0.5*pi^2 x dx",
+    "∫pi/-2^3 x dx",
     "∫_0^a x dx",
     "∫_a^1 x dx",
     "0からaまでxを定積分せよ",
@@ -145,5 +154,60 @@ test("割り算範囲・x直後の数字・数字同士の暗黙積を推測し�
     "∫_0^1 1 2 dx",
   ]) {
     assertInvalid(question);
+  }
+});
+
+test("科学記数法風のe連結をEuler定数の暗黙積として解釈しない", () => {
+  for (const question of [
+    "∫_0^1 1e2 dx",
+    "∫_0^1 1e-2 dx",
+    "∫_0^1 2.5E+3 dx",
+    "∫_0^1 .5 e 2 dx",
+    "∫_0^1 １ｅ２ dx",
+  ]) {
+    const result = parseDefiniteIntegralInput(question);
+    assert.equal(result.recognized, true, question);
+    assert.equal(result.ok, false, question);
+    assert.match(result.error, /科学記数法|Euler/u, question);
+  }
+
+  assertParsed("∫_0^1 2*e^2 dx", {
+    expression: "2*e^2",
+    lowerSource: "0",
+    upperSource: "1",
+  });
+});
+
+test("sin・cos・expは引数の括弧を必須にし、関数直後の数字を推測しない", () => {
+  for (const question of [
+    "∫_0^1 exp x dx",
+    "∫_0^1 expx dx",
+    "∫_0^1 sin 2x dx",
+    "∫_0^1 cosx dx",
+    "∫_0^1 xsin x dx",
+    "∫_0^1 exp(x)2 dx",
+    "∫_0^1 sin((x+1)) 3 dx",
+    "∫_0^1 cos(x).5 dx",
+  ]) {
+    assertInvalid(question);
+  }
+});
+
+test("括弧付き関数と明確な関数式は入力構文として維持する", () => {
+  for (const [expression, expected] of [
+    ["exp(x)", "exp(x)"],
+    ["2exp(x)", "2exp(x)"],
+    ["exp(x)/2", "exp(x)/2"],
+    ["exp(x)/exp(x)", "exp(x)/exp(x)"],
+    ["1/exp(x)*2", "1/exp(x)*2"],
+    ["e^(2x+1)", "e^(2x+1)"],
+    ["sin(x^2)", "sin(x^2)"],
+    ["arcsin(x)", "arcsin(x)"],
+  ]) {
+    assertParsed(`∫_0^1 ${expression} dx`, {
+      expression: expected,
+      lowerSource: "0",
+      upperSource: "1",
+    });
   }
 });

@@ -86,7 +86,6 @@ test("固定境界で定義域を解決済みでも初期範囲外の結果をco
   for (const question of [
     "∫_1^2 1/x dx",
     "∫_0^1 sin(x) dx",
-    "∫_0^1 exp(x) dx",
     "∫_1^2 log(x) dx",
     "∫_0^1 sqrt(x) dx",
     "∫_0^1 pi*x dx",

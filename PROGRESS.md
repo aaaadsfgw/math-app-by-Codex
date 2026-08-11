@@ -7,7 +7,7 @@ Last updated: 2026-08-11
 - Physical path: `C:\Users\kukuk\OneDrive\ドキュメント\GitHub\math-study-log-ai`
 - Branch: `feat/non-ai-math-engine`
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
-- Working milestone: 4 - Algebra expansion
+- Working milestone: 6 - Mathematics III
 
 ## Completed
 
@@ -216,6 +216,27 @@ Last updated: 2026-08-11
   expectation formula, bringing the generated corpus to 2,750 cases total.
   A separate independent audit matched 6,500 randomized valid integrals and
   found zero false verification across 1,800 unsupported/domain mutations.
+- Extended exact finite definite integrals to
+  `P(x)+Σq*exp(ax+b)` over rational bounds:
+  - accept rational `q`, `a`, and `b`, constant exponentials, and the
+    `e^(ax+b)` alias;
+  - construct every primitive coefficient and endpoint exponent with BigInt
+    fractions and combine equal formal `exp(rational)` atoms exactly;
+  - keep nonlinear exponents, exponential products, variable denominators,
+    non-rational bounds, and improper integrals unsupported;
+  - limit the input to 32 syntactic exponential terms before cancellation.
+- Required explicit parentheses for `exp`, `sin`, and `cos` in definite
+  integrals and blocked suffix digits, missing-bound markers, and ambiguous
+  implicit multiplication from reaching a solver.
+- Fixed the newly exposed `1e2` / `1e-2` / `2.5E3` false-verification boundary
+  by rejecting scientific-notation-like concatenation instead of interpreting
+  `e` as Euler's constant.
+- Added 250 independently generated affine-exponential definite integrals,
+  bringing the generated corpus to 3,000 unique cases. An independent audit
+  matched 7,000 randomized valid integrals and found no false verification in
+  3,400 unsupported or invalid mutations. A separate adversarial parser review
+  found the scientific-notation boundary, whose targeted regressions pass
+  after repair.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -244,9 +265,10 @@ Last updated: 2026-08-11
 
 ## Next
 
-1. Extend definite integrals only to standard elementary or rational forms
-   whose continuity, endpoint domains, and exact endpoint values can all be
-   proved over the complete interval; keep improper integrals unsupported.
+1. Extend the same exact all-real definite-integral path to finite sums of
+   affine `sin(ax+b)` and `cos(ax+b)` terms with rational coefficients and
+   rational bounds; keep formal endpoint atoms separate from later special
+   angles involving `pi`.
 2. Add finite textual limits with one-sided/domain case splits and exact
    verification before beginning area or volume applications.
 3. Verify module-worker and offscreen loading in unpacked Chrome before
@@ -254,9 +276,9 @@ Last updated: 2026-08-11
 
 ## Last verified commands
 
-- `npm test` - 198 passed, 0 failed on 2026-08-11, including 2,750 generated
+- `npm test` - 216 passed, 0 failed on 2026-08-11, including 3,000 generated
   evaluation cases.
-- `npm run check` - passed for 124 files, 10 HTML, 86 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 127 files, 10 HTML, 89 JS/MJS, and 11 CSS files
   on 2026-08-11.
 
 ## Restart procedure

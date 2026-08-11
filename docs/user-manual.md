@@ -25,11 +25,18 @@ even when algebraic cancellation removes that factor from the visible formula.
 For an exact definite integral, enter `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
 Use signed integers, finite decimals, or explicit fractions for both bounds.
-The current supported integrand is an `x` polynomial with rational
-coefficients. A variable denominator, infinite or variable bound,
-trigonometric or other function, or hidden undefined point produces an
-unsupported message; the extension does not silently treat it as a proper
-polynomial integral.
+The current supported integrand is a rational-coefficient `x` polynomial
+through degree 32 plus at most 32 terms of the form `q*exp(ax+b)`, with rational
+`q`, `a`, and `b`. For example, `∫_0^1 2exp(2x+1) dx` returns the exact value
+`exp(3)-exp(1)`. Put function arguments in parentheses; `e^(2x+1)` is also
+accepted. Scientific notation such as `1e2` is not accepted, so write a finite
+decimal or make multiplication by Euler's constant explicit with `*`.
+
+A variable denominator, nonlinear exponent, product such as `x*exp(x)`,
+infinite or variable bound, trigonometric or other unsupported function, or
+hidden undefined point produces an unsupported message. The extension does
+not silently treat it as a proper integral or replace an exact result with a
+numerical estimate.
 
 ## Shortcut
 

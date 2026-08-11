@@ -246,6 +246,35 @@ function subtractCorpusRationals(left, right) {
   );
 }
 
+function multiplyCorpusRationals(left, right) {
+  return corpusRational(
+    left.numerator * right.numerator,
+    left.denominator * right.denominator,
+  );
+}
+
+function divideCorpusRationals(left, right) {
+  if (right.numerator === 0n) throw new RangeError("division by zero in corpus");
+  return corpusRational(
+    left.numerator * right.denominator,
+    left.denominator * right.numerator,
+  );
+}
+
+function negateCorpusRational(value) {
+  return corpusRational(-value.numerator, value.denominator);
+}
+
+function compareCorpusRationals(left, right) {
+  const difference = left.numerator * right.denominator
+    - right.numerator * left.denominator;
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
+function equalCorpusRationals(left, right) {
+  return compareCorpusRationals(left, right) === 0;
+}
+
 function powerCorpusRational(value, exponent) {
   let result = corpusRational(1n);
   for (let count = 0; count < exponent; count += 1) {
@@ -263,7 +292,7 @@ function formatCorpusRational(value) {
     : `${value.numerator}/${value.denominator}`;
 }
 
-function definiteIntegralExpectedAnswer(coefficients, lower, upper) {
+function definiteIntegralExpectedValue(coefficients, lower, upper) {
   let total = corpusRational(0n);
   for (let power = 0; power < coefficients.length; power += 1) {
     const exponent = power + 1;
@@ -271,12 +300,21 @@ function definiteIntegralExpectedAnswer(coefficients, lower, upper) {
       powerCorpusRational(upper, exponent),
       powerCorpusRational(lower, exponent),
     );
-    total = addCorpusRationals(total, corpusRational(
-      BigInt(coefficients[power]) * endpointDifference.numerator,
-      BigInt(exponent) * endpointDifference.denominator,
+    const coefficient = typeof coefficients[power] === "number"
+      ? corpusRational(BigInt(coefficients[power]))
+      : coefficients[power];
+    total = addCorpusRationals(total, divideCorpusRationals(
+      multiplyCorpusRationals(coefficient, endpointDifference),
+      corpusRational(BigInt(exponent)),
     ));
   }
-  return formatCorpusRational(total);
+  return total;
+}
+
+function definiteIntegralExpectedAnswer(coefficients, lower, upper) {
+  return formatCorpusRational(
+    definiteIntegralExpectedValue(coefficients, lower, upper),
+  );
 }
 
 function formatPolynomial(coefficients) {
@@ -346,6 +384,226 @@ function generatedDefiniteIntegrals() {
   });
 }
 
+function formatRationalPolynomial(coefficients) {
+  let expression = "";
+  for (let power = coefficients.length - 1; power >= 0; power -= 1) {
+    const coefficient = coefficients[power];
+    if (coefficient.numerator === 0n) continue;
+    const negative = coefficient.numerator < 0n;
+    const magnitude = negative ? negateCorpusRational(coefficient) : coefficient;
+    const variable = power === 0 ? "" : power === 1 ? "x" : `x^${power}`;
+    const magnitudeText = formatCorpusRational(magnitude);
+    const body = !variable
+      ? magnitudeText
+      : equalCorpusRationals(magnitude, corpusRational(1n))
+        ? variable
+        : magnitude.denominator === 1n
+          ? `${magnitudeText}*${variable}`
+          : `(${magnitudeText})*${variable}`;
+    if (!expression) expression = `${negative ? "-" : ""}${body}`;
+    else expression += `${negative ? "-" : "+"}${body}`;
+  }
+  return expression;
+}
+
+function generatedExponentialPolynomial(index) {
+  if (index % 7 === 0) return [corpusRational(0n)];
+  const degrees = [0, 1, 2, 3, 4, 8, 16, 32];
+  const degree = degrees[index % degrees.length];
+  const coefficients = Array.from({ length: degree + 1 }, (_, power) => (
+    corpusRational(
+      BigInt(((index * (power + 5) + power * 7) % 11) - 5),
+      BigInt(((index + power * 2) % 3) + 1),
+    )
+  ));
+  if (coefficients[degree].numerator === 0n) {
+    coefficients[degree] = corpusRational(
+      index % 2 === 0 ? 1n : -1n,
+      BigInt((index % 3) + 1),
+    );
+  }
+  return coefficients;
+}
+
+function generatedExponentialTerms(index) {
+  const terms = Array.from({ length: (index % 4) + 1 }, (_, termIndex) => {
+    let amplitudeNumerator = ((index * (termIndex + 2) + termIndex * 3) % 9) - 4;
+    if (amplitudeNumerator === 0) amplitudeNumerator = termIndex % 2 === 0 ? 2 : -2;
+    let slopeNumerator = (index + termIndex) % 6 === 0
+      ? 0
+      : ((index * 3 + termIndex * 5) % 7) - 3;
+    if (slopeNumerator === 0 && (index + termIndex) % 6 !== 0) {
+      slopeNumerator = termIndex % 2 === 0 ? 1 : -1;
+    }
+    return {
+      amplitude: corpusRational(
+        BigInt(amplitudeNumerator),
+        BigInt(((index + termIndex) % 3) + 1),
+      ),
+      slope: corpusRational(
+        BigInt(slopeNumerator),
+        BigInt(((index * 2 + termIndex) % 3) + 1),
+      ),
+      intercept: corpusRational(
+        BigInt(((index * 5 + termIndex * 4) % 9) - 4),
+        BigInt(((index + termIndex * 2) % 3) + 1),
+      ),
+      eAlias: (index + termIndex) % 3 === 0,
+    };
+  });
+
+  if (index % 10 === 0) {
+    terms.push({
+      ...terms[0],
+      amplitude: negateCorpusRational(terms[0].amplitude),
+      eAlias: !terms[0].eAlias,
+    });
+  }
+  return terms;
+}
+
+function formatAffineExponent(slope, intercept) {
+  let expression = "";
+  if (slope.numerator !== 0n) {
+    if (equalCorpusRationals(slope, corpusRational(1n))) expression = "x";
+    else if (equalCorpusRationals(slope, corpusRational(-1n))) expression = "-x";
+    else if (slope.denominator === 1n) expression = `${slope.numerator}*x`;
+    else expression = `(${formatCorpusRational(slope)})*x`;
+  }
+  if (intercept.numerator === 0n) return expression || "0";
+  const interceptText = formatCorpusRational(intercept);
+  if (!expression) return interceptText;
+  return intercept.numerator < 0n
+    ? `${expression}${interceptText}`
+    : `${expression}+${interceptText}`;
+}
+
+function formatExponentialIntegrandTerm(term) {
+  const negative = term.amplitude.numerator < 0n;
+  const magnitude = negative
+    ? negateCorpusRational(term.amplitude)
+    : term.amplitude;
+  const argument = formatAffineExponent(term.slope, term.intercept);
+  const atom = term.eAlias ? `e^(${argument})` : `exp(${argument})`;
+  const coefficient = equalCorpusRationals(magnitude, corpusRational(1n))
+    ? ""
+    : magnitude.denominator === 1n
+      ? `${magnitude.numerator}*`
+      : `(${formatCorpusRational(magnitude)})*`;
+  return `${negative ? "-" : ""}${coefficient}${atom}`;
+}
+
+function appendCorpusExpression(expression, term) {
+  if (!term) return expression;
+  if (!expression) return term;
+  return term.startsWith("-") ? `${expression}${term}` : `${expression}+${term}`;
+}
+
+function formatExponentialSum(entries) {
+  const combined = new Map();
+  for (const { exponent, coefficient } of entries) {
+    const key = formatCorpusRational(exponent);
+    const previous = combined.get(key);
+    combined.set(key, {
+      exponent,
+      coefficient: previous
+        ? addCorpusRationals(previous.coefficient, coefficient)
+        : coefficient,
+    });
+  }
+  const terms = [...combined.values()]
+    .filter(({ coefficient }) => coefficient.numerator !== 0n)
+    .sort((left, right) => {
+      const leftNegative = left.coefficient.numerator < 0n;
+      const rightNegative = right.coefficient.numerator < 0n;
+      if (leftNegative !== rightNegative) return leftNegative ? 1 : -1;
+      return -compareCorpusRationals(left.exponent, right.exponent);
+    });
+  if (!terms.length) return "0";
+
+  return terms.map(({ exponent, coefficient }, termIndex) => {
+    const negative = coefficient.numerator < 0n;
+    const magnitude = negative ? negateCorpusRational(coefficient) : coefficient;
+    let body;
+    if (exponent.numerator === 0n) {
+      body = formatCorpusRational(magnitude);
+    } else {
+      const atom = `exp(${formatCorpusRational(exponent)})`;
+      if (magnitude.denominator === 1n) {
+        body = magnitude.numerator === 1n ? atom : `${magnitude.numerator}*${atom}`;
+      } else {
+        body = magnitude.numerator === 1n
+          ? `${atom}/${magnitude.denominator}`
+          : `${magnitude.numerator}*${atom}/${magnitude.denominator}`;
+      }
+    }
+    if (termIndex === 0) return `${negative ? "-" : ""}${body}`;
+    return `${negative ? "-" : "+"}${body}`;
+  }).join("");
+}
+
+function exponentialIntegralExpectedAnswer(polynomial, terms, lower, upper) {
+  const entries = [];
+  const polynomialValue = definiteIntegralExpectedValue(polynomial, lower, upper);
+  if (polynomialValue.numerator !== 0n) {
+    entries.push({ exponent: corpusRational(0n), coefficient: polynomialValue });
+  }
+  for (const term of terms) {
+    if (term.slope.numerator === 0n) {
+      entries.push({
+        exponent: term.intercept,
+        coefficient: multiplyCorpusRationals(
+          term.amplitude,
+          subtractCorpusRationals(upper, lower),
+        ),
+      });
+      continue;
+    }
+    const primitiveCoefficient = divideCorpusRationals(term.amplitude, term.slope);
+    entries.push({
+      exponent: addCorpusRationals(
+        multiplyCorpusRationals(term.slope, upper),
+        term.intercept,
+      ),
+      coefficient: primitiveCoefficient,
+    });
+    entries.push({
+      exponent: addCorpusRationals(
+        multiplyCorpusRationals(term.slope, lower),
+        term.intercept,
+      ),
+      coefficient: negateCorpusRational(primitiveCoefficient),
+    });
+  }
+  return formatExponentialSum(entries);
+}
+
+function generatedExponentialDefiniteIntegrals() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const polynomial = generatedExponentialPolynomial(index);
+    const terms = generatedExponentialTerms(index);
+    const [lower, upper] = generatedIntegralBounds(index + 1);
+    let integrand = formatRationalPolynomial(polynomial);
+    for (const term of terms) {
+      integrand = appendCorpusExpression(
+        integrand,
+        formatExponentialIntegrandTerm(term),
+      );
+    }
+    return {
+      family: "exponential-definite-integral",
+      question: `\u222b_(${formatCorpusRational(lower)})^(${formatCorpusRational(upper)}) `
+        + `${integrand || "0"} dx`,
+      answer: exponentialIntegralExpectedAnswer(
+        polynomial,
+        terms,
+        lower,
+        upper,
+      ),
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -365,6 +623,7 @@ function generatedRejectedInputs() {
   }));
 }
 
+const exponentialDefiniteIntegralCorpus = generatedExponentialDefiniteIntegrals();
 const positiveCorpus = [
   ...generatedLinearEquations(),
   ...generatedLinearInequalities(),
@@ -377,15 +636,21 @@ const positiveCorpus = [
   ...generatedExponentialEquations(),
   ...generatedLogarithmicEquations(),
   ...generatedDefiniteIntegrals(),
+  ...exponentialDefiniteIntegralCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("2,750問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 2_750);
+test("3,000問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 3_000);
+  assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
+  assert.equal(
+    new Set(exponentialDefiniteIntegralCorpus.map(({ question }) => question)).size,
+    250,
+  );
 
   for (const item of positiveCorpus) {
-    const result = item.family === "definite-integral"
+    const result = item.family.endsWith("definite-integral")
       ? await solveQuestionAsync(item.question)
       : solveQuestion(item.question);
     assert.equal(result.verified, true, `${item.family}: ${item.question}: ${result.error}`);

@@ -45,6 +45,7 @@ function response({
   lowerSource = "",
   upperSource = "",
   error = "",
+  errorCode = "",
 }) {
   return Object.freeze({
     recognized: recognized === true,
@@ -53,6 +54,7 @@ function response({
     lowerSource,
     upperSource,
     error,
+    errorCode,
   });
 }
 
@@ -77,6 +79,8 @@ function hasIntegralBoundShape(value) {
     /∫\s*[_^]/u.test(source)
     || /∫\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)\s*\^/u.test(source)
     || /∫\s*\(\s*[+-]?(?:(?:\d+(?:\.\d*)?|\.\d+)|(?:\d+\s*\/\s*\d+))\s*\)\s*\^/u.test(source)
+    || /∫\s*[^\s^()]*pi[^\s^()]*\s*\^/iu.test(source)
+    || /∫\s*\([^\r\n)]*pi[^\r\n)]*\)\s*\^/iu.test(source)
   );
 }
 
@@ -129,6 +133,35 @@ function validateBound(value) {
   return { ok: true, source, error: "" };
 }
 
+function elementaryFunctionNotationError(value) {
+  const source = String(value ?? "");
+  for (const match of source.matchAll(/exp|sin|cos/giu)) {
+    const functionName = match[0].toLowerCase();
+    const functionStart = match.index;
+    if (
+      ["sin", "cos"].includes(functionName)
+      && source.slice(Math.max(0, functionStart - 3), functionStart).toLowerCase() === "arc"
+    ) {
+      continue;
+    }
+
+    const openingIndex = skipSpaces(source, functionStart + match[0].length);
+    if (source[openingIndex] !== "(") {
+      return "sin・cos・expの引数は括弧で囲み、sin(x)の形式で入力してください。";
+    }
+
+    const closingEnd = parenthesizedEnd(source, openingIndex);
+    if (closingEnd < 0) {
+      return "sin・cos・expの引数を囲む括弧を閉じてください。";
+    }
+    const followingIndex = skipSpaces(source, closingEnd);
+    if (/^(?:\d|\.\d)/u.test(source.slice(followingIndex))) {
+      return "関数の直後の数字は曖昧です。掛け算ならexp(x)*2、累乗ならexp(x)^2と入力してください。";
+    }
+  }
+  return "";
+}
+
 function validatedCandidate(expressionValue, lowerValue, upperValue) {
   const lower = validateBound(lowerValue);
   if (!lower.ok) return response({ recognized: true, error: lower.error });
@@ -154,11 +187,21 @@ function validatedCandidate(expressionValue, lowerValue, upperValue) {
       error: "数字を空白だけで並べず、掛け算なら*を入力してください。",
     });
   }
+  if (/(?:\d+(?:\.\d*)?|\.\d+)\s*[eE]\s*[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)/u.test(expression)) {
+    return response({
+      recognized: true,
+      error: "科学記数法の連結表記は解釈しません。有限小数で入力するか、Euler数との掛け算なら*を明示してください。",
+    });
+  }
   if (hasAmbiguousDivisionMultiplication(expression)) {
     return response({
       recognized: true,
       error: "割り算の直後の暗黙の掛け算は曖昧です。分母と続く掛け算を括弧や*で明示してください。",
     });
+  }
+  const functionNotationError = elementaryFunctionNotationError(expression);
+  if (functionNotationError) {
+    return response({ recognized: true, error: functionNotationError });
   }
   try {
     const parsed = parseMathExpression(expression, { symbols: ["x"] });
@@ -173,6 +216,7 @@ function validatedCandidate(expressionValue, lowerValue, upperValue) {
     return response({
       recognized: true,
       error: error.message || "被積分関数を解釈できません。",
+      errorCode: error.code || "",
     });
   }
 }

@@ -2,6 +2,7 @@ import { normalizeMathNotation } from "../math-core/notation.js";
 
 const RELATION_PATTERN = /<=|>=|=|<|>/gu;
 const MAX_EQUATION_INPUT_LENGTH = 5_000;
+const FUNCTION_CALL_PATTERN = /^(?:arccos|arcsin|arctan|sqrt|abs|cos|exp|log|sin|tan)\s*(?=\()/iu;
 
 function hasStandaloneEquality(value) {
   return [...String(value ?? "").matchAll(RELATION_PATTERN)]
@@ -110,6 +111,11 @@ function consumePrimary(source, start) {
   if (source[index] === "(") return consumeParenthesized(source, index);
   const number = /^(?:\d+(?:\.\d*)?|\.\d+)/u.exec(source.slice(index));
   if (number) return index + number[0].length;
+  const functionCall = FUNCTION_CALL_PATTERN.exec(source.slice(index));
+  if (functionCall) {
+    const openingIndex = skipSpaces(source, index + functionCall[0].trimEnd().length);
+    return consumeParenthesized(source, openingIndex);
+  }
   return /[A-Za-z]/u.test(source[index] ?? "") ? index + 1 : index;
 }
 
