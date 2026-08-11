@@ -33,6 +33,8 @@ The current migration checkpoint supports:
   expressions;
 - indefinite integrals whose candidate can be differentiated back over the
   whole supported domain;
+- exact definite integrals of rational-coefficient polynomials through degree
+  32 over finite rational bounds, evaluated with BigInt fractions;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
@@ -75,6 +77,14 @@ the calculus parser. Parentheses around every logarithm argument are required.
 For rational inequalities, make every denominator boundary explicit. Write
 `1/(x(x+1))>0` or `(1/x)*(x+1)>0`; ambiguous forms such as `1/x(x+1)>0` and
 `1/2x<1` are rejected instead of guessed.
+
+For definite integrals, write `∫_0^1 x^2 dx`,
+`0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
+The current exact path accepts signed integers, finite decimals, or explicit
+fractions as both bounds and an `x` polynomial with rational coefficients.
+Variable denominators, hidden holes, non-rational or infinite bounds, and
+improper integrals remain unsupported rather than being inferred from an
+antiderivative alone.
 
 ## Development
 

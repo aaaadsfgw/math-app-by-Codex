@@ -196,6 +196,26 @@ Last updated: 2026-08-11
 - Added 250 generated rational-inequality cases, bringing the generated corpus
   to 2,500 cases total. Added a separate 240-case exact-substitution audit and
   cross-field quadratic-root ordering tests.
+- Added exact finite definite integrals for rational-coefficient polynomials:
+  - parse integral notation and both common Japanese bound-order forms by full
+    input match;
+  - accept signed integer, finite-decimal, and explicit-fraction bounds;
+  - integrate polynomials through degree 32 coefficient by coefficient and
+    evaluate `F(upper)-F(lower)` entirely with BigInt fractions;
+  - preserve reversed-bound signs and require a domain-safe polynomial
+    certificate before returning zero for equal bounds;
+  - reject variable denominators, negative variable powers, zero-power holes,
+    functions, non-rational or infinite bounds, and improper integrals.
+- Blocked incomplete or subscript-style bound notation from falling through to
+  the indefinite-integral path as a false verified `0+C`; a 1,200-case parser
+  mutation audit found the missing-underscore variant and passed after repair.
+- Rejected ambiguous integral expressions such as `1/2x`, `x/2x`, `x2`, and
+  adjacent numeric literals unless their multiplication and division scope is
+  explicit.
+- Added 250 generated definite-integral cases with an independent BigInt
+  expectation formula, bringing the generated corpus to 2,750 cases total.
+  A separate independent audit matched 6,500 randomized valid integrals and
+  found zero false verification across 1,800 unsupported/domain mutations.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -224,17 +244,19 @@ Last updated: 2026-08-11
 
 ## Next
 
-1. Add definite integrals only after endpoint-domain and discontinuity checks.
-2. Extend the evaluation corpus across every newly supported curriculum
-   domain instead of treating the current 2,500 algebra-heavy cases as final.
+1. Extend definite integrals only to standard elementary or rational forms
+   whose continuity, endpoint domains, and exact endpoint values can all be
+   proved over the complete interval; keep improper integrals unsupported.
+2. Add finite textual limits with one-sided/domain case splits and exact
+   verification before beginning area or volume applications.
 3. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 165 passed, 0 failed on 2026-08-11, including 2,500 generated
+- `npm test` - 198 passed, 0 failed on 2026-08-11, including 2,750 generated
   evaluation cases.
-- `npm run check` - passed for 119 files, 10 HTML, 81 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 124 files, 10 HTML, 86 JS/MJS, and 11 CSS files
   on 2026-08-11.
 
 ## Restart procedure

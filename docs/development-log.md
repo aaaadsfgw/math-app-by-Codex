@@ -240,3 +240,32 @@ answers, and higher-degree product equations remain unsupported.
 Node tests and source validation pass. Cubic-or-higher cleared numerators,
 parameterized coefficients, functions, and chained or simultaneous
 inequalities remain unsupported.
+
+## 2026-08-11: exact polynomial definite integrals
+
+- Added full-input parsing for `∫_a^b f(x) dx` and the two common Japanese
+  bound-order forms, with signed integer, finite-decimal, and explicit-fraction
+  bounds.
+- Added a project-owned degree-32 polynomial integrator that constructs every
+  antiderivative coefficient and evaluates both bounds using exact BigInt
+  fractions, including reversed and equal bounds.
+- Reject variable denominators, negative variable powers, zero powers that can
+  erase holes, functions, mathematical constants, variable or non-rational
+  bounds, infinite bounds, and improper integrals without CAS fallback.
+- Block incomplete lower/upper notation and Unicode subscript variants from
+  falling through to the indefinite-integral path as a false verified `0+C`.
+- Reused the shared ambiguity guards so `1/2x`, `x/2x`, `x2`, and numbers
+  separated only by whitespace cannot acquire one guessed multiplication or
+  division scope inside an integral.
+- Integrated the exact result into asynchronous routing, five output modes,
+  verified history classification, and the examples page.
+- Added 250 generated definite-integral cases with an independent BigInt
+  expectation formula, bringing the evaluation corpus to 2,750 cases.
+- Independently cross-checked 6,500 valid randomized integrals and 1,800
+  domain/unsupported mutations; no answer mismatch or false verification was
+  found after the parser regression fix.
+
+Node tests and source validation pass. Transcendental integrands, variable
+denominators, algebraic or variable bounds, and improper integrals remain the
+next continuity-aware extension rather than being inferred from endpoint
+substitution alone.

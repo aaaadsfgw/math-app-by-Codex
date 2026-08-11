@@ -1,7 +1,11 @@
 import { classifyCategory } from "../category-classifier.js";
 import { solveAlgebraTransformation } from "./algebra-transformation.js";
 import { solveBaseConversion } from "./base-conversion.js";
-import { solveDerivative, solveIndefiniteIntegral } from "./calculus.js";
+import {
+  solveDefiniteIntegral,
+  solveDerivative,
+  solveIndefiniteIntegral,
+} from "./calculus.js";
 import { solveExponentialEquation } from "./exponential-equation.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solveLinearInequality } from "./linear-inequality.js";
@@ -18,6 +22,7 @@ import { unsupportedResult } from "./utils.js";
 export {
   solveAlgebraTransformation,
   solveBaseConversion,
+  solveDefiniteIntegral,
   solveDerivative,
   solveExponentialEquation,
   solveIndefiniteIntegral,
@@ -132,10 +137,10 @@ export const solveWithLocalSolver = solveQuestion;
 export async function solveQuestionAsync(question, options = {}) {
   const category = normalizedCategory(options.category, question);
   const asynchronousSolvers = category === "微分"
-    ? [solveDerivative, solveIndefiniteIntegral, solveAlgebraTransformation]
+    ? [solveDerivative, solveDefiniteIntegral, solveIndefiniteIntegral, solveAlgebraTransformation]
     : category === "積分"
-      ? [solveIndefiniteIntegral, solveDerivative, solveAlgebraTransformation]
-      : [solveAlgebraTransformation, solveDerivative, solveIndefiniteIntegral];
+      ? [solveDefiniteIntegral, solveIndefiniteIntegral, solveDerivative, solveAlgebraTransformation]
+      : [solveAlgebraTransformation, solveDerivative, solveDefiniteIntegral, solveIndefiniteIntegral];
   const preferAsynchronous = ["式の計算", "微分", "積分"].includes(category);
   let immediate = null;
   if (!preferAsynchronous) {
@@ -147,7 +152,7 @@ export async function solveQuestionAsync(question, options = {}) {
     const result = await solver(question, {
       symbolicOperations: options.symbolicOperations,
     });
-    if (result.supported) return result;
+    if (result.supported || result.recognized === true) return result;
     lastUnsupported = result;
   }
   if (preferAsynchronous) {

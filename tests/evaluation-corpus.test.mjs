@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { solveQuestion } from "../js/solver/index.js";
+import { solveQuestion, solveQuestionAsync } from "../js/solver/index.js";
 
 function signedTerm(value, symbol = "") {
   if (value === 0) return "";
@@ -208,6 +208,144 @@ function generatedLogarithmicEquations() {
   });
 }
 
+function corpusGcd(left, right) {
+  let a = left < 0n ? -left : left;
+  let b = right < 0n ? -right : right;
+  while (b !== 0n) {
+    const remainder = a % b;
+    a = b;
+    b = remainder;
+  }
+  return a;
+}
+
+function corpusRational(numerator, denominator = 1n) {
+  if (denominator === 0n) throw new RangeError("zero denominator in corpus");
+  if (numerator === 0n) return { numerator: 0n, denominator: 1n };
+  const sign = denominator < 0n ? -1n : 1n;
+  const signedNumerator = numerator * sign;
+  const positiveDenominator = denominator * sign;
+  const divisor = corpusGcd(signedNumerator, positiveDenominator);
+  return {
+    numerator: signedNumerator / divisor,
+    denominator: positiveDenominator / divisor,
+  };
+}
+
+function addCorpusRationals(left, right) {
+  return corpusRational(
+    left.numerator * right.denominator + right.numerator * left.denominator,
+    left.denominator * right.denominator,
+  );
+}
+
+function subtractCorpusRationals(left, right) {
+  return corpusRational(
+    left.numerator * right.denominator - right.numerator * left.denominator,
+    left.denominator * right.denominator,
+  );
+}
+
+function powerCorpusRational(value, exponent) {
+  let result = corpusRational(1n);
+  for (let count = 0; count < exponent; count += 1) {
+    result = corpusRational(
+      result.numerator * value.numerator,
+      result.denominator * value.denominator,
+    );
+  }
+  return result;
+}
+
+function formatCorpusRational(value) {
+  return value.denominator === 1n
+    ? String(value.numerator)
+    : `${value.numerator}/${value.denominator}`;
+}
+
+function definiteIntegralExpectedAnswer(coefficients, lower, upper) {
+  let total = corpusRational(0n);
+  for (let power = 0; power < coefficients.length; power += 1) {
+    const exponent = power + 1;
+    const endpointDifference = subtractCorpusRationals(
+      powerCorpusRational(upper, exponent),
+      powerCorpusRational(lower, exponent),
+    );
+    total = addCorpusRationals(total, corpusRational(
+      BigInt(coefficients[power]) * endpointDifference.numerator,
+      BigInt(exponent) * endpointDifference.denominator,
+    ));
+  }
+  return formatCorpusRational(total);
+}
+
+function formatPolynomial(coefficients) {
+  const terms = [];
+  for (let power = coefficients.length - 1; power >= 0; power -= 1) {
+    const coefficient = coefficients[power];
+    if (coefficient === 0) continue;
+    const magnitude = Math.abs(coefficient);
+    const variable = power === 0 ? "" : power === 1 ? "x" : `x^${power}`;
+    const body = variable && magnitude === 1 ? variable : `${magnitude}${variable}`;
+    if (!terms.length) {
+      terms.push(coefficient < 0 ? `-${body}` : body);
+    } else {
+      terms.push(`${coefficient < 0 ? "-" : "+"}${body}`);
+    }
+  }
+  return terms.join("") || "0";
+}
+
+function generatedPolynomialCoefficients(index) {
+  const degree = index % 5;
+  const coefficients = Array.from({ length: degree + 1 }, (_, power) => (
+    ((index * (power + 3) + power * 5) % 9) - 4
+  ));
+  if (coefficients[degree] === 0) {
+    coefficients[degree] = index % 2 === 0 ? 1 : -1;
+  }
+  return coefficients;
+}
+
+function generatedIntegralBounds(index) {
+  const sequence = Math.floor(index / 6);
+  const integerLower = corpusRational(BigInt((sequence % 7) - 3));
+  const integerUpper = addCorpusRationals(
+    integerLower,
+    corpusRational(BigInt((sequence % 4) + 1)),
+  );
+  const fractionalLower = corpusRational(
+    BigInt((sequence % 13) - 7),
+    BigInt((sequence % 3) + 2),
+  );
+  const fractionalUpper = addCorpusRationals(
+    fractionalLower,
+    corpusRational(BigInt((sequence % 5) + 1), BigInt((sequence % 4) + 2)),
+  );
+
+  switch (index % 6) {
+    case 0: return [integerLower, integerUpper];
+    case 1: return [integerUpper, integerLower];
+    case 2: return [integerLower, integerLower];
+    case 3: return [fractionalLower, fractionalUpper];
+    case 4: return [fractionalUpper, fractionalLower];
+    default: return [fractionalLower, fractionalLower];
+  }
+}
+
+function generatedDefiniteIntegrals() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const coefficients = generatedPolynomialCoefficients(index);
+    const [lower, upper] = generatedIntegralBounds(index);
+    return {
+      family: "definite-integral",
+      question: `\u222b_(${formatCorpusRational(lower)})^(${formatCorpusRational(upper)}) `
+        + `${formatPolynomial(coefficients)} dx`,
+      answer: definiteIntegralExpectedAnswer(coefficients, lower, upper),
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -238,15 +376,18 @@ const positiveCorpus = [
   ...generatedQuadraticInequalities(),
   ...generatedExponentialEquations(),
   ...generatedLogarithmicEquations(),
+  ...generatedDefiniteIntegrals(),
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("2,500問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 2_500);
+test("2,750問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 2_750);
 
   for (const item of positiveCorpus) {
-    const result = solveQuestion(item.question);
+    const result = item.family === "definite-integral"
+      ? await solveQuestionAsync(item.question)
+      : solveQuestion(item.question);
     assert.equal(result.verified, true, `${item.family}: ${item.question}: ${result.error}`);
     assert.equal(result.answer, item.answer, `${item.family}: ${item.question}`);
   }

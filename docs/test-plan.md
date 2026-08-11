@@ -23,11 +23,14 @@ imported-verification downgrade.
 6. Confirm the result is saved and can be self-assessed.
 7. Select `2x+3=11` on an ordinary web page and press the shortcut.
 8. Confirm `x=4` is copied, a success toast appears, and history is saved.
-9. Submit an unsupported trigonometric, calculus, proof, and diagram-dependent
-   problem; confirm none receives a guessed or verified answer.
-10. Verify history filters, JSON import/export, analytics, review rerun, setting
+9. Solve `∫_0^1 x^2 dx` and confirm the exact answer is `1/3`, both hints hide
+   that answer, and the typed working is retained in history.
+10. Submit an unsupported trigonometric problem, an improper integral such as
+   `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
+   receives a guessed or verified answer.
+11. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-11. Reload the extension and repeat the shortcut to cover service-worker
+12. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation

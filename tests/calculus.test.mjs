@@ -106,6 +106,36 @@ test("検証失敗・定積分・未対応関数を検証済みにしない", as
   assert.equal(absolute.verified, false);
 });
 
+test("境界記号を欠く定積分風表記を不定積分0+Cとして検証しない", async () => {
+  let integrationCalls = 0;
+  const symbolicOperations = operations({
+    integrate: async () => {
+      integrationCalls += 1;
+      return "0";
+    },
+    equivalent: async () => true,
+  });
+
+  for (const question of [
+    "∫₀¹ x dx",
+    "∫₀^1 x dx",
+    "∫0^1 x dx",
+    "∫(0)^(1) x dx",
+    "∫(-1)^(2) x^2 dx",
+  ]) {
+    const direct = await solveIndefiniteIntegral(question, { symbolicOperations });
+    assert.equal(direct.verified, false, question);
+    assert.equal(direct.answer, "", question);
+    assert.notEqual(direct.answer, "0+C", question);
+
+    const routed = await solveQuestionAsync(question, { symbolicOperations });
+    assert.equal(routed.verified, false, question);
+    assert.equal(routed.answer, "", question);
+    assert.notEqual(routed.answer, "0+C", question);
+  }
+  assert.equal(integrationCalls, 0);
+});
+
 test("危険な識別子や不完全な微積分指示を実行しない", async () => {
   for (const operation of [solveDerivative, solveIndefiniteIntegral]) {
     const result = await operation("globalThis.process.exit()を微分せよ", {

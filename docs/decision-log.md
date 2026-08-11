@@ -180,3 +180,22 @@ including holes hidden by cancellation, multiplication by zero, zero powers,
 or nested division. Roots from unrelated quadratic equations are compared by
 evaluating one defining quadratic at the other root and locating that value
 relative to the rational vertex, never by decimal approximations.
+
+## D-014: Start definite integrals with a project-owned exact polynomial path
+
+**Status:** accepted
+**Date:** 2026-08-11
+
+A finite definite integral is marked exact only when both bounds reduce to
+bounded rational numbers and the integrand reduces to an everywhere-defined
+rational-coefficient polynomial of degree at most 32. The solver constructs
+the antiderivative coefficient by coefficient and evaluates `F(upper)-F(lower)`
+with BigInt fractions; it does not need a symbolic-integration proposal or a
+floating-point check. Syntactic variable denominators, negative variable
+powers, and zero powers that could erase an original hole are rejected before
+algebraic cancellation. Functions, mathematical constants, variable or
+irrational bounds, infinite bounds, and improper integrals remain unsupported
+until their continuity and endpoint domains can be proved over the entire
+closed interval. Reversed bounds are evaluated in their written order, and an
+equal-bound result is zero only after the integrand passes the same domain-safe
+polynomial certificate.

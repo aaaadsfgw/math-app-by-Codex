@@ -22,6 +22,15 @@ every denominator, for example `1/(x-1)>0`, `1/(x(x+1))>=0`, or
 or `1/2x<1`. Values that made an original denominator zero remain excluded
 even when algebraic cancellation removes that factor from the visible formula.
 
+For an exact definite integral, enter `∫_0^1 x^2 dx`,
+`0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
+Use signed integers, finite decimals, or explicit fractions for both bounds.
+The current supported integrand is an `x` polynomial with rational
+coefficients. A variable denominator, infinite or variable bound,
+trigonometric or other function, or hidden undefined point produces an
+unsupported message; the extension does not silently treat it as a proper
+polynomial integral.
+
 ## Shortcut
 
 Select a question on an HTTP/HTTPS page and press `Ctrl+Shift+Y`

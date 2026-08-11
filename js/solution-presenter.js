@@ -14,6 +14,7 @@ const METHOD_HINTS = Object.freeze({
   percentage: "「全体×割合÷100」の形に直して計算します。",
   "algebra-transformation": "項と因数の構造を確認し、指定された形へ同値変形します。",
   derivative: "各項に微分公式を適用し、合成関数では内側の導関数を掛けます。",
+  "definite-integral": "原始関数 F(x) を作り、指定された向きのまま F(上端)-F(下端) を厳密に計算します。",
   "indefinite-integral": "基本積分公式を適用し、最後に積分定数 C を付けます。",
 });
 

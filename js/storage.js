@@ -241,6 +241,7 @@ function validIso(value, fallback = null) {
 }
 
 const VERIFIED_SOLVER_CATEGORIES = Object.freeze({
+  "definite-integral": "積分",
   "exponential-equation": "指数・対数",
   "logarithmic-equation": "指数・対数",
   "rational-equation": "分数方程式",

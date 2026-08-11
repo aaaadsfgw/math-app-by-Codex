@@ -15,6 +15,7 @@ Classification alone never means a problem can be solved.
 | One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
+| Definite polynomial integral | `∫_0^1 x^2 dx`, `-1から2まで(3x^2+1)を定積分せよ` | exact coefficient integration and rational endpoint substitution with BigInt fractions |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
@@ -30,8 +31,8 @@ Classification alone never means a problem can be solved.
 - sequences and common finite/infinite sums;
 - counting, probability, statistics, and data summaries;
 - textual coordinate formulas and vector algebra;
-- limits, definite integrals, and standard calculus applications through
-  Mathematics III;
+- limits, broader definite integrals, and standard calculus applications
+  through Mathematics III;
 - broader derivative/integral forms after their real-domain case splits are
   implemented.
 
@@ -54,6 +55,20 @@ composition, `sin`, `cos`, `tan`, `exp`, `log`, and `sqrt`. Domain restrictions
 are retained as conditional results. Indefinite integrals are accepted only
 when the returned candidate parses safely, has no unresolved domain split, and
 differentiates back to the original integrand.
+
+Definite integrals currently accept one variable `x`, rational coefficients,
+polynomial degree at most 32, and finite rational bounds written as signed
+integers, finite decimals, or explicit fractions. Accepted full-input forms
+are `∫_a^b f(x) dx`, `aからbまでf(x)を定積分せよ`, and
+`f(x)をaからbまで定積分せよ`. Coefficients are integrated term by term and
+the result is computed as `F(b)-F(a)` entirely with BigInt fractions. Reversed
+bounds retain their sign, and equal bounds return zero only after the
+integrand has been certified as an everywhere-defined polynomial. Variable
+denominators, negative variable powers, zero powers that can erase original
+holes, functions, mathematical constants, non-rational or variable bounds,
+infinite bounds, and all improper integrals remain unsupported. They are not
+accepted merely because a symbolic antiderivative happens to have endpoint
+values.
 
 For rational-expression simplification, restrictions from every original
 denominator are preserved in the displayed answer and history record. For
