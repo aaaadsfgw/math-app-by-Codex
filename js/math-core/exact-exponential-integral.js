@@ -336,11 +336,29 @@ function formatAntiderivative(value) {
   return pieces.join(" + ").replace(/ \+ -/gu, " - ") || "0";
 }
 
-export function evaluateExactExponentialIntegral(node, lower, upper) {
+export function evaluateExactExponentialAnalysis(analyzed, lower, upper) {
   if (!(lower instanceof ExactRational) || !(upper instanceof ExactRational)) {
     throw new TypeError("指数関数定積分の上下限は厳密分数で指定してください。");
   }
-  const analyzed = analyzeExactExponentialIntegrand(node);
+  if (
+    !analyzed
+    || !Array.isArray(analyzed.polynomial)
+    || !Array.isArray(analyzed.exponentials)
+    || analyzed.polynomial.some((coefficient) => !(coefficient instanceof ExactRational))
+    || analyzed.exponentials.some(({ amplitude, slope, intercept }) => (
+      !(amplitude instanceof ExactRational)
+      || !(slope instanceof ExactRational)
+      || !(intercept instanceof ExactRational)
+    ))
+  ) {
+    throw new TypeError("型付き指数関数被積分関数が必要です。");
+  }
+  if (analyzed.exponentials.length > MAX_EXPONENTIAL_TERMS) {
+    throw new ExactExponentialIntegralError(
+      `指数関数の項数は${MAX_EXPONENTIAL_TERMS}個以下にしてください。`,
+      { code: "TOO_MANY_EXPONENTIAL_TERMS", unsupported: true },
+    );
+  }
   const entries = [];
   if (!isZeroPolynomial(analyzed.polynomial)) {
     const polynomialValue = evaluateExactDefinitePolynomialIntegral(
@@ -381,6 +399,14 @@ export function evaluateExactExponentialIntegral(node, lower, upper) {
     exact: formatExactExponentialSum(value),
     antiderivative: formatAntiderivative(analyzed),
   });
+}
+
+export function evaluateExactExponentialIntegral(node, lower, upper) {
+  return evaluateExactExponentialAnalysis(
+    analyzeExactExponentialIntegrand(node),
+    lower,
+    upper,
+  );
 }
 
 export { MAX_EXPONENTIAL_TERMS };

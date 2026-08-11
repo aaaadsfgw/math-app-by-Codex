@@ -5,6 +5,7 @@ import {
   ExactExponentialIntegralError,
   MAX_EXPONENTIAL_TERMS,
   analyzeExactExponentialIntegrand,
+  evaluateExactExponentialAnalysis,
   evaluateExactExponentialIntegral,
   formatExactExponentialSum,
 } from "../js/math-core/exact-exponential-integral.js";
@@ -156,11 +157,31 @@ test("非線形指数・指数関数積・変数分母・次数超過をexact結
 });
 
 test("公開APIは厳密分数境界と厳密指数和以外を拒否する", () => {
+  const analyzed = analyzeExactExponentialIntegrand(ast("2exp(2x+1)+x"));
+  assert.equal(
+    evaluateExactExponentialAnalysis(analyzed, rational("0"), rational("1")).exact,
+    "exp(3)+1/2-exp(1)",
+  );
   assert.throws(
     () => evaluateExactExponentialIntegral(ast("exp(x)"), 0, rational("1")),
     TypeError,
   );
   assert.throws(() => formatExactExponentialSum(null), TypeError);
   assert.throws(() => formatExactExponentialSum({ terms: null }), TypeError);
+  assert.throws(
+    () => evaluateExactExponentialAnalysis({}, rational("0"), rational("1")),
+    TypeError,
+  );
+  assert.throws(
+    () => evaluateExactExponentialAnalysis({
+      polynomial: analyzed.polynomial,
+      exponentials: Array(MAX_EXPONENTIAL_TERMS + 1).fill(analyzed.exponentials[0]),
+    }, rational("0"), rational("1")),
+    (error) => (
+      error instanceof ExactExponentialIntegralError
+      && error.code === "TOO_MANY_EXPONENTIAL_TERMS"
+      && error.unsupported === true
+    ),
+  );
   assert.equal(formatExactExponentialSum({ terms: [] }), "0");
 });

@@ -237,6 +237,33 @@ Last updated: 2026-08-11
   3,400 unsupported or invalid mutations. A separate adversarial parser review
   found the scientific-notation boundary, whose targeted regressions pass
   after repair.
+- Extended the same exact all-real definite-integral path to finite sums of
+  affine `sin(ax+b)` and `cos(ax+b)` terms with rational coefficients and
+  rational bounds:
+  - construct primitive coefficients with BigInt fractions and branch on zero
+    slope before division;
+  - merge polynomial, `exp`, `sin`, and `cos` endpoint contributions in one
+    typed formal-atom map;
+  - normalize only `sin(-r)=-sin(r)`, `cos(-r)=cos(r)`, `sin(0)=0`, and
+    `cos(0)=1`, with all angles interpreted as rational radians;
+  - validate every subtree before zero multiplication, cancellation, or equal
+    bounds may yield an exact zero;
+  - reject nonlinear arguments, function products/powers/denominators, `tan`,
+    inverse trigonometric functions, `pi`/degree angles, and improper cases.
+- Added 250 independently generated mixed polynomial/exp/sin/cos integrals,
+  bringing the corpus to 3,250 unique cases, including negative and zero
+  slopes, fraction bounds, reversed/equal intervals, and cross-source atom
+  cancellation.
+- An adversarial review exercised 49 dangerous forms through both direct and
+  asynchronous routes, including 32/33-term limits and zero-short-circuit
+  attempts, with no false verification.
+- An independent formal-atom audit matched 7,200 randomized valid integrals
+  and found no false verification across 4,200 unsupported or invalid
+  mutations. It exposed an initially over-strict combined sin/cos term limit;
+  after changing the policy to 32 `sin` terms and 32 `cos` terms separately,
+  five focused boundary cases and another 1,200 randomized integrals all
+  matched the independent BigInt oracle. A compact 32-exp + 32-sin + 32-cos
+  input also remained exact.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -265,10 +292,9 @@ Last updated: 2026-08-11
 
 ## Next
 
-1. Extend the same exact all-real definite-integral path to finite sums of
-   affine `sin(ax+b)` and `cos(ax+b)` terms with rational coefficients and
-   rational bounds; keep formal endpoint atoms separate from later special
-   angles involving `pi`.
+1. Add an exact angle type for rational multiples of `pi`, then enable bounded
+   `pi` endpoints and standard special-angle simplification without decimal
+   trigonometry.
 2. Add finite textual limits with one-sided/domain case splits and exact
    verification before beginning area or volume applications.
 3. Verify module-worker and offscreen loading in unpacked Chrome before
@@ -276,9 +302,9 @@ Last updated: 2026-08-11
 
 ## Last verified commands
 
-- `npm test` - 216 passed, 0 failed on 2026-08-11, including 3,000 generated
+- `npm test` - 236 passed, 0 failed on 2026-08-11, including 3,250 generated
   evaluation cases.
-- `npm run check` - passed for 127 files, 10 HTML, 89 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 130 files, 10 HTML, 92 JS/MJS, and 11 CSS files
   on 2026-08-11.
 
 ## Restart procedure

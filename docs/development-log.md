@@ -296,3 +296,32 @@ substitution alone.
 Node tests and source validation pass. Affine sine/cosine terms, exact special
 angles, rational-function interval domains, non-rational bounds, and improper
 integrals remain unsupported.
+
+## 2026-08-11: exact affine sine/cosine definite integrals
+
+- Extended the all-real exact path to rational-coefficient affine `sin` and
+  `cos` terms alongside the existing polynomial and exponential families.
+- Represented polynomial constants and `exp`, `sin`, and `cos` endpoint values
+  in one typed BigInt-rational coefficient map, allowing endpoint-generated
+  terms to cancel exact constant-function terms across source families.
+- Normalized only the exact zero and odd/even identities. No periodic,
+  special-angle, decimal, CAS, or numerical integration evidence is used.
+- Handled zero slopes before division and preserved reversed/equal-bound
+  behavior only after complete subtree validation.
+- Rejected nonlinear arguments, function products and powers, variable or
+  function denominators, `tan`, inverse trigonometric integrals, `pi`/degree
+  angles, non-rational bounds, and improper integrals.
+- Added direct core, routing, display, history, parser, zero-short-circuit, and
+  32/33-term boundary regressions. An adversarial 49-form review found no false
+  verification across direct and asynchronous routes.
+- Added 250 independent formal-atom corpus cases, bringing the generated
+  evaluation corpus to 3,250 unique problems.
+- Independently cross-checked 7,200 randomized valid integrals and 4,200
+  unsupported or invalid mutations. The audit exposed an over-strict combined
+  sin/cos term limit; after applying separate 32-term limits, all five focused
+  family-boundary cases, another 1,200 randomized integrals, and a compact
+  32-exp + 32-sin + 32-cos case matched the independent BigInt oracle.
+
+Node tests and source validation pass. Rational multiples of `pi`, special
+angles, trigonometric products/powers, rational-function interval domains,
+and improper integrals remain unsupported.

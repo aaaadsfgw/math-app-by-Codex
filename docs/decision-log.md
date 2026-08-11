@@ -219,3 +219,27 @@ The 32-term bound is applied before cancellation as a conservative complexity
 limit. Function arguments require parentheses, and scientific-notation-like
 input such as `1e2` is rejected so Euler's constant cannot create a false
 verified interpretation.
+
+## D-016: Keep rational-radian sine and cosine values as typed atoms
+
+**Status:** accepted
+**Date:** 2026-08-11
+
+The all-real definite-integral path may include at most 32 terms each of
+`q*sin(ax+b)` and `q*cos(ax+b)`, with rational coefficients, affine rational
+arguments, and finite rational bounds. Angles are rational numbers in radians;
+`pi`, degrees, nonlinear phases, trigonometric products and powers, `tan`, and
+inverse trigonometric integrals remain unsupported. A nonzero inner slope is
+divided out with exact BigInt fractions, while slope zero is handled first as
+a constant function.
+
+Endpoint contributions from polynomials, exponentials, sine, and cosine are
+merged into one typed coefficient map. The only trigonometric rewrites are
+`sin(-r)=-sin(r)`, `cos(-r)=cos(r)`, `sin(0)=0`, and `cos(0)=1`; periodic,
+addition-formula, or numerical approximations are forbidden. Rational
+constants share the exponential family's sort position as a virtual
+`exp(0)`, so the new formatter remains consistent with the earlier exact
+exponential normal form. Every subtree is certified before zero coefficients,
+cancellation, or equal bounds can produce zero. Thus an invalid form such as
+`0*sin(1/x)` or an equal-bound `sin(x)^0` never becomes verified by a
+short-circuit.

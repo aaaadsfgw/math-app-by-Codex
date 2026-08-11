@@ -28,12 +28,15 @@ imported-verification downgrade.
 10. Solve `∫_0^1 2exp(2x+1) dx` and confirm the exact answer is
     `exp(3)-exp(1)`, then confirm `∫_0^1 x*exp(x) dx` and `∫_0^1 1e2 dx`
     receive no verified answer.
-11. Submit an unsupported trigonometric problem, an improper integral such as
+11. Solve `∫_0^1 sin(x) dx` and confirm the exact radian-form answer is
+    `1-cos(1)`, then confirm `∫_0^1 sin(x)^2 dx`, `∫_0^pi sin(x) dx`, and
+    `∫_0^0 sin(1/x) dx` receive no verified answer.
+12. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-12. Verify history filters, JSON import/export, analytics, review rerun, setting
+13. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-13. Reload the extension and repeat the shortcut to cover service-worker
+14. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation

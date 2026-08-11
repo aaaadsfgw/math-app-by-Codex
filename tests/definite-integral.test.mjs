@@ -85,7 +85,6 @@ test("逆順境界は符号を反転し、同一境界は定義済み多項式�
 test("固定境界で定義域を解決済みでも初期範囲外の結果をconditionalで通さない", async () => {
   for (const question of [
     "∫_1^2 1/x dx",
-    "∫_0^1 sin(x) dx",
     "∫_1^2 log(x) dx",
     "∫_0^1 sqrt(x) dx",
     "∫_0^1 pi*x dx",
@@ -216,10 +215,10 @@ test("分類・非同期ルーター・認識済み未対応理由を定積分�
     assert.equal(routed.answer, "1/3");
   }
 
-  const unsupported = await solveQuestionAsync("∫_0^1 sin(x) dx");
+  const unsupported = await solveQuestionAsync("∫_0^1 tan(x) dx");
   assert.equal(unsupported.verified, false);
   assert.equal(unsupported.resultKind, "unsupported");
-  assert.match(unsupported.error, /有理係数多項式|関数/u);
+  assert.match(unsupported.error, /三角関数|有限和|対応/u);
 });
 
 test("定積分の検証済み履歴から5つの表示モードを安全に生成する", async () => {

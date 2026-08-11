@@ -604,6 +604,411 @@ function generatedExponentialDefiniteIntegrals() {
   });
 }
 
+function generatedTrigonometricTerms(index, functionName) {
+  const functionOffset = functionName === "sin" ? 0 : 1;
+  const count = functionName === "sin"
+    ? (index % 4) + 1
+    : ((index * 3 + 1) % 4) + 1;
+  return Array.from({ length: count }, (_, termIndex) => {
+    let amplitudeNumerator = (
+      (index * (termIndex + functionOffset + 3) + termIndex * 5 + functionOffset * 2) % 11
+    ) - 5;
+    if (amplitudeNumerator === 0) {
+      amplitudeNumerator = (index + termIndex + functionOffset) % 2 === 0 ? 2 : -2;
+    }
+    const zeroSlope = (index + termIndex * 2 + functionOffset) % 7 === 0;
+    let slopeNumerator = zeroSlope
+      ? 0
+      : ((index * (functionOffset + 2) + termIndex * 3 + functionOffset) % 7) - 3;
+    if (!zeroSlope && slopeNumerator === 0) {
+      slopeNumerator = (index + termIndex) % 2 === 0 ? 1 : -1;
+    }
+    return {
+      functionName,
+      amplitude: corpusRational(
+        BigInt(amplitudeNumerator),
+        BigInt(((index + termIndex + functionOffset) % 3) + 1),
+      ),
+      slope: corpusRational(
+        BigInt(slopeNumerator),
+        BigInt(((index * 2 + termIndex + functionOffset) % 3) + 1),
+      ),
+      intercept: corpusRational(
+        BigInt(((index * 4 + termIndex * 5 + functionOffset * 3) % 9) - 4),
+        BigInt(((index + termIndex * 2 + functionOffset) % 3) + 1),
+      ),
+    };
+  });
+}
+
+function forceTrigonometricCoverage(index, sinTerms, cosTerms, upper) {
+  if (index % 12 === 2) {
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slope: corpusRational(0n),
+      intercept: corpusRational(0n),
+    };
+  }
+  if (index % 12 === 3) {
+    cosTerms[0] = {
+      ...cosTerms[0],
+      slope: corpusRational(0n),
+      intercept: corpusRational(-1n, 2n),
+    };
+  }
+  if (index % 12 === 4) {
+    const slope = sinTerms[0].slope.numerator === 0n
+      ? corpusRational(1n, 2n)
+      : sinTerms[0].slope;
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slope,
+      intercept: negateCorpusRational(multiplyCorpusRationals(slope, upper)),
+    };
+  }
+  if (index % 12 === 5) {
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slope: corpusRational(-1n, BigInt((index % 3) + 1)),
+    };
+  }
+}
+
+function addCrossSourceCancellation(index, sinTerms, cosTerms, lower, upper) {
+  const intervalLength = subtractCorpusRationals(upper, lower);
+  if (intervalLength.numerator === 0n) return false;
+
+  if (index % 8 === 0) {
+    const source = {
+      ...sinTerms[0],
+      slope: sinTerms[0].slope.numerator === 0n
+        ? corpusRational(index % 2 === 0 ? 1n : -1n)
+        : sinTerms[0].slope,
+    };
+    sinTerms[0] = source;
+    const endpointArgument = addCorpusRationals(
+      multiplyCorpusRationals(source.slope, upper),
+      source.intercept,
+    );
+    cosTerms[0] = {
+      functionName: "cos",
+      amplitude: divideCorpusRationals(
+        divideCorpusRationals(source.amplitude, source.slope),
+        intervalLength,
+      ),
+      slope: corpusRational(0n),
+      intercept: endpointArgument,
+    };
+    return true;
+  }
+
+  if (index % 8 === 1) {
+    const source = {
+      ...cosTerms[0],
+      slope: cosTerms[0].slope.numerator === 0n
+        ? corpusRational(index % 2 === 0 ? 1n : -1n)
+        : cosTerms[0].slope,
+    };
+    cosTerms[0] = source;
+    const endpointArgument = addCorpusRationals(
+      multiplyCorpusRationals(source.slope, upper),
+      source.intercept,
+    );
+    sinTerms[0] = {
+      functionName: "sin",
+      amplitude: negateCorpusRational(divideCorpusRationals(
+        divideCorpusRationals(source.amplitude, source.slope),
+        intervalLength,
+      )),
+      slope: corpusRational(0n),
+      intercept: endpointArgument,
+    };
+    return true;
+  }
+  return false;
+}
+
+function formatTrigonometricIntegrandTerm(term) {
+  const negative = term.amplitude.numerator < 0n;
+  const magnitude = negative
+    ? negateCorpusRational(term.amplitude)
+    : term.amplitude;
+  const argument = formatAffineExponent(term.slope, term.intercept);
+  const coefficient = equalCorpusRationals(magnitude, corpusRational(1n))
+    ? ""
+    : magnitude.denominator === 1n
+      ? `${magnitude.numerator}*`
+      : `(${formatCorpusRational(magnitude)})*`;
+  return `${negative ? "-" : ""}${coefficient}${term.functionName}(${argument})`;
+}
+
+function normalizeCorpusElementaryEntry(rawEntry) {
+  if (rawEntry.coefficient.numerator === 0n) return null;
+  if (rawEntry.kind === "rational") {
+    return { kind: "rational", argument: null, coefficient: rawEntry.coefficient };
+  }
+  if (rawEntry.kind === "exp" && rawEntry.argument.numerator === 0n) {
+    return { kind: "rational", argument: null, coefficient: rawEntry.coefficient };
+  }
+  if (rawEntry.kind === "sin") {
+    if (rawEntry.argument.numerator === 0n) return null;
+    if (rawEntry.argument.numerator < 0n) {
+      return {
+        kind: "sin",
+        argument: negateCorpusRational(rawEntry.argument),
+        coefficient: negateCorpusRational(rawEntry.coefficient),
+      };
+    }
+  }
+  if (rawEntry.kind === "cos") {
+    if (rawEntry.argument.numerator === 0n) {
+      return { kind: "rational", argument: null, coefficient: rawEntry.coefficient };
+    }
+    if (rawEntry.argument.numerator < 0n) {
+      return {
+        kind: "cos",
+        argument: negateCorpusRational(rawEntry.argument),
+        coefficient: rawEntry.coefficient,
+      };
+    }
+  }
+  return rawEntry;
+}
+
+function formatCorpusElementarySum(entries) {
+  const atomOrder = { exp: 0, rational: 0, sin: 1, cos: 2 };
+  const combined = new Map();
+  for (const rawEntry of entries) {
+    const entry = normalizeCorpusElementaryEntry(rawEntry);
+    if (!entry) continue;
+    const key = entry.kind === "rational"
+      ? "rational"
+      : `${entry.kind}:${formatCorpusRational(entry.argument)}`;
+    const previous = combined.get(key);
+    combined.set(key, {
+      ...entry,
+      coefficient: previous
+        ? addCorpusRationals(previous.coefficient, entry.coefficient)
+        : entry.coefficient,
+    });
+  }
+
+  const terms = [...combined.values()]
+    .filter(({ coefficient }) => coefficient.numerator !== 0n)
+    .sort((left, right) => {
+      const leftNegative = left.coefficient.numerator < 0n;
+      const rightNegative = right.coefficient.numerator < 0n;
+      if (leftNegative !== rightNegative) return leftNegative ? 1 : -1;
+      const order = atomOrder[left.kind] - atomOrder[right.kind];
+      if (order) return order;
+      const leftArgument = left.kind === "rational"
+        ? corpusRational(0n)
+        : left.argument;
+      const rightArgument = right.kind === "rational"
+        ? corpusRational(0n)
+        : right.argument;
+      return -compareCorpusRationals(leftArgument, rightArgument);
+    });
+  if (!terms.length) return "0";
+
+  return terms.map(({ kind, argument, coefficient }, termIndex) => {
+    const negative = coefficient.numerator < 0n;
+    const magnitude = negative ? negateCorpusRational(coefficient) : coefficient;
+    let body;
+    if (kind === "rational") {
+      body = formatCorpusRational(magnitude);
+    } else {
+      const atom = `${kind}(${formatCorpusRational(argument)})`;
+      if (magnitude.denominator === 1n) {
+        body = magnitude.numerator === 1n ? atom : `${magnitude.numerator}*${atom}`;
+      } else {
+        body = magnitude.numerator === 1n
+          ? `${atom}/${magnitude.denominator}`
+          : `${magnitude.numerator}*${atom}/${magnitude.denominator}`;
+      }
+    }
+    if (termIndex === 0) return `${negative ? "-" : ""}${body}`;
+    return `${negative ? "-" : "+"}${body}`;
+  }).join("");
+}
+
+function appendExponentialEndpointEntries(entries, terms, lower, upper) {
+  for (const term of terms) {
+    if (term.slope.numerator === 0n) {
+      entries.push({
+        kind: "exp",
+        argument: term.intercept,
+        coefficient: multiplyCorpusRationals(
+          term.amplitude,
+          subtractCorpusRationals(upper, lower),
+        ),
+      });
+      continue;
+    }
+    const primitiveCoefficient = divideCorpusRationals(term.amplitude, term.slope);
+    entries.push({
+      kind: "exp",
+      argument: addCorpusRationals(
+        multiplyCorpusRationals(term.slope, upper),
+        term.intercept,
+      ),
+      coefficient: primitiveCoefficient,
+    });
+    entries.push({
+      kind: "exp",
+      argument: addCorpusRationals(
+        multiplyCorpusRationals(term.slope, lower),
+        term.intercept,
+      ),
+      coefficient: negateCorpusRational(primitiveCoefficient),
+    });
+  }
+}
+
+function appendTrigonometricEndpointEntries(entries, terms, lower, upper) {
+  for (const term of terms) {
+    if (term.slope.numerator === 0n) {
+      entries.push({
+        kind: term.functionName,
+        argument: term.intercept,
+        coefficient: multiplyCorpusRationals(
+          term.amplitude,
+          subtractCorpusRationals(upper, lower),
+        ),
+      });
+      continue;
+    }
+    const quotient = divideCorpusRationals(term.amplitude, term.slope);
+    const upperArgument = addCorpusRationals(
+      multiplyCorpusRationals(term.slope, upper),
+      term.intercept,
+    );
+    const lowerArgument = addCorpusRationals(
+      multiplyCorpusRationals(term.slope, lower),
+      term.intercept,
+    );
+    if (term.functionName === "sin") {
+      entries.push({
+        kind: "cos",
+        argument: upperArgument,
+        coefficient: negateCorpusRational(quotient),
+      });
+      entries.push({ kind: "cos", argument: lowerArgument, coefficient: quotient });
+    } else {
+      entries.push({ kind: "sin", argument: upperArgument, coefficient: quotient });
+      entries.push({
+        kind: "sin",
+        argument: lowerArgument,
+        coefficient: negateCorpusRational(quotient),
+      });
+    }
+  }
+}
+
+function trigonometricIntegralExpectedAnswer({
+  polynomial,
+  exponentialTerms,
+  sinTerms,
+  cosTerms,
+  lower,
+  upper,
+}) {
+  const entries = [];
+  const polynomialValue = definiteIntegralExpectedValue(polynomial, lower, upper);
+  if (polynomialValue.numerator !== 0n) {
+    entries.push({ kind: "rational", argument: null, coefficient: polynomialValue });
+  }
+  appendExponentialEndpointEntries(entries, exponentialTerms, lower, upper);
+  appendTrigonometricEndpointEntries(entries, sinTerms, lower, upper);
+  appendTrigonometricEndpointEntries(entries, cosTerms, lower, upper);
+  return formatCorpusElementarySum(entries);
+}
+
+function trigonometricCoverage({
+  polynomial,
+  exponentialTerms,
+  sinTerms,
+  cosTerms,
+  lower,
+  upper,
+  crossSourceCancellation,
+}) {
+  const terms = [...sinTerms, ...cosTerms];
+  const endpointArguments = terms.flatMap((term) => [lower, upper].map((bound) => (
+    addCorpusRationals(
+      multiplyCorpusRationals(term.slope, bound),
+      term.intercept,
+    )
+  )));
+  const direction = compareCorpusRationals(lower, upper);
+  return {
+    polynomialNonzero: polynomial.some(({ numerator }) => numerator !== 0n),
+    exponentialCount: exponentialTerms.length,
+    sinCount: sinTerms.length,
+    cosCount: cosTerms.length,
+    intervalKind: direction < 0 ? "normal" : direction > 0 ? "reverse" : "equal",
+    fractionalBounds: lower.denominator !== 1n || upper.denominator !== 1n,
+    zeroSlope: terms.some(({ slope }) => slope.numerator === 0n),
+    negativeSlope: terms.some(({ slope }) => slope.numerator < 0n),
+    zeroArgument: endpointArguments.some(({ numerator }) => numerator === 0n),
+    negativeArgument: endpointArguments.some(({ numerator }) => numerator < 0n),
+    crossSourceCancellation,
+  };
+}
+
+function generatedTrigonometricDefiniteIntegrals() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const polynomial = [...generatedExponentialPolynomial(index + 401)];
+    if (polynomial.every(({ numerator }) => numerator === 0n)) {
+      polynomial[0] = corpusRational(BigInt((index % 5) + 1), BigInt((index % 3) + 1));
+    }
+    const exponentialTerms = generatedExponentialTerms(index + 503);
+    const sinTerms = generatedTrigonometricTerms(index, "sin")
+      .map((term) => ({ ...term }));
+    const cosTerms = generatedTrigonometricTerms(index, "cos")
+      .map((term) => ({ ...term }));
+    const [lower, upper] = generatedIntegralBounds(index + 3);
+    forceTrigonometricCoverage(index, sinTerms, cosTerms, upper);
+    const crossSourceCancellation = addCrossSourceCancellation(
+      index,
+      sinTerms,
+      cosTerms,
+      lower,
+      upper,
+    );
+
+    let integrand = formatRationalPolynomial(polynomial);
+    for (const term of exponentialTerms) {
+      integrand = appendCorpusExpression(integrand, formatExponentialIntegrandTerm(term));
+    }
+    for (const term of [...sinTerms, ...cosTerms]) {
+      integrand = appendCorpusExpression(integrand, formatTrigonometricIntegrandTerm(term));
+    }
+    return {
+      family: "trigonometric-definite-integral",
+      question: `\u222b_(${formatCorpusRational(lower)})^(${formatCorpusRational(upper)}) `
+        + `${integrand} dx`,
+      answer: trigonometricIntegralExpectedAnswer({
+        polynomial,
+        exponentialTerms,
+        sinTerms,
+        cosTerms,
+        lower,
+        upper,
+      }),
+      coverage: trigonometricCoverage({
+        polynomial,
+        exponentialTerms,
+        sinTerms,
+        cosTerms,
+        lower,
+        upper,
+        crossSourceCancellation,
+      }),
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -624,6 +1029,7 @@ function generatedRejectedInputs() {
 }
 
 const exponentialDefiniteIntegralCorpus = generatedExponentialDefiniteIntegrals();
+const trigonometricDefiniteIntegralCorpus = generatedTrigonometricDefiniteIntegrals();
 const positiveCorpus = [
   ...generatedLinearEquations(),
   ...generatedLinearInequalities(),
@@ -637,16 +1043,52 @@ const positiveCorpus = [
   ...generatedLogarithmicEquations(),
   ...generatedDefiniteIntegrals(),
   ...exponentialDefiniteIntegralCorpus,
+  ...trigonometricDefiniteIntegralCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("3,000問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 3_000);
+test("3,250問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 3_250);
   assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
   assert.equal(
     new Set(exponentialDefiniteIntegralCorpus.map(({ question }) => question)).size,
     250,
+  );
+  assert.equal(trigonometricDefiniteIntegralCorpus.length, 250);
+  assert.equal(
+    new Set(trigonometricDefiniteIntegralCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.ok(trigonometricDefiniteIntegralCorpus.every(({ coverage }) => (
+    coverage.polynomialNonzero
+    && coverage.exponentialCount >= 1
+    && coverage.sinCount >= 1
+    && coverage.sinCount <= 4
+    && coverage.cosCount >= 1
+    && coverage.cosCount <= 4
+  )));
+  assert.deepEqual(
+    new Set(trigonometricDefiniteIntegralCorpus.map(({ coverage }) => coverage.sinCount)),
+    new Set([1, 2, 3, 4]),
+  );
+  assert.deepEqual(
+    new Set(trigonometricDefiniteIntegralCorpus.map(({ coverage }) => coverage.cosCount)),
+    new Set([1, 2, 3, 4]),
+  );
+  assert.deepEqual(
+    new Set(trigonometricDefiniteIntegralCorpus.map(({ coverage }) => coverage.intervalKind)),
+    new Set(["normal", "reverse", "equal"]),
+  );
+  assert.ok(trigonometricDefiniteIntegralCorpus.some(({ coverage }) => coverage.fractionalBounds));
+  assert.ok(trigonometricDefiniteIntegralCorpus.some(({ coverage }) => coverage.zeroSlope));
+  assert.ok(trigonometricDefiniteIntegralCorpus.some(({ coverage }) => coverage.negativeSlope));
+  assert.ok(trigonometricDefiniteIntegralCorpus.some(({ coverage }) => coverage.zeroArgument));
+  assert.ok(trigonometricDefiniteIntegralCorpus.some(({ coverage }) => coverage.negativeArgument));
+  assert.ok(
+    trigonometricDefiniteIntegralCorpus.filter(
+      ({ coverage }) => coverage.crossSourceCancellation,
+    ).length >= 20,
   );
 
   for (const item of positiveCorpus) {

@@ -34,8 +34,9 @@ The current migration checkpoint supports:
 - indefinite integrals whose candidate can be differentiated back over the
   whole supported domain;
 - exact definite integrals of rational-coefficient polynomials through degree
-  32 plus finite sums of `q*exp(ax+b)` over finite rational bounds, evaluated
-  as BigInt fractions and formal `exp(rational)` values;
+  32 plus finite sums of affine `exp`, `sin`, and `cos` terms over finite
+  rational bounds, evaluated as BigInt fractions and typed formal endpoint
+  values;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
@@ -83,13 +84,16 @@ For definite integrals, write `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
 The current exact path accepts signed integers, finite decimals, or explicit
 fractions as both bounds. Its integrand may be a rational-coefficient `x`
-polynomial through degree 32 plus at most 32 terms `q*exp(ax+b)`, where
-`q`, `a`, and `b` are rational. Write the function argument with parentheses,
-as in `exp(2x+1)`; `e^(2x+1)` is the supported alias. Scientific notation such
-as `1e2` is intentionally rejected instead of being confused with Euler's
-constant. Nonlinear exponents, products involving an exponential, variable
-denominators, hidden holes, non-rational or infinite bounds, and improper
-integrals remain unsupported rather than being inferred from endpoint values.
+polynomial through degree 32, at most 32 terms `q*exp(ax+b)`, and at most 32
+terms each of `r*sin(cx+d)` and `s*cos(ex+f)`, with all coefficients rational.
+Angles are rational numbers in radians; `pi` bounds and degree notation are a
+later exact-angle milestone. Write function arguments with parentheses, as in
+`exp(2x+1)` and `sin(3x-1)`; `e^(2x+1)` is the supported exponential alias.
+Scientific notation such as `1e2` is intentionally rejected instead of being
+confused with Euler's constant. Nonlinear arguments, products involving
+functions, variable denominators, hidden holes, non-rational or infinite
+bounds, and improper integrals remain unsupported rather than being inferred
+from endpoint values.
 
 ## Development
 

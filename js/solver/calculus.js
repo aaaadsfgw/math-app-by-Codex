@@ -13,6 +13,10 @@ import {
   exactRationalConstantFromAst,
   formatExactPolynomialForIntegral,
 } from "../math-core/exact-polynomial-integral.js";
+import {
+  ExactTrigonometricIntegralError,
+  evaluateExactTrigonometricIntegral,
+} from "../math-core/exact-trigonometric-integral.js";
 import { MathParseError, parseMathExpression } from "../math-core/expression-parser.js";
 import {
   equivalentInWorker,
@@ -126,6 +130,7 @@ function definiteIntegralFailure(error) {
     (
       error instanceof ExactPolynomialIntegralError
       || error instanceof ExactExponentialIntegralError
+      || error instanceof ExactTrigonometricIntegralError
     )
     && error.unsupported
   ) {
@@ -135,6 +140,7 @@ function definiteIntegralFailure(error) {
     error instanceof MathParseError
     || error instanceof ExactPolynomialIntegralError
     || error instanceof ExactExponentialIntegralError
+    || error instanceof ExactTrigonometricIntegralError
   ) {
     return recognizedResult(failedResult(DEFINITE_INTEGRAL_SOLVER_ID, error.message));
   }
@@ -300,6 +306,52 @@ function solvedExponentialDefiniteIntegral(parsedIntegrand, lower, upper) {
   });
 }
 
+function solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper) {
+  const evaluated = evaluateExactTrigonometricIntegral(parsedIntegrand.ast, lower, upper);
+  const exactAnswer = evaluated.exact;
+  return solvedResult({
+    answer: exactAnswer,
+    exactAnswer,
+    metadata: {
+      integrand: parsedIntegrand.normalized,
+      lowerBound: lower.toString(),
+      upperBound: upper.toString(),
+      antiderivative: evaluated.antiderivative,
+      family: "affine-trigonometric",
+    },
+    steps: [
+      { type: "input", content: `∫_${lower}^${upper} ${parsedIntegrand.normalized} dx` },
+      {
+        type: "constraint",
+        content: "有理係数多項式と q*exp(ax+b)、q*sin(ax+b)、q*cos(ax+b) の有限和",
+        explanation: "exp・sin・cosは全実数で連続です。非線形引数、関数同士の積、変数分母は検証済みにしません。",
+      },
+      {
+        type: "rule",
+        content: `F(x)=${evaluated.antiderivative}`,
+        explanation: "sinの原始関数は-cos、cosの原始関数はsinとし、一次引数の傾きで係数を厳密に割ります。傾き0は定数関数として扱います。",
+      },
+      {
+        type: "transformation",
+        content: `F(${upper})-F(${lower})=${exactAnswer}`,
+        explanation: definiteIntervalExplanation(
+          lower,
+          upper,
+          "多項式・exp・sin・cosの全項が全実数で定義されること",
+        ),
+      },
+      {
+        type: "verification",
+        content: "原始関数係数とsin・cosの奇偶性を厳密分数で再照合",
+        explanation: "各原始関数を微分した係数が元へ戻ることを確認し、sin(-r)=-sin(r)、cos(-r)=cos(r)、sin(0)=0、cos(0)=1だけを厳密に正規化しました。",
+      },
+      { type: "result", content: `定積分: ${exactAnswer}` },
+    ],
+    verification: "多項式・exp・sin・cosの原始関数係数をBigInt分数で検算し、有理数端点の形式的な関数値を厳密結合しました。CAS・数値積分・浮動小数点近似は使っていません。",
+    solverId: DEFINITE_INTEGRAL_SOLVER_ID,
+  });
+}
+
 export async function solveDefiniteIntegral(question) {
   const request = parseDefiniteIntegralInput(question);
   if (!request.recognized) {
@@ -331,7 +383,14 @@ export async function solveDefiniteIntegral(question) {
         throw error;
       }
     }
-    return solvedExponentialDefiniteIntegral(parsedIntegrand, lower, upper);
+    try {
+      return solvedExponentialDefiniteIntegral(parsedIntegrand, lower, upper);
+    } catch (error) {
+      if (!(error instanceof ExactExponentialIntegralError) || !error.unsupported) {
+        throw error;
+      }
+    }
+    return solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper);
   } catch (error) {
     return definiteIntegralFailure(error);
   }
