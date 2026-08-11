@@ -7,10 +7,12 @@ import { solveLinearEquation } from "./linear-equation.js";
 import { solveLinearInequality } from "./linear-inequality.js";
 import { solveLinearSystem } from "./linear-system.js";
 import { solveLogarithmicEquation } from "./logarithmic-equation.js";
+import { parseInequalityInput } from "./inequality-input.js";
 import { solvePercentage } from "./percentage.js";
 import { solveQuadraticEquation } from "./quadratic-equation.js";
 import { solveQuadraticInequality } from "./quadratic-inequality.js";
 import { solveRationalEquation } from "./rational-equation.js";
+import { solveRationalInequality } from "./rational-inequality.js";
 import { unsupportedResult } from "./utils.js";
 
 export {
@@ -27,12 +29,15 @@ export {
   solveQuadraticEquation,
   solveQuadraticInequality,
   solveRationalEquation,
+  solveRationalInequality,
 };
 
 export const SOLVERS = Object.freeze([
   solveLinearSystem,
+  solveRationalInequality,
   solveQuadraticInequality,
   solveLinearInequality,
+  recognizedInequalityFallback,
   solveBaseConversion,
   solvePercentage,
   solveLogarithmicEquation,
@@ -42,10 +47,26 @@ export const SOLVERS = Object.freeze([
   solveLinearEquation,
 ]);
 
+function recognizedInequalityFallback(question) {
+  const source = parseInequalityInput(question);
+  const reason = source.ok
+    ? "この不等式は現在の対応範囲外です。一次・二次多項式または対応済みの有理不等式を入力してください。"
+    : source.error;
+  return Object.freeze({
+    ...unsupportedResult(reason),
+    recognized: source.recognized === true,
+  });
+}
+
 const CATEGORY_SOLVERS = Object.freeze({
   "一次方程式": [solveRationalEquation, solveLinearEquation],
   "分数方程式": [solveRationalEquation],
-  "不等式": [solveQuadraticInequality, solveLinearInequality],
+  "不等式": [
+    solveRationalInequality,
+    solveQuadraticInequality,
+    solveLinearInequality,
+    recognizedInequalityFallback,
+  ],
   "連立方程式": [solveLinearSystem],
   "二次方程式": [solveRationalEquation, solveQuadraticEquation],
   "指数・対数": [solveLogarithmicEquation, solveExponentialEquation],

@@ -43,6 +43,7 @@ const SOLVED_RESULT_KINDS = new Set(["exact", "approximate", "conditional"]);
 const TRACE_TYPES = new Set([
   "answer",
   "conclusion",
+  "constraint",
   "input",
   "result",
   "rule",
@@ -243,6 +244,7 @@ const VERIFIED_SOLVER_CATEGORIES = Object.freeze({
   "exponential-equation": "指数・対数",
   "logarithmic-equation": "指数・対数",
   "rational-equation": "分数方程式",
+  "rational-inequality": "不等式",
 });
 
 function normalizeClassification(input) {

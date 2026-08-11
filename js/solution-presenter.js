@@ -4,6 +4,7 @@ const METHOD_HINTS = Object.freeze({
   "linear-equation": "等号の両側で同じ操作を行い、変数を含む項と定数項を分けます。",
   "linear-inequality": "変数項を片側へ集め、負の数で割る場合だけ不等号を反転します。",
   "quadratic-inequality": "右辺を0にし、2つの根と最高次係数から各区間の符号を調べます。",
+  "rational-inequality": "左右を一つの分数にまとめ、分子の零点と分母が0になる点で数直線を区切り、各区間の符号を調べます。",
   "linear-system": "2本の式から一方の変数を消去し、得られた値を元の式へ戻します。",
   "quadratic-equation": "式を ax²+bx+c=0 の形に整理し、因数分解または解の公式を選びます。",
   "rational-equation": "元の分母が0でない条件を先に保ち、通分後の候補を元の式で検査します。",

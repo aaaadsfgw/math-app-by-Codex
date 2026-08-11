@@ -12,6 +12,7 @@ Classification alone never means a problem can be solved.
 | Two-variable linear system | `x+y=3, x-y=1` | exact substitution into both equations |
 | One-variable linear inequality | `-3x+6>=0`, `0.5x>1` | exact boundary and coefficient-sign check |
 | One-variable quadratic inequality | `x^2-5x+6<=0`, `x^2-2<0` | exact discriminant and sign chart |
+| One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
@@ -23,7 +24,7 @@ Classification alone never means a problem can be solved.
 
 ## Planned textual domains
 
-- chained, simultaneous, rational, and higher-degree inequalities;
+- chained, simultaneous, and higher-degree inequalities;
 - broader powers, exponential substitutions, roots, and complex numbers;
 - trigonometric values, identities, equations, and inequalities;
 - sequences and common finite/infinite sums;
@@ -64,6 +65,18 @@ cleared equation must reduce to degree two or below; larger intermediate or
 domain polynomials fail safely. Slash notation followed by implicit
 multiplication, such as `1/x(x+1)`, is rejected until the denominator is made
 explicit with parentheses.
+
+Rational inequalities use the same one-variable syntax and original-denominator
+ledger. After moving both sides together, the cleared numerator must have
+degree at most two; every original denominator factor must also have degree at
+most two, while bounded products of those factors may remain unexpanded for
+the sign check. Rational and quadratic-radical zeros and poles are ordered with
+BigInt algebra, including roots from different quadratic equations. Each open
+interval is checked at an exact rational sample, inclusive operators close only
+valid numerator zeros, and every original pole stays open after cancellation,
+zero multiplication, zero powers, or nested division. Cubic-or-higher cleared
+numerators, parameterized coefficients, functions, chained inequalities, and
+ambiguous slash-plus-implicit-multiplication input remain unsupported.
 
 Exponential equations currently require positive rational bases other than
 one and affine exponents in `x`. The solver accepts only identities,

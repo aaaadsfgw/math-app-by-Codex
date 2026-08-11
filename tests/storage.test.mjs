@@ -21,6 +21,7 @@ import {
   setPendingQuestion,
   updateHistory,
 } from "../js/storage.js";
+import { solveRationalInequality } from "../js/solver/rational-inequality.js";
 import { historyInput, installStorageFixture } from "./storage-fixtures.mjs";
 
 let fixture;
@@ -162,6 +163,26 @@ test("createHistoryRecord derives score, category details, verification, and rev
   assert.equal(logarithmic.categoryClassification.primary, "指数・対数");
   assert.equal(logarithmic.resultKind, "conditional");
   assert.deepEqual(logarithmic.conditions, ["x>0"]);
+
+  const rationalInequalityResult = solveRationalInequality("1/(x-1)>0");
+  const rationalInequality = createHistoryRecord(historyInput({
+    question: "1/(x-1)>0",
+    output: rationalInequalityResult.answer,
+    finalAnswer: rationalInequalityResult.answer,
+    category: "分数方程式",
+    solverId: rationalInequalityResult.solverId,
+    resultKind: rationalInequalityResult.resultKind,
+    conditions: rationalInequalityResult.conditions,
+    solutionSet: rationalInequalityResult.solutionSet,
+    solutionTrace: rationalInequalityResult.solutionTrace,
+    verificationMessage: rationalInequalityResult.verification,
+  }));
+  assert.equal(rationalInequality.category, "不等式");
+  assert.equal(rationalInequality.categoryClassification.primary, "不等式");
+  assert.equal(rationalInequality.resultKind, "conditional");
+  assert.deepEqual(rationalInequality.conditions, ["x≠1"]);
+  assert.equal(rationalInequality.solutionSet.intervals[0].lower.exact, "1");
+  assert.equal(rationalInequality.solutionTrace[1].type, "constraint");
 });
 
 test("unverified and malformed result metadata cannot retain solver conditions", () => {

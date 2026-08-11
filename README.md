@@ -14,6 +14,9 @@ The current migration checkpoint supports:
 - linear equations in one variable;
 - one-variable rational equations whose cleared numerator and every original
   denominator reduce to degree two or below;
+- one-variable rational inequalities whose cleared numerator and every
+  original denominator factor reduce to degree two or below, with exact open
+  poles and rational or quadratic-radical interval endpoints;
 - systems of two linear equations in `x` and `y`, with exact fractions;
 - one-variable linear inequalities;
 - one-variable quadratic inequalities with exact rational or radical
@@ -68,6 +71,10 @@ working, and explanations are derived from that same result.
 For logarithmic equations, write an explicit integer base as `log_2(x)` or
 `log₂(x)`. Bare `log(x)` and `ln(x)` both mean the natural logarithm, matching
 the calculus parser. Parentheses around every logarithm argument are required.
+
+For rational inequalities, make every denominator boundary explicit. Write
+`1/(x(x+1))>0` or `(1/x)*(x+1)>0`; ambiguous forms such as `1/x(x+1)>0` and
+`1/2x<1` are rejected instead of guessed.
 
 ## Development
 

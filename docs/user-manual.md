@@ -16,6 +16,12 @@ For logarithmic equations, use forms such as `log_2(x)=3`, `log₂(x)=3`, or
 `ln(x)=0`. The argument parentheses are required. Bare `log(x)` and `ln(x)`
 both mean the natural logarithm; use `log_10(x)` for an explicit base 10.
 
+For rational inequalities, use explicit parentheses or multiplication around
+every denominator, for example `1/(x-1)>0`, `1/(x(x+1))>=0`, or
+`(1/x)*(x+1)<0`. The extension rejects ambiguous input such as `1/x(x+1)>0`
+or `1/2x<1`. Values that made an original denominator zero remain excluded
+even when algebraic cancellation removes that factor from the visible formula.
+
 ## Shortcut
 
 Select a question on an HTTP/HTTPS page and press `Ctrl+Shift+Y`

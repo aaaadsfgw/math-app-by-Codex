@@ -3,6 +3,11 @@ import { normalizeMathNotation } from "../math-core/notation.js";
 const RELATION_PATTERN = /<=|>=|=|<|>/gu;
 const MAX_EQUATION_INPUT_LENGTH = 5_000;
 
+function hasStandaloneEquality(value) {
+  return [...String(value ?? "").matchAll(RELATION_PATTERN)]
+    .some((match) => match[0] === "=");
+}
+
 export function normalizeEquationNotation(value) {
   return normalizeMathNotation(value)
     .replace(/X/gu, "x")
@@ -29,12 +34,12 @@ export function parseEquationInput(question) {
   if (raw.length > MAX_EQUATION_INPUT_LENGTH) {
     return {
       ok: false,
-      recognized: /[=＝]/u.test(raw),
+      recognized: hasStandaloneEquality(raw.replace(/＝/gu, "=")) || /方程式/u.test(raw),
       error: "入力が長すぎます。",
     };
   }
   const normalized = normalizeEquationNotation(question);
-  const recognized = normalized.includes("=");
+  const recognized = hasStandaloneEquality(normalized) || /方程式/u.test(normalized);
   if (!recognized) {
     return {
       ok: false,

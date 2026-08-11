@@ -150,6 +150,30 @@ function generatedRationalEquations() {
   });
 }
 
+function generatedRationalInequalities() {
+  const operators = ["<", "<=", ">", ">="];
+  return Array.from({ length: 250 }, (_, index) => {
+    const hole = (index % 23) - 15;
+    const root = hole + (index % 7) + 1;
+    const numeratorLeading = index % 2 === 0 ? (index % 5) + 1 : -((index % 5) + 1);
+    const denominatorLeading = index % 3 === 0 ? -((index % 4) + 1) : (index % 4) + 1;
+    const operator = operators[index % operators.length];
+    const outsidePositive = numeratorLeading * denominatorLeading > 0;
+    const wantsPositive = operator.startsWith(">");
+    const outside = outsidePositive === wantsPositive;
+    const inclusive = operator.includes("=");
+    const exactAnswer = outside
+      ? `x<${hole} または ${root}${inclusive ? "≤" : "<"}x`
+      : `${hole}<x${inclusive ? "≤" : "<"}${root}`;
+    return {
+      family: "rational-inequality",
+      question: `${numeratorLeading}*${factorAt(root)}`
+        + `/(${denominatorLeading}*${factorAt(hole)})${operator}0`,
+      answer: `${exactAnswer}（ただし x≠${hole}）`,
+    };
+  });
+}
+
 function generatedExponentialEquations() {
   const bases = [2, 3, 5, 6, 10];
   return Array.from({ length: 250 }, (_, index) => {
@@ -210,6 +234,7 @@ const positiveCorpus = [
   ...generatedBaseConversions(),
   ...generatedQuadraticEquations(),
   ...generatedRationalEquations(),
+  ...generatedRationalInequalities(),
   ...generatedQuadraticInequalities(),
   ...generatedExponentialEquations(),
   ...generatedLogarithmicEquations(),
@@ -217,8 +242,8 @@ const positiveCorpus = [
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("2,250問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 2_250);
+test("2,500問の生成評価コーパスで厳密解と安全な未対応を維持する", () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 2_500);
 
   for (const item of positiveCorpus) {
     const result = solveQuestion(item.question);

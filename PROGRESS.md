@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-08-05
+Last updated: 2026-08-11
 
 ## Repository checkpoint
 
@@ -179,6 +179,23 @@ Last updated: 2026-08-05
   by the equation path.
 - Added 250 generated logarithmic-equation cases, bringing the generated
   corpus to 2,250 cases total.
+- Added exact one-variable rational inequalities for all four order relations:
+  - keep every original real pole as an open endpoint and conditional history
+    value after cancellation, zero multiplication, zero powers, negative
+    powers, and nested division;
+  - order rational points and quadratic-radical roots from unrelated defining
+    polynomials with BigInt algebra rather than decimal approximations;
+  - place an exact rational sample in every critical-point interval and check
+    the original left-minus-right sign without multiplying by an unknown-sign
+    denominator;
+  - preserve recognized unsupported reasons for cleared numerators above
+    degree two and reject ambiguous slash-plus-implicit-multiplication input.
+- Fixed the shared inequality parser so `1/2x<1`, `1/x(x+1)>0`, and spaced
+  `x 2<4` cannot become partially verified, and fixed `<=` / `>=` from being
+  recognized as standalone equation equalities.
+- Added 250 generated rational-inequality cases, bringing the generated corpus
+  to 2,500 cases total. Added a separate 240-case exact-substitution audit and
+  cross-field quadratic-root ordering tests.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -202,25 +219,23 @@ Last updated: 2026-08-05
 
 ## In progress
 
-- Add rational inequalities while keeping unpacked-Chrome verification as a
-  release blocker.
+- Continue Mathematics III coverage while keeping unpacked-Chrome verification
+  as a release blocker.
 
 ## Next
 
-1. Add rational inequalities only after exact sign charts can include poles as
-   separate open endpoints.
-2. Add definite integrals only after endpoint-domain and discontinuity checks.
-3. Extend the evaluation corpus across every newly supported curriculum
-   domain instead of treating the current 2,250 algebra-heavy cases as final.
-4. Verify module-worker and offscreen loading in unpacked Chrome before
+1. Add definite integrals only after endpoint-domain and discontinuity checks.
+2. Extend the evaluation corpus across every newly supported curriculum
+   domain instead of treating the current 2,500 algebra-heavy cases as final.
+3. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 148 passed, 0 failed on 2026-08-05, including 2,250 generated
+- `npm test` - 165 passed, 0 failed on 2026-08-11, including 2,500 generated
   evaluation cases.
-- `npm run check` - passed for 115 files, 10 HTML, 77 JS/MJS, and 11 CSS files
-  on 2026-08-05.
+- `npm run check` - passed for 119 files, 10 HTML, 81 JS/MJS, and 11 CSS files
+  on 2026-08-11.
 
 ## Restart procedure
 

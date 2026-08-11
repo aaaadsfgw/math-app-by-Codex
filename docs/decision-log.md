@@ -163,3 +163,20 @@ exact comparison of `A+B√r`, never by their decimal approximations. Bare
 `log` and `ln` both denote the natural logarithm so equation and calculus
 notation remain consistent; an integer base uses `log_n` or Unicode subscript
 notation.
+
+## D-013: Verify rational inequalities by exact critical-point cells
+
+**Status:** accepted
+**Date:** 2026-08-11
+
+A rational inequality is reduced to the exact difference of its two sides,
+but the implementation never multiplies an inequality by a denominator of
+unknown sign. It records numerator zeros and every original denominator zero
+as separate critical points, orders rational and quadratic-radical points with
+BigInt algebra, and evaluates one exact rational sample inside every resulting
+open interval. Inclusive relations may include a numerator zero only when the
+original expression is defined there; every denominator point remains open,
+including holes hidden by cancellation, multiplication by zero, zero powers,
+or nested division. Roots from unrelated quadratic equations are compared by
+evaluating one defining quadratic at the other root and locating that value
+relative to the rational vertex, never by decimal approximations.

@@ -214,3 +214,29 @@ equations, and exponential substitutions remain unsupported.
 Node tests and source validation pass. Logarithmic inequalities, variable or
 fractional bases, nested logarithms, mixed-base transformations, cubic-root
 answers, and higher-degree product equations remain unsupported.
+
+## 2026-08-11: exact rational inequalities
+
+- Added one-variable rational inequalities for `<`, `<=`, `>`, and `>=` when
+  the cleared numerator and every original denominator factor have degree at
+  most two.
+- Preserved all real poles as conditional history data and open solution-set
+  endpoints after cancellation, multiplication by zero, zero powers, negative
+  powers, and nested division.
+- Added a shared exact-real-point layer that orders rational endpoints and
+  roots from different quadratic equations without using `Number` as proof.
+- Constructed exact rational samples between adjacent algebraic critical
+  points and verified the sign of the original left-minus-right rational
+  expression on every interval with BigInt arithmetic.
+- Rejected chained inequalities, ambiguous division followed by implicit
+  multiplication, unsafe text, functions, extra variables, and cleared
+  numerators above degree two without solver fallthrough.
+- Fixed `<=` and `>=` from being mistaken for standalone equation equality,
+  and added `分数不等式` / `有理不等式` instruction wrappers.
+- Added 250 generated rational-inequality cases, bringing the generated
+  evaluation corpus to 2,500, plus 240 independently substituted sign-chart
+  cases and cross-field radical-ordering audits.
+
+Node tests and source validation pass. Cubic-or-higher cleared numerators,
+parameterized coefficients, functions, and chained or simultaneous
+inequalities remain unsupported.
