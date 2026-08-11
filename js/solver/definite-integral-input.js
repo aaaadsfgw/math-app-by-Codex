@@ -293,6 +293,13 @@ function validatedCandidate(expressionValue, lowerValue, upperValue) {
       error: "科学記数法の連結表記は解釈しません。有限小数で入力するか、Euler数との掛け算なら*を明示してください。",
     });
   }
+  if (/pi\s*(?:\d|\.)/iu.test(expression)) {
+    return response({
+      recognized: true,
+      error: "piの直後の数値は曖昧です。掛け算ならpi*2のように*を明示してください。",
+      errorCode: "AMBIGUOUS_PI_MULTIPLICATION",
+    });
+  }
   if (hasAmbiguousDivisionMultiplication(expression)) {
     return response({
       recognized: true,

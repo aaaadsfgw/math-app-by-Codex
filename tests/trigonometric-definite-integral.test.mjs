@@ -161,7 +161,7 @@ test("非線形・積・冪・変数分母・tanを部分的にverifiedへ昇格
     "∫_0^1 sin(x)/(x+1) dx",
     "∫_0^1 tan(2x+1) dx",
     "∫_0^1 arcsin(x) dx",
-    "∫_0^1 sin(pi*x) dx",
+    "∫_0^1 sin((pi+1)*x) dx",
     "∫_0^1 0*sin(1/x) dx",
     "∫_0^1 sin(1/x)-sin(1/x) dx",
     "∫_0^1 sin(x)^0 dx",

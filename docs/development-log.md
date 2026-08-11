@@ -359,3 +359,39 @@ and improper integrals remain unsupported.
 Node tests and source validation pass. `pi`-valued slopes (and the resulting
 `1/pi` coefficient basis), mixed-bound elementary sums, finite textual limits,
 rational-function interval domains, and improper integrals remain unsupported.
+
+## 2026-08-11: exact pi-valued slopes over rational bounds
+
+- Added a dedicated rational-bound evaluator for complete finite sums of
+  `q*sin(a*pi*x+b*pi)` and `r*cos(c*pi*x+d*pi)`, with every coefficient
+  rational and separate 32-term sine/cosine limits.
+- Extended the exact flat trigonometric basis with `piPower=-1`. Nonzero
+  slopes retain primitive coefficients such as `2/pi`, `√2/(2*pi)`, and
+  `5*sin(pi/5)/pi`; zero slopes are evaluated first as constant functions with
+  no division by `pi`.
+- Reused the BigInt period/quadrant reducer, 15-degree `1`, `√2`, `√3`, `√6`
+  table, and nonstandard formal atoms without using `Math.PI`, decimal
+  trigonometry, CAS integration, or numerical quadrature.
+- Added an affine `Q+Q*pi` phase analyzer with persistent `xBearing` and
+  `piBearing` ledgers. Nonlinear `x*x` or `pi*pi` subtrees, forbidden
+  denominators, zero scaling, cancellation, and equal bounds cannot hide an
+  unsupported expression.
+- Kept ordinary rational slopes, polynomial/exp terms, mixed phases, pure-pi
+  bounds, products, powers, variable denominators, and unsupported functions
+  outside this route instead of partially solving a supported subset.
+- Rejected ambiguous `pi2*x`, `pi 2*x`, `pi.5*x`, and slash-plus-implicit-
+  multiplication forms before AST evaluation while retaining explicit forms
+  such as `(pi/2)*x` and `pi/2*x`.
+- Added direct core, solver, parser, async routing, five-mode display, history,
+  zero-masking, and 32/33-term regressions plus 250 independent BigInt-oracle
+  cases, bringing the generated evaluation corpus to 3,750 unique problems.
+- Independently audited 220 inputs across 440 direct/asynchronous executions,
+  3,500 mathematical sign/value comparisons, 30,000 phase fuzz cases, and
+  1,800 old-formatter compatibility cases. An intermediate audit found the
+  spaced forms `pi 2*x` and `pi .5*x`; after expanding the ambiguity guard,
+  no P0-P2 issue or false verification remained.
+
+Node tests and source validation pass. Mixed elementary angle families, finite
+textual limits, rational-function interval domains, and improper integrals
+remain unsupported. The unpacked Chrome extension path still requires the
+release smoke test.

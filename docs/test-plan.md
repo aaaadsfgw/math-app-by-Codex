@@ -34,12 +34,16 @@ imported-verification downgrade.
 12. Solve `∫_0^pi sin(x) dx` and `∫_0^(pi/4) cos(x) dx`; confirm the exact
     answers are `2` and `√2/2`, while `∫_0^pi (x+sin(x)) dx` and
     `∫_0^pi sin(pi*x) dx` receive no partial or verified answer.
-13. Submit an unsupported trigonometric equation, an improper integral such as
+13. Solve `∫_0^1 sin(pi*x) dx` and `∫_0^1 cos(pi*x/5) dx`; confirm the exact
+    answers are `2/pi` and `5*sin(pi/5)/pi`. Confirm
+    `∫_0^1 (sin(x)+sin(pi*x)) dx` is unsupported and `pi/2x`, `pi2*x`, and
+    `pi 2*x` inside a trigonometric argument are invalid rather than guessed.
+14. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-14. Verify history filters, JSON import/export, analytics, review rerun, setting
+15. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-15. Reload the extension and repeat the shortcut to cover service-worker
+16. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation

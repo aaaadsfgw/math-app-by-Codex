@@ -86,6 +86,11 @@ The current exact path accepts signed integers, finite decimals, or explicit
 fractions as both bounds. Its integrand may be a rational-coefficient `x`
 polynomial through degree 32, at most 32 terms `q*exp(ax+b)`, and at most 32
 terms each of `r*sin(cx+d)` and `s*cos(ex+f)`, with all coefficients rational.
+For a separate rational-bound exact-angle path, the whole integrand may instead
+be a finite rational-coefficient sum of `sin(a*pi*x+b*pi)` and
+`cos(c*pi*x+d*pi)`, where `a`, `b`, `c`, and `d` are rational. For example,
+`∫_0^1 sin(pi*x) dx` returns `2/pi`. The `1/pi` factor is retained as an exact
+typed basis value rather than converted to a decimal.
 For a separate exact-angle path, both bounds may instead be explicit rational
 multiples of `pi`, such as `0`, `pi/4`, or `3*pi/2`, when the whole integrand
 is a finite rational-coefficient sum of `sin(ax+b*pi)` and `cos(cx+d*pi)` with
@@ -95,11 +100,12 @@ values rather than decimals. Write function arguments with parentheses, as in
 `exp(2x+1)` and `sin(3x-1)`; `e^(2x+1)` is the supported exponential alias.
 Scientific notation such as `1e2` is intentionally rejected instead of being
 confused with Euler's constant. Nonlinear arguments, products involving
-functions, `pi`-valued slopes such as `sin(pi*x)`, mixed rational/`pi` bounds,
-degree notation, variable denominators, hidden holes, infinite bounds, and
-improper integrals remain unsupported rather than being inferred from endpoint
-values. Polynomial or exponential terms are not partially solved on the
-`pi`-bound path.
+functions, mixed ordinary-radian and `pi`-valued slopes, mixed rational/`pi`
+bounds, degree notation, variable denominators, hidden holes, infinite bounds,
+and improper integrals remain unsupported rather than being inferred from
+endpoint values. Polynomial or exponential terms are not partially solved on
+either exact-angle path, and a `pi`-valued slope is still unsupported when the
+bounds themselves contain `pi`.
 
 ## Development
 

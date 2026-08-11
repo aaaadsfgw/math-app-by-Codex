@@ -38,6 +38,13 @@ function arguments in parentheses; `e^(2x+1)` is also accepted. Scientific
 notation such as `1e2` is not accepted, so write a finite decimal or make
 multiplication by Euler's constant explicit with `*`.
 
+With rational bounds, a separate sin/cos-only path accepts arguments such as
+`pi*x`, `(pi/2)*x+pi/6`, and `3*pi*x-pi/4`. For example,
+`∫_0^1 sin(pi*x) dx` returns the exact value `2/pi`, and
+`∫_0^1 cos(pi*x/5) dx` returns `5*sin(pi/5)/pi`. Keep division scope explicit:
+write `(pi/2)*x` or `pi/2*x`, not `pi/2x`. Ambiguous forms such as `pi2*x`,
+`pi 2*x`, and `1/2pi*x` are rejected instead of guessed.
+
 A variable denominator, nonlinear function argument, product such as
 `x*exp(x)` or `sin(x)*cos(x)`, function power, `tan` or inverse trigonometric
 integral, infinite or variable bound, unsupported `pi` combination, or hidden
@@ -46,7 +53,9 @@ silently treat it as a proper integral or replace an exact result with a
 numerical estimate.
 On the `pi`-bound route, use bounds such as `pi/3` or `(3/4)*pi`; polynomial or
 exponential terms, mixed bounds such as `1` to `pi`, `sin(pi*x)`, and degree
-notation are still unsupported.
+notation are still unsupported. On the rational-bound `pi`-slope route,
+ordinary-radian slopes, polynomial or exponential terms, and mixed expressions
+such as `sin(x)+sin(pi*x)` remain unsupported as one whole problem.
 
 ## Shortcut
 

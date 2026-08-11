@@ -272,3 +272,35 @@ Every angle subtree and every source term is validated before zero scaling,
 cancellation, or equal bounds can produce zero. `sin` and `cos` keep separate
 32-term limits. Ambiguous forms such as `3/4pi`, nonlinear `pi` expressions,
 and malformed bounds remain invalid or unsupported rather than being guessed.
+
+## D-018: Isolate pure pi slopes over rational bounds
+
+**Status:** accepted
+**Date:** 2026-08-11
+
+A second exact-angle route handles finite rational bounds and a complete
+integrand made only from rational-coefficient `sin(a*pi*x+b*pi)` and
+`cos(c*pi*x+d*pi)` terms, with rational `a`, `b`, `c`, and `d`. It runs only
+after the existing rational-radian trigonometric evaluator returns typed
+unsupported. Ordinary rational slopes and polynomial or exponential terms are
+never mixed with supported `pi` slopes by solving only part of an expression.
+
+For a nonzero slope `a*pi`, primitive coefficients are stored in the flat
+exact basis with `piPower=-1`; a zero slope is handled before division as a
+constant function with `piPower=0`. Endpoint angles are pure rational
+multiples of `pi`, so the existing BigInt period/quadrant reduction, exact
+15-degree radical table, and nonstandard formal atoms remain applicable. The
+canonical key always includes `piPower`, preventing a coefficient `q` from
+being incorrectly combined with `q/pi`. Formatting uses unambiguous forms such
+as `2/pi`, `√2/(2*pi)`, and `3*sin(pi/5)/(2*pi)`.
+
+The phase analyzer keeps both exact `Q+Q*pi` coefficients and structural
+`xBearing`/`piBearing` ledgers. Addition and subtraction never clear those
+ledgers merely because a value cancels to zero. Consequently `x*x`, `pi*pi`,
+variable or `pi` denominators, zero-scaled nonlinear subtrees, and equal-bound
+shortcuts remain unsupported. Safe linear cancellations such as
+`(pi-pi)*x` are accepted only after every subtree has been certified.
+Ambiguous source forms including `pi/2x`, `pi2*x`, and `pi 2*x` are invalid;
+explicit forms such as `(pi/2)*x` and `pi/2*x` remain distinct and accepted.
+Math.PI, floating-point trigonometry, CAS integration, numerical quadrature,
+and tolerance comparisons are forbidden as verification evidence.

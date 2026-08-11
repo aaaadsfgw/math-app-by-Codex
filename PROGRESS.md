@@ -286,6 +286,24 @@ Last updated: 2026-08-11
   `pi/2x` was initially reported as unsupported instead of invalid. Moving the
   ambiguity check ahead of AST parsing fixed it; the focused 23-case rerun and
   the completed audit found no remaining P0-P2 issue or false verification.
+- Added a separate rational-bound exact-angle route for finite sums of
+  `q*sin(a*pi*x+b*pi)` and `r*cos(c*pi*x+d*pi)`. Nonzero slopes use an exact
+  flat `1/pi` basis; zero slopes are handled first as constant functions.
+- Extended the existing period/quadrant, 15-degree radical, and nonstandard
+  formal-atom normalization without using `Math.PI`, floating point, CAS, or
+  numerical integration. Ordinary-radian slopes, polynomial/exp terms, and
+  pure-`pi` bounds are not mixed into this route.
+- Added persistent structural `xBearing` and `piBearing` ledgers so `x*x`,
+  `pi*pi`, forbidden denominators, zero scaling, cancellation, and equal bounds
+  cannot hide unsupported phase subtrees.
+- Added 250 independent BigInt-oracle cases, bringing the generated evaluation
+  corpus to 3,750 unique problems. Direct core, parser, routing, display,
+  history, masking, and 32/33-term regressions cover the public path.
+- Independently audited 220 inputs over 440 direct/asynchronous routes, 3,500
+  sign/value comparisons, 30,000 phase fuzz cases, and 1,800 old-formatter
+  compatibility cases. The audit found spaced `pi 2*x`/`pi .5*x` ambiguity;
+  after the source guard was fixed, no P0-P2 issue or false verification
+  remained.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -314,18 +332,18 @@ Last updated: 2026-08-11
 
 ## Next
 
-1. Add `pi`-valued affine slopes over rational bounds with an exact flat
-   `1/pi` coefficient basis, without widening mixed-angle expressions.
-2. Add finite textual limits with one-sided/domain case splits and exact
+1. Add finite textual limits with one-sided/domain case splits and exact
    verification before beginning area or volume applications.
+2. Add exact area and volume applications only after the finite-limit and
+   interval-domain rules are explicit.
 3. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 264 passed, 0 failed on 2026-08-11, including 3,500 generated
+- `npm test` - 285 passed, 0 failed on 2026-08-11, including 3,750 generated
   evaluation cases.
-- `npm run check` - passed for 135 files, 10 HTML, 97 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 137 files, 10 HTML, 99 JS/MJS, and 11 CSS files
   on 2026-08-11.
 
 ## Restart procedure

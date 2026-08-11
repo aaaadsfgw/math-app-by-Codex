@@ -75,6 +75,16 @@ quadrature, or floating-point values as proof. Reversed bounds retain their
 sign, and equal bounds return zero only after the complete integrand has
 passed the supported all-real certificate.
 
+A second rational-bound route accepts only finite sums of
+`q*sin(a*pi*x+b*pi)` and `r*cos(c*pi*x+d*pi)`, where every displayed
+coefficient is rational and each trigonometric family has at most 32 source
+terms. Nonzero slopes produce exact `1/pi` basis terms; zero slopes are handled
+first as constant functions. Endpoint angles remain rational multiples of
+`pi`, so the same exact 15-degree radical table and nonstandard formal atoms
+can be used without `Math.PI`, decimal trigonometry, CAS integration, or
+numerical quadrature. This route does not mix ordinary rational-radian slopes,
+polynomials, or exponentials into the same verified result.
+
 A separate exact-angle route accepts both bounds as pure rational multiples of
 `pi`, including `0`, `-pi/4`, `pi`, and `3*pi/2`. On that route the entire
 integrand must be a finite sum of `q*sin(ax+b*pi)` and `r*cos(cx+d*pi)` with
@@ -91,6 +101,9 @@ integrals, degree-based angles, non-rational or variable bounds, infinite
 bounds, and all improper integrals remain unsupported. The `pi`-bound route
 also rejects mixed rational/`pi` endpoints, polynomial or exponential terms,
 nonzero rational phase shifts, and `pi`-valued slopes such as `sin(pi*x)`.
+The rational-bound `pi`-slope route rejects mixed slopes such as
+`sin((pi+1)*x)`, nonzero ordinary-radian phase shifts, and mixed elementary
+sums such as `exp(x)+sin(pi*x)` rather than solving only the supported part.
 Scientific-notation-like input such as `1e2` is rejected rather than
 interpreted as multiplication by Euler's constant. These forms are not
 accepted merely because a symbolic antiderivative happens to have endpoint

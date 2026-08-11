@@ -13,6 +13,7 @@ import {
 } from "../math-core/exact-linear-pi.js";
 import {
   ExactPiTrigonometricIntegralError,
+  evaluateExactPiSlopeTrigonometricIntegral,
   evaluateExactPiTrigonometricIntegral,
 } from "../math-core/exact-pi-trigonometric-integral.js";
 import {
@@ -129,6 +130,18 @@ function compareRationals(left, right) {
   const difference = left.numerator * right.denominator
     - right.numerator * left.denominator;
   return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
+function containsConstant(node, name) {
+  if (node?.type === "constant") return node.name === name;
+  if (node?.type === "unary") return containsConstant(node.argument, name);
+  if (node?.type === "binary") {
+    return containsConstant(node.left, name) || containsConstant(node.right, name);
+  }
+  if (node?.type === "call") {
+    return node.args.some((argument) => containsConstant(argument, name));
+  }
+  return false;
 }
 
 function definiteIntegralFailure(error) {
@@ -365,6 +378,56 @@ function solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper) {
   });
 }
 
+function solvedPiSlopeTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper) {
+  const evaluated = evaluateExactPiSlopeTrigonometricIntegral(
+    parsedIntegrand.ast,
+    lower,
+    upper,
+  );
+  const exactAnswer = evaluated.exact;
+  return solvedResult({
+    answer: exactAnswer,
+    exactAnswer,
+    metadata: {
+      integrand: parsedIntegrand.normalized,
+      lowerBound: lower.toString(),
+      upperBound: upper.toString(),
+      antiderivative: evaluated.antiderivative,
+      family: "affine-pi-slope-trigonometric",
+    },
+    steps: [
+      { type: "input", content: `∫_${lower}^${upper} ${parsedIntegrand.normalized} dx` },
+      {
+        type: "constraint",
+        content: "上下限は有理数、被積分関数は有理係数・有理数倍pi傾き・有理数倍pi位相のsin・cos有限和",
+        explanation: "piを小数へ変換せず、通常ラジアン傾きとの混合、非線形位相、関数積、変数分母、多項式・expとの混合は検証済みにしません。",
+      },
+      {
+        type: "rule",
+        content: `F(x)=${evaluated.antiderivative}`,
+        explanation: "傾きa*piが非零なら原始関数係数をaとpiで割り、傾き0は有理数倍piの定数関数として扱います。",
+      },
+      {
+        type: "transformation",
+        content: `F(${upper})-F(${lower})=${exactAnswer}`,
+        explanation: definiteIntervalExplanation(
+          lower,
+          upper,
+          "pi傾きのsin・cos全項が全実数で定義されること",
+        ),
+      },
+      {
+        type: "verification",
+        content: "1/pi係数・周期・奇偶・標準角表をBigInt分数で再照合",
+        explanation: "角度を有理数倍piのまま象限へ還元し、原始関数の1/pi係数へa*piを掛けると元の有理係数へ戻ることを型付き代数で確認しました。",
+      },
+      { type: "result", content: `定積分: ${exactAnswer}` },
+    ],
+    verification: "有理数倍piの傾きと位相をBigInt分数で検算し、原始関数の1/pi係数、周期、奇偶、標準角を型付きの厳密代数だけで確認しました。Math.PI、浮動小数、CAS、数値積分は使っていません。",
+    solverId: DEFINITE_INTEGRAL_SOLVER_ID,
+  });
+}
+
 function definitePiIntervalExplanation(lower, upper) {
   const direction = compareRationals(lower.piCoefficient, upper.piCoefficient);
   if (direction < 0) return "有理数倍piの下端から上端へ通常の向きで評価します。";
@@ -477,22 +540,25 @@ export async function solveDefiniteIntegral(question) {
         throw error;
       }
     }
+    let rationalTrigonometricError;
     try {
       return solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper);
     } catch (error) {
       if (
         !(error instanceof ExactTrigonometricIntegralError)
         || !error.unsupported
-        || !lower.isZero()
-        || !upper.isZero()
       ) {
         throw error;
       }
+      rationalTrigonometricError = error;
     }
-    return solvedPiTrigonometricDefiniteIntegral(
+    if (!containsConstant(parsedIntegrand.ast, "pi")) {
+      throw rationalTrigonometricError;
+    }
+    return solvedPiSlopeTrigonometricDefiniteIntegral(
       parsedIntegrand,
-      lowerBound,
-      upperBound,
+      lower,
+      upper,
     );
   } catch (error) {
     return definiteIntegralFailure(error);

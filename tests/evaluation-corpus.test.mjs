@@ -1521,6 +1521,566 @@ function generatedPiAngleDefiniteIntegrals() {
   });
 }
 
+const PI_SLOPE_STANDARD_REFERENCES = [
+  corpusRational(0n),
+  corpusRational(1n, 12n),
+  corpusRational(1n, 6n),
+  corpusRational(1n, 4n),
+  corpusRational(1n, 3n),
+  corpusRational(5n, 12n),
+  corpusRational(1n, 2n),
+];
+
+const PI_SLOPE_SINE_TICK_VECTORS = Object.freeze([
+  [],
+  [[6, 1n, 4n], [2, -1n, 4n]],
+  [[1, 1n, 2n]],
+  [[2, 1n, 2n]],
+  [[3, 1n, 2n]],
+  [[6, 1n, 4n], [2, 1n, 4n]],
+  [[1, 1n, 1n]],
+  [[6, 1n, 4n], [2, 1n, 4n]],
+  [[3, 1n, 2n]],
+  [[2, 1n, 2n]],
+  [[1, 1n, 2n]],
+  [[6, 1n, 4n], [2, -1n, 4n]],
+  [],
+  [[6, -1n, 4n], [2, 1n, 4n]],
+  [[1, -1n, 2n]],
+  [[2, -1n, 2n]],
+  [[3, -1n, 2n]],
+  [[6, -1n, 4n], [2, -1n, 4n]],
+  [[1, -1n, 1n]],
+  [[6, -1n, 4n], [2, -1n, 4n]],
+  [[3, -1n, 2n]],
+  [[2, -1n, 2n]],
+  [[1, -1n, 2n]],
+  [[6, -1n, 4n], [2, 1n, 4n]],
+]);
+
+function piSlopeStandardTick(angle) {
+  const scaledNumerator = angle.numerator * 12n;
+  if (scaledNumerator % angle.denominator !== 0n) return null;
+  const rawTick = scaledNumerator / angle.denominator;
+  return ((rawTick % 24n) + 24n) % 24n;
+}
+
+function piSlopeStandardVector(functionName, angle) {
+  const tick = piSlopeStandardTick(angle);
+  if (tick === null) return null;
+  const sineTick = functionName === "sin" ? tick : (tick + 6n) % 24n;
+  return PI_SLOPE_SINE_TICK_VECTORS[sineTick].map(
+    ([radicand, numerator, denominator]) => ({
+      radicand,
+      coefficient: corpusRational(numerator, denominator),
+    }),
+  );
+}
+
+function canonicalPiSlopeAngle(functionName, angle) {
+  const modulus = 2n * angle.denominator;
+  const turn = corpusRational(
+    ((angle.numerator % modulus) + modulus) % modulus,
+    angle.denominator,
+  );
+  const half = corpusRational(1n, 2n);
+  const one = corpusRational(1n);
+  const threeHalves = corpusRational(3n, 2n);
+  if (compareCorpusRationals(turn, half) <= 0) {
+    return { turn, reference: turn, sign: 1n };
+  }
+  if (compareCorpusRationals(turn, one) <= 0) {
+    return {
+      turn,
+      reference: subtractCorpusRationals(one, turn),
+      sign: functionName === "sin" ? 1n : -1n,
+    };
+  }
+  if (compareCorpusRationals(turn, threeHalves) <= 0) {
+    return {
+      turn,
+      reference: subtractCorpusRationals(turn, one),
+      sign: -1n,
+    };
+  }
+  return {
+    turn,
+    reference: subtractCorpusRationals(corpusRational(2n), turn),
+    sign: functionName === "sin" ? -1n : 1n,
+  };
+}
+
+function piSlopeOracleEntries({
+  functionName,
+  angle,
+  coefficient,
+  piPower,
+}) {
+  if (coefficient.numerator === 0n) return [];
+  const vector = piSlopeStandardVector(functionName, angle);
+  if (vector !== null) {
+    return vector.map(({ radicand, coefficient: factor }) => ({
+      kind: "scalar",
+      argument: null,
+      piPower,
+      radicand,
+      coefficient: multiplyCorpusRationals(coefficient, factor),
+    }));
+  }
+  const canonical = canonicalPiSlopeAngle(functionName, angle);
+  return [{
+    kind: functionName,
+    argument: canonical.reference,
+    piPower,
+    radicand: 1,
+    coefficient: multiplyCorpusRationals(
+      coefficient,
+      corpusRational(canonical.sign),
+    ),
+  }];
+}
+
+function appendPiSlopeOracleTerm(entries, term, lower, upper) {
+  if (term.slopePi.numerator === 0n) {
+    entries.push(...piSlopeOracleEntries({
+      functionName: term.functionName,
+      angle: term.interceptPi,
+      coefficient: multiplyCorpusRationals(
+        term.amplitude,
+        subtractCorpusRationals(upper, lower),
+      ),
+      piPower: 0,
+    }));
+    return;
+  }
+
+  const quotient = divideCorpusRationals(term.amplitude, term.slopePi);
+  const lowerAngle = addCorpusRationals(
+    multiplyCorpusRationals(term.slopePi, lower),
+    term.interceptPi,
+  );
+  const upperAngle = addCorpusRationals(
+    multiplyCorpusRationals(term.slopePi, upper),
+    term.interceptPi,
+  );
+  if (term.functionName === "sin") {
+    entries.push(...piSlopeOracleEntries({
+      functionName: "cos",
+      angle: lowerAngle,
+      coefficient: quotient,
+      piPower: -1,
+    }));
+    entries.push(...piSlopeOracleEntries({
+      functionName: "cos",
+      angle: upperAngle,
+      coefficient: negateCorpusRational(quotient),
+      piPower: -1,
+    }));
+    return;
+  }
+  entries.push(...piSlopeOracleEntries({
+    functionName: "sin",
+    angle: upperAngle,
+    coefficient: quotient,
+    piPower: -1,
+  }));
+  entries.push(...piSlopeOracleEntries({
+    functionName: "sin",
+    angle: lowerAngle,
+    coefficient: negateCorpusRational(quotient),
+    piPower: -1,
+  }));
+}
+
+function formatPiSlopeOracleMagnitude(term, magnitude) {
+  const factors = [];
+  if (term.piPower === 1) factors.push("pi");
+  if (term.radicand !== 1) factors.push(`√${term.radicand}`);
+  if (term.kind !== "scalar") {
+    factors.push(`${term.kind}(${formatCorpusPiMultiple(term.argument)})`);
+  }
+
+  if (term.piPower === -1) {
+    const numeratorFactors = [];
+    if (magnitude.numerator !== 1n || !factors.length) {
+      numeratorFactors.push(String(magnitude.numerator));
+    }
+    numeratorFactors.push(...factors);
+    const numerator = numeratorFactors.join("*") || "1";
+    return magnitude.denominator === 1n
+      ? `${numerator}/pi`
+      : `${numerator}/(${magnitude.denominator}*pi)`;
+  }
+
+  if (!factors.length) return formatCorpusRational(magnitude);
+  const product = factors.join("*");
+  if (magnitude.denominator === 1n) {
+    return magnitude.numerator === 1n
+      ? product
+      : `${magnitude.numerator}*${product}`;
+  }
+  return magnitude.numerator === 1n
+    ? `${product}/${magnitude.denominator}`
+    : `${magnitude.numerator}*${product}/${magnitude.denominator}`;
+}
+
+function formatPiSlopeOracleSum(entries) {
+  const combined = new Map();
+  for (const entry of entries) {
+    if (entry.coefficient.numerator === 0n) continue;
+    const argumentKey = entry.kind === "scalar"
+      ? "scalar"
+      : formatCorpusRational(entry.argument);
+    const key = [
+      entry.kind,
+      argumentKey,
+      `pi:${entry.piPower}`,
+      `sqrt:${entry.radicand}`,
+    ].join("|");
+    const previous = combined.get(key);
+    combined.set(key, {
+      ...entry,
+      coefficient: previous
+        ? addCorpusRationals(previous.coefficient, entry.coefficient)
+        : entry.coefficient,
+    });
+  }
+
+  const kindOrder = { scalar: 0, sin: 1, cos: 2 };
+  const radicalOrder = { 1: 0, 6: 1, 3: 2, 2: 3 };
+  const terms = [...combined.values()]
+    .filter(({ coefficient }) => coefficient.numerator !== 0n)
+    .sort((left, right) => {
+      const leftNegative = left.coefficient.numerator < 0n;
+      const rightNegative = right.coefficient.numerator < 0n;
+      if (leftNegative !== rightNegative) return leftNegative ? 1 : -1;
+      const kind = kindOrder[left.kind] - kindOrder[right.kind];
+      if (kind) return kind;
+      if (left.kind !== "scalar") {
+        const argument = -compareCorpusRationals(left.argument, right.argument);
+        if (argument) return argument;
+      }
+      if (left.piPower !== right.piPower) return left.piPower - right.piPower;
+      return radicalOrder[left.radicand] - radicalOrder[right.radicand];
+    });
+  if (!terms.length) return "0";
+
+  return terms.map((term, index) => {
+    const negative = term.coefficient.numerator < 0n;
+    const magnitude = negative
+      ? negateCorpusRational(term.coefficient)
+      : term.coefficient;
+    const body = formatPiSlopeOracleMagnitude(term, magnitude);
+    if (index === 0) return `${negative ? "-" : ""}${body}`;
+    return `${negative ? "-" : "+"}${body}`;
+  }).join("");
+}
+
+function piSlopeExpectedAnswer(sinTerms, cosTerms, lower, upper) {
+  const entries = [];
+  for (const term of [...sinTerms, ...cosTerms]) {
+    appendPiSlopeOracleTerm(entries, term, lower, upper);
+  }
+  return formatPiSlopeOracleSum(entries);
+}
+
+function generatedPiSlopeBounds(index) {
+  const sequence = Math.floor(index / 6);
+  const integerLower = corpusRational(BigInt((sequence % 9) - 4));
+  const integerUpper = addCorpusRationals(
+    integerLower,
+    corpusRational(BigInt((sequence % 4) + 1)),
+  );
+  const denominator = BigInt((sequence % 5) + 2);
+  const fractionalLower = corpusRational(
+    BigInt(((sequence * 5) % 17) - 8),
+    denominator,
+  );
+  const fractionalUpper = addCorpusRationals(
+    fractionalLower,
+    corpusRational(BigInt((sequence % 5) + 1), BigInt((sequence % 4) + 2)),
+  );
+  const nonzeroIntegerEqual = integerLower.numerator === 0n
+    ? corpusRational(1n)
+    : integerLower;
+  const nonzeroFractionalEqual = fractionalLower.numerator === 0n
+    ? corpusRational(1n, denominator)
+    : fractionalLower;
+  switch (index % 6) {
+    case 0: return [integerLower, integerUpper];
+    case 1: return [integerUpper, integerLower];
+    case 2: return [nonzeroIntegerEqual, nonzeroIntegerEqual];
+    case 3: return [fractionalLower, fractionalUpper];
+    case 4: return [fractionalUpper, fractionalLower];
+    default: return [nonzeroFractionalEqual, nonzeroFractionalEqual];
+  }
+}
+
+const PI_SLOPE_VALUES = [
+  corpusRational(-5n, 3n),
+  corpusRational(-1n),
+  corpusRational(-1n, 2n),
+  corpusRational(0n),
+  corpusRational(1n, 12n),
+  corpusRational(1n, 6n),
+  corpusRational(1n, 4n),
+  corpusRational(1n, 3n),
+  corpusRational(2n, 5n),
+  corpusRational(1n, 2n),
+  corpusRational(5n, 12n),
+  corpusRational(1n),
+  corpusRational(4n, 3n),
+  corpusRational(2n),
+  corpusRational(7n, 3n),
+];
+
+const PI_SLOPE_INTERCEPTS = [
+  corpusRational(-13n, 12n),
+  corpusRational(-2n, 5n),
+  corpusRational(-1n, 12n),
+  corpusRational(0n),
+  corpusRational(1n, 12n),
+  corpusRational(1n, 6n),
+  corpusRational(1n, 4n),
+  corpusRational(1n, 3n),
+  corpusRational(2n, 5n),
+  corpusRational(5n, 12n),
+  corpusRational(1n, 2n),
+  corpusRational(11n, 5n),
+];
+
+function generatedPiSlopeTerms(index, functionName) {
+  const functionOffset = functionName === "sin" ? 0 : 1;
+  const count = functionName === "sin"
+    ? (index % 3) + 1
+    : ((index * 2 + 1) % 3) + 1;
+  return Array.from({ length: count }, (_, termIndex) => {
+    let amplitudeNumerator = (
+      index * (termIndex + functionOffset + 3) + termIndex * 7 + functionOffset * 5
+    ) % 13 - 6;
+    if (amplitudeNumerator === 0) {
+      amplitudeNumerator = (index + termIndex + functionOffset) % 2 === 0 ? 2 : -2;
+    }
+    return {
+      functionName,
+      amplitude: corpusRational(
+        BigInt(amplitudeNumerator),
+        BigInt(((index + termIndex * 2 + functionOffset) % 4) + 1),
+      ),
+      slopePi: PI_SLOPE_VALUES[
+        (index * (functionOffset + 2) + termIndex * 3 + functionOffset)
+          % PI_SLOPE_VALUES.length
+      ],
+      interceptPi: PI_SLOPE_INTERCEPTS[
+        (index * 3 + termIndex * 5 + functionOffset * 2)
+          % PI_SLOPE_INTERCEPTS.length
+      ],
+    };
+  });
+}
+
+function forcePiSlopeCoverage(index, sinTerms, cosTerms, upper) {
+  const selector = index % 16;
+  if (selector < PI_SLOPE_STANDARD_REFERENCES.length) {
+    const target = PI_SLOPE_STANDARD_REFERENCES[selector];
+    const slopePi = sinTerms[0].slopePi.numerator === 0n
+      ? corpusRational(selector % 2 === 0 ? 1n : -1n, BigInt((selector % 3) + 1))
+      : sinTerms[0].slopePi;
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slopePi,
+      interceptPi: subtractCorpusRationals(
+        target,
+        multiplyCorpusRationals(slopePi, upper),
+      ),
+    };
+  } else if (selector <= 10) {
+    const targets = [
+      corpusRational(1n, 5n),
+      corpusRational(1n, 7n),
+      corpusRational(2n, 5n),
+      corpusRational(3n, 11n),
+    ];
+    const target = targets[selector - 7];
+    const slopePi = cosTerms[0].slopePi.numerator === 0n
+      ? corpusRational(selector % 2 === 0 ? 1n : -1n)
+      : cosTerms[0].slopePi;
+    cosTerms[0] = {
+      ...cosTerms[0],
+      slopePi,
+      interceptPi: subtractCorpusRationals(
+        target,
+        multiplyCorpusRationals(slopePi, upper),
+      ),
+    };
+  } else if (selector === 11) {
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slopePi: corpusRational(0n),
+      interceptPi: corpusRational(1n, 12n),
+    };
+  } else if (selector === 12) {
+    cosTerms[0] = {
+      ...cosTerms[0],
+      slopePi: corpusRational(0n),
+      interceptPi: corpusRational(1n, 5n),
+    };
+  } else if (selector === 13) {
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slopePi: corpusRational(-1n, BigInt((index % 3) + 1)),
+      interceptPi: addCorpusRationals(sinTerms[0].interceptPi, corpusRational(2n)),
+    };
+  } else if (selector === 14) {
+    cosTerms[0] = {
+      ...cosTerms[0],
+      interceptPi: addCorpusRationals(cosTerms[0].interceptPi, corpusRational(4n)),
+    };
+  } else {
+    sinTerms[0] = {
+      ...sinTerms[0],
+      slopePi: corpusRational(-5n, 7n),
+    };
+  }
+
+  if ([...sinTerms, ...cosTerms].every(({ slopePi }) => slopePi.numerator === 0n)) {
+    cosTerms[0] = { ...cosTerms[0], slopePi: corpusRational(1n) };
+  }
+}
+
+function addPiSlopeCancellation(index, sinTerms, cosTerms) {
+  if (index % 9 === 0 && cosTerms.length >= 2) {
+    const source = cosTerms[0];
+    cosTerms[1] = {
+      ...source,
+      amplitude: negateCorpusRational(source.amplitude),
+      interceptPi: addCorpusRationals(source.interceptPi, corpusRational(2n)),
+    };
+    return true;
+  }
+  if (index % 9 === 1 && sinTerms.length >= 2) {
+    const source = sinTerms[0];
+    sinTerms[1] = {
+      ...source,
+      amplitude: negateCorpusRational(source.amplitude),
+      interceptPi: addCorpusRationals(source.interceptPi, corpusRational(2n)),
+    };
+    return true;
+  }
+  return false;
+}
+
+function formatPiSlopePhase(slopePi, interceptPi) {
+  let expression = "";
+  if (slopePi.numerator !== 0n) {
+    if (equalCorpusRationals(slopePi, corpusRational(1n))) expression = "pi*x";
+    else if (equalCorpusRationals(slopePi, corpusRational(-1n))) expression = "-pi*x";
+    else if (slopePi.denominator === 1n) expression = `${slopePi.numerator}*pi*x`;
+    else expression = `(${formatCorpusRational(slopePi)})*pi*x`;
+  }
+  if (interceptPi.numerator === 0n) return expression || "0*pi*x";
+  const intercept = formatCorpusPiMultiple(interceptPi);
+  if (!expression) return intercept;
+  return interceptPi.numerator < 0n
+    ? `${expression}${intercept}`
+    : `${expression}+${intercept}`;
+}
+
+function formatPiSlopeIntegrandTerm(term) {
+  const negative = term.amplitude.numerator < 0n;
+  const magnitude = negative
+    ? negateCorpusRational(term.amplitude)
+    : term.amplitude;
+  const coefficient = equalCorpusRationals(magnitude, corpusRational(1n))
+    ? ""
+    : magnitude.denominator === 1n
+      ? `${magnitude.numerator}*`
+      : `(${formatCorpusRational(magnitude)})*`;
+  return `${negative ? "-" : ""}${coefficient}${term.functionName}(`
+    + `${formatPiSlopePhase(term.slopePi, term.interceptPi)})`;
+}
+
+function piSlopeCoverage(sinTerms, cosTerms, lower, upper, cancellationPattern) {
+  const terms = [...sinTerms, ...cosTerms];
+  const angles = [];
+  for (const term of terms) {
+    const rawAngles = term.slopePi.numerator === 0n
+      ? [term.interceptPi]
+      : [lower, upper].map((bound) => addCorpusRationals(
+        multiplyCorpusRationals(term.slopePi, bound),
+        term.interceptPi,
+      ));
+    const evaluatedFunction = term.slopePi.numerator === 0n
+      ? term.functionName
+      : term.functionName === "sin" ? "cos" : "sin";
+    for (const raw of rawAngles) {
+      const canonical = canonicalPiSlopeAngle(evaluatedFunction, raw);
+      const vector = piSlopeStandardVector(evaluatedFunction, raw);
+      angles.push({
+        raw,
+        canonical,
+        vector,
+        piPower: term.slopePi.numerator === 0n ? 0 : -1,
+      });
+    }
+  }
+  const direction = compareCorpusRationals(lower, upper);
+  return {
+    sinCount: sinTerms.length,
+    cosCount: cosTerms.length,
+    intervalKind: direction < 0 ? "normal" : direction > 0 ? "reverse" : "equal",
+    fractionalBounds: lower.denominator !== 1n || upper.denominator !== 1n,
+    zeroSlope: terms.some(({ slopePi }) => slopePi.numerator === 0n),
+    negativeSlope: terms.some(({ slopePi }) => slopePi.numerator < 0n),
+    fractionalSlope: terms.some(({ slopePi }) => (
+      slopePi.numerator !== 0n && slopePi.denominator !== 1n
+    )),
+    negativeAngle: angles.some(({ raw }) => raw.numerator < 0n),
+    periodicReduction: angles.some(({ raw, canonical }) => (
+      !equalCorpusRationals(raw, canonical.turn)
+    )),
+    quadrantReduction: angles.some(({ canonical }) => (
+      !equalCorpusRationals(canonical.turn, canonical.reference)
+    )),
+    standardReferences: angles
+      .filter(({ vector }) => vector !== null)
+      .map(({ canonical }) => formatCorpusRational(canonical.reference)),
+    radicands: angles.flatMap(({ vector }) => (
+      vector ? vector.map(({ radicand }) => radicand) : []
+    )),
+    formalAtom: angles.some(({ vector }) => vector === null),
+    piPowers: angles.map(({ piPower }) => piPower),
+    cancellationPattern,
+  };
+}
+
+function generatedPiSlopeDefiniteIntegrals() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const [lower, upper] = generatedPiSlopeBounds(index);
+    const sinTerms = generatedPiSlopeTerms(index, "sin").map((term) => ({ ...term }));
+    const cosTerms = generatedPiSlopeTerms(index, "cos").map((term) => ({ ...term }));
+    forcePiSlopeCoverage(index, sinTerms, cosTerms, upper);
+    const cancellationPattern = addPiSlopeCancellation(index, sinTerms, cosTerms);
+    let integrand = "";
+    for (const term of [...sinTerms, ...cosTerms]) {
+      integrand = appendCorpusExpression(integrand, formatPiSlopeIntegrandTerm(term));
+    }
+    return {
+      family: "pi-slope-definite-integral",
+      question: `\u222b_(${formatCorpusRational(lower)})^(${formatCorpusRational(upper)}) `
+        + `${integrand} dx`,
+      answer: piSlopeExpectedAnswer(sinTerms, cosTerms, lower, upper),
+      coverage: piSlopeCoverage(
+        sinTerms,
+        cosTerms,
+        lower,
+        upper,
+        cancellationPattern,
+      ),
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -1543,6 +2103,7 @@ function generatedRejectedInputs() {
 const exponentialDefiniteIntegralCorpus = generatedExponentialDefiniteIntegrals();
 const trigonometricDefiniteIntegralCorpus = generatedTrigonometricDefiniteIntegrals();
 const piAngleDefiniteIntegralCorpus = generatedPiAngleDefiniteIntegrals();
+const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const positiveCorpus = [
   ...generatedLinearEquations(),
   ...generatedLinearInequalities(),
@@ -1558,12 +2119,13 @@ const positiveCorpus = [
   ...exponentialDefiniteIntegralCorpus,
   ...trigonometricDefiniteIntegralCorpus,
   ...piAngleDefiniteIntegralCorpus,
+  ...piSlopeDefiniteIntegralCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("3,500問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 3_500);
+test("3,750問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 3_750);
   assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
   assert.equal(
     new Set(exponentialDefiniteIntegralCorpus.map(({ question }) => question)).size,
@@ -1649,6 +2211,56 @@ test("3,500問の生成評価コーパスで厳密解と安全な未対応を維
   assert.deepEqual(
     new Set(piAngleDefiniteIntegralCorpus.flatMap(({ coverage }) => coverage.radicands)),
     new Set([1, 2, 3, 6]),
+  );
+  assert.equal(piSlopeDefiniteIntegralCorpus.length, 250);
+  assert.equal(
+    new Set(piSlopeDefiniteIntegralCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.ok(piSlopeDefiniteIntegralCorpus.every(({ coverage }) => (
+    coverage.sinCount >= 1
+    && coverage.sinCount <= 3
+    && coverage.cosCount >= 1
+    && coverage.cosCount <= 3
+  )));
+  assert.deepEqual(
+    new Set(piSlopeDefiniteIntegralCorpus.map(({ coverage }) => coverage.sinCount)),
+    new Set([1, 2, 3]),
+  );
+  assert.deepEqual(
+    new Set(piSlopeDefiniteIntegralCorpus.map(({ coverage }) => coverage.cosCount)),
+    new Set([1, 2, 3]),
+  );
+  assert.deepEqual(
+    new Set(piSlopeDefiniteIntegralCorpus.map(({ coverage }) => coverage.intervalKind)),
+    new Set(["normal", "reverse", "equal"]),
+  );
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.fractionalBounds));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.zeroSlope));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.negativeSlope));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.fractionalSlope));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.negativeAngle));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.periodicReduction));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.quadrantReduction));
+  assert.ok(piSlopeDefiniteIntegralCorpus.some(({ coverage }) => coverage.formalAtom));
+  assert.ok(
+    piSlopeDefiniteIntegralCorpus.filter(
+      ({ coverage }) => coverage.cancellationPattern,
+    ).length >= 20,
+  );
+  assert.deepEqual(
+    new Set(piSlopeDefiniteIntegralCorpus.flatMap(
+      ({ coverage }) => coverage.standardReferences,
+    )),
+    new Set(["0", "1/12", "1/6", "1/4", "1/3", "5/12", "1/2"]),
+  );
+  assert.deepEqual(
+    new Set(piSlopeDefiniteIntegralCorpus.flatMap(({ coverage }) => coverage.radicands)),
+    new Set([1, 2, 3, 6]),
+  );
+  assert.deepEqual(
+    new Set(piSlopeDefiniteIntegralCorpus.flatMap(({ coverage }) => coverage.piPowers)),
+    new Set([-1, 0]),
   );
 
   for (const item of positiveCorpus) {
