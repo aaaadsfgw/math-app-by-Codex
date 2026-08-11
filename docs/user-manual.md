@@ -30,16 +30,23 @@ through degree 32 plus bounded finite sums of `q*exp(ax+b)`, `r*sin(cx+d)`,
 and `s*cos(ex+f)`, with rational coefficients. For example,
 `∫_0^1 2exp(2x+1) dx` returns `exp(3)-exp(1)`, while
 `∫_0^1 sin(x) dx` returns `1-cos(1)`. Sine and cosine arguments are radians;
-`pi` bounds and degree notation are not supported yet. Put function arguments
-in parentheses; `e^(2x+1)` is also accepted. Scientific notation such as
-`1e2` is not accepted, so write a finite decimal or make multiplication by
-Euler's constant explicit with `*`.
+you may also use pure rational multiples of `pi` as both bounds for a
+sin/cos-only problem. For example, `∫_0^pi sin(x) dx` returns `2` and
+`∫_0^(pi/4) cos(x) dx` returns `√2/2`. Nonstandard values such as
+`sin(pi/5)` remain exact symbols and are never replaced by decimals. Put
+function arguments in parentheses; `e^(2x+1)` is also accepted. Scientific
+notation such as `1e2` is not accepted, so write a finite decimal or make
+multiplication by Euler's constant explicit with `*`.
 
 A variable denominator, nonlinear function argument, product such as
 `x*exp(x)` or `sin(x)*cos(x)`, function power, `tan` or inverse trigonometric
-integral, infinite or variable bound, `pi` angle, or hidden undefined point
-produces an unsupported message. The extension does not silently treat it as
-a proper integral or replace an exact result with a numerical estimate.
+integral, infinite or variable bound, unsupported `pi` combination, or hidden
+undefined point produces an unsupported message. The extension does not
+silently treat it as a proper integral or replace an exact result with a
+numerical estimate.
+On the `pi`-bound route, use bounds such as `pi/3` or `(3/4)*pi`; polynomial or
+exponential terms, mixed bounds such as `1` to `pi`, `sin(pi*x)`, and degree
+notation are still unsupported.
 
 ## Shortcut
 

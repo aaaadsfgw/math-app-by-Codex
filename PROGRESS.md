@@ -264,6 +264,28 @@ Last updated: 2026-08-11
   five focused boundary cases and another 1,200 randomized integrals all
   matched the independent BigInt oracle. A compact 32-exp + 32-sin + 32-cos
   input also remained exact.
+- Added an immutable `Q+Q*pi` exact-angle type and a separately certified
+  pure-`q*pi` bound path without converting `pi` to a JavaScript number.
+- Added exact definite integrals for finite sums of `q*sin(ax+b*pi)` and
+  `r*cos(cx+d*pi)` when both bounds are rational multiples of `pi`, all outer
+  coefficients and slopes are rational, and each function family has at most
+  32 source terms.
+- Reduced period, quadrant, parity, and supplementary-angle identities with
+  BigInt fractions. Multiples of 15 degrees use the exact flat basis `1`,
+  `√2`, `√3`, and `√6`; nonstandard angles remain typed formal atoms.
+- Kept polynomial/exp terms, mixed rational/`pi` bounds, nonzero rational phase
+  shifts, and `pi`-valued slopes unsupported on this route, with no partial
+  verification after zero scaling, cancellation, or equal bounds.
+- Added 250 independently generated `pi`-bound trigonometric integrals with a
+  test-side BigInt angle/radical/formal-atom oracle, bringing the generated
+  evaluation corpus to 3,500 unique cases.
+- An independent adversarial audit exercised 6,212 inputs and 10,724
+  direct/asynchronous or separate-oracle comparisons, including every
+  15-degree quadrant, nonstandard formal angles, accepted spellings, 32/33-term
+  limits, and zero/cancellation masking. It found one classification defect:
+  `pi/2x` was initially reported as unsupported instead of invalid. Moving the
+  ambiguity check ahead of AST parsing fixed it; the focused 23-case rerun and
+  the completed audit found no remaining P0-P2 issue or false verification.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -292,9 +314,8 @@ Last updated: 2026-08-11
 
 ## Next
 
-1. Add an exact angle type for rational multiples of `pi`, then enable bounded
-   `pi` endpoints and standard special-angle simplification without decimal
-   trigonometry.
+1. Add `pi`-valued affine slopes over rational bounds with an exact flat
+   `1/pi` coefficient basis, without widening mixed-angle expressions.
 2. Add finite textual limits with one-sided/domain case splits and exact
    verification before beginning area or volume applications.
 3. Verify module-worker and offscreen loading in unpacked Chrome before
@@ -302,9 +323,9 @@ Last updated: 2026-08-11
 
 ## Last verified commands
 
-- `npm test` - 236 passed, 0 failed on 2026-08-11, including 3,250 generated
+- `npm test` - 264 passed, 0 failed on 2026-08-11, including 3,500 generated
   evaluation cases.
-- `npm run check` - passed for 130 files, 10 HTML, 92 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 135 files, 10 HTML, 97 JS/MJS, and 11 CSS files
   on 2026-08-11.
 
 ## Restart procedure

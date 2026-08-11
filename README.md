@@ -86,14 +86,20 @@ The current exact path accepts signed integers, finite decimals, or explicit
 fractions as both bounds. Its integrand may be a rational-coefficient `x`
 polynomial through degree 32, at most 32 terms `q*exp(ax+b)`, and at most 32
 terms each of `r*sin(cx+d)` and `s*cos(ex+f)`, with all coefficients rational.
-Angles are rational numbers in radians; `pi` bounds and degree notation are a
-later exact-angle milestone. Write function arguments with parentheses, as in
+For a separate exact-angle path, both bounds may instead be explicit rational
+multiples of `pi`, such as `0`, `pi/4`, or `3*pi/2`, when the whole integrand
+is a finite rational-coefficient sum of `sin(ax+b*pi)` and `cos(cx+d*pi)` with
+rational slopes. Standard 15-degree angles are reduced to exact `√2`, `√3`,
+and `√6` terms; other rational multiples such as `pi/5` remain exact formal
+values rather than decimals. Write function arguments with parentheses, as in
 `exp(2x+1)` and `sin(3x-1)`; `e^(2x+1)` is the supported exponential alias.
 Scientific notation such as `1e2` is intentionally rejected instead of being
 confused with Euler's constant. Nonlinear arguments, products involving
-functions, variable denominators, hidden holes, non-rational or infinite
-bounds, and improper integrals remain unsupported rather than being inferred
-from endpoint values.
+functions, `pi`-valued slopes such as `sin(pi*x)`, mixed rational/`pi` bounds,
+degree notation, variable denominators, hidden holes, infinite bounds, and
+improper integrals remain unsupported rather than being inferred from endpoint
+values. Polynomial or exponential terms are not partially solved on the
+`pi`-bound path.
 
 ## Development
 

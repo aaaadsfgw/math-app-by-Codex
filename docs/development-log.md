@@ -325,3 +325,37 @@ integrals remain unsupported.
 Node tests and source validation pass. Rational multiples of `pi`, special
 angles, trigonometric products/powers, rational-function interval domains,
 and improper integrals remain unsupported.
+
+## 2026-08-11: exact rational-multiple-pi trigonometric bounds
+
+- Added an immutable `Q+Q*pi` type with exact BigInt-rational operations and a
+  pure-`q*pi` bound certificate. Nonlinear products, `pi` denominators, and
+  higher `pi` powers are rejected before zero or cancellation can hide them.
+- Added a dedicated definite-integral route whose two bounds are rational
+  multiples of `pi` and whose complete integrand is an affine sin/cos finite
+  sum with rational coefficients, rational slopes, and `b*pi` phase shifts.
+- Reduced periods, quadrants, parity, and supplementary angles with exact
+  rational arithmetic. The 15-degree table expands into `1`, `√2`, `√3`, and
+  `√6`; nonstandard values such as `sin(pi/5)` remain formal exact atoms.
+- Added a flat basis for rational, radical, `pi`, `pi*radical`, and formal
+  trigonometric terms, keeping every stored coefficient rational and the
+  positive-before-negative formatter deterministic.
+- Kept polynomial/exp terms, mixed rational/`pi` bounds, nonzero rational phase
+  shifts, `pi` slopes, products, powers, variable denominators, and unsupported
+  functions outside this slice instead of partially solving them.
+- Added parser, direct core, solver, router, display-mode, history, standard and
+  nonstandard angle, reversed/equal-bound, zero-slope, cancellation, and
+  malformed-input regressions.
+- Added 250 independently generated `pi`-bound trigonometric cases with a
+  separate BigInt rational, special-angle, radical-basis, and formal-atom
+  oracle, bringing the generated evaluation corpus to 3,500 unique problems.
+- Independently audited 6,212 inputs across 10,724 direct/asynchronous or
+  separate-oracle comparisons. Coverage included all supported 15-degree
+  quadrants and periods, nonstandard formal atoms, parser spellings, family
+  limits, and masking attempts. The audit exposed one invalid/unsupported
+  classification error for `pi/2x`; after checking ambiguity before AST
+  parsing, all 23 focused regressions passed and no P0-P2 issue remained.
+
+Node tests and source validation pass. `pi`-valued slopes (and the resulting
+`1/pi` coefficient basis), mixed-bound elementary sums, finite textual limits,
+rational-function interval domains, and improper integrals remain unsupported.

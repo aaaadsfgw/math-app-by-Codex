@@ -7,6 +7,15 @@ import {
   evaluateExactExponentialIntegral,
 } from "../math-core/exact-exponential-integral.js";
 import {
+  ExactLinearPi,
+  ExactLinearPiError,
+  exactLinearPiConstantFromAst,
+} from "../math-core/exact-linear-pi.js";
+import {
+  ExactPiTrigonometricIntegralError,
+  evaluateExactPiTrigonometricIntegral,
+} from "../math-core/exact-pi-trigonometric-integral.js";
+import {
   ExactPolynomialIntegralError,
   evaluateExactDefinitePolynomialIntegral,
   exactPolynomialForIntegralFromAst,
@@ -131,6 +140,8 @@ function definiteIntegralFailure(error) {
       error instanceof ExactPolynomialIntegralError
       || error instanceof ExactExponentialIntegralError
       || error instanceof ExactTrigonometricIntegralError
+      || error instanceof ExactLinearPiError
+      || error instanceof ExactPiTrigonometricIntegralError
     )
     && error.unsupported
   ) {
@@ -141,6 +152,8 @@ function definiteIntegralFailure(error) {
     || error instanceof ExactPolynomialIntegralError
     || error instanceof ExactExponentialIntegralError
     || error instanceof ExactTrigonometricIntegralError
+    || error instanceof ExactLinearPiError
+    || error instanceof ExactPiTrigonometricIntegralError
   ) {
     return recognizedResult(failedResult(DEFINITE_INTEGRAL_SOLVER_ID, error.message));
   }
@@ -352,6 +365,61 @@ function solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper) {
   });
 }
 
+function definitePiIntervalExplanation(lower, upper) {
+  const direction = compareRationals(lower.piCoefficient, upper.piCoefficient);
+  if (direction < 0) return "有理数倍piの下端から上端へ通常の向きで評価します。";
+  if (direction > 0) {
+    return "有理数倍piの上下限が逆でも、指定どおり F(上端)-F(下端) を厳密に計算します。";
+  }
+  return "上下限は同じ有理数倍piですが、被積分関数全体を検証してから0とします。";
+}
+
+function solvedPiTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper) {
+  const evaluated = evaluateExactPiTrigonometricIntegral(
+    parsedIntegrand.ast,
+    lower,
+    upper,
+  );
+  const exactAnswer = evaluated.exact;
+  return solvedResult({
+    answer: exactAnswer,
+    exactAnswer,
+    metadata: {
+      integrand: parsedIntegrand.normalized,
+      lowerBound: lower.toString(),
+      upperBound: upper.toString(),
+      antiderivative: evaluated.antiderivative,
+      family: "affine-pi-trigonometric",
+    },
+    steps: [
+      { type: "input", content: `∫_${lower}^${upper} ${parsedIntegrand.normalized} dx` },
+      {
+        type: "constraint",
+        content: "上下限は有理数倍pi、被積分関数は有理係数・有理傾き・有理数倍pi位相のsin・cos有限和",
+        explanation: "piを小数へ変換せず、非線形位相、pi傾き、関数積、変数分母、多項式・expとの混合は検証済みにしません。",
+      },
+      {
+        type: "rule",
+        content: `F(x)=${evaluated.antiderivative}`,
+        explanation: "sinの原始関数を-cos、cosの原始関数をsinとして、有理傾きだけで係数を厳密に割ります。",
+      },
+      {
+        type: "transformation",
+        content: `F(${upper})-F(${lower})=${exactAnswer}`,
+        explanation: definitePiIntervalExplanation(lower, upper),
+      },
+      {
+        type: "verification",
+        content: "原始関数係数・周期・奇偶・標準角表をBigInt分数で再照合",
+        explanation: "角度を有理数倍piのまま象限へ還元し、標準角だけを厳密な根号へ展開しました。非標準角はformal atomとして保持しています。",
+      },
+      { type: "result", content: `定積分: ${exactAnswer}` },
+    ],
+    verification: "有理傾きの原始関数を微分して係数を検算し、有理数倍piの周期・奇偶・標準角をBigInt分数だけで確認しました。Math.PI、浮動小数、CAS、数値積分は使っていません。",
+    solverId: DEFINITE_INTEGRAL_SOLVER_ID,
+  });
+}
+
 export async function solveDefiniteIntegral(question) {
   const request = parseDefiniteIntegralInput(question);
   if (!request.recognized) {
@@ -360,6 +428,7 @@ export async function solveDefiniteIntegral(question) {
   if (!request.ok) {
     if (
       request.errorCode === "UNSUPPORTED_SYMBOL"
+      || request.errorCode.startsWith("UNSUPPORTED_")
       || /上下限は、符号付き整数|積分区間の上下限/u.test(request.error)
     ) {
       return recognizedResult(unsupportedResult(request.error));
@@ -374,8 +443,26 @@ export async function solveDefiniteIntegral(question) {
     const parsedIntegrand = parseSingleVariableExpression(request.expression);
     const lowerParsed = parseMathExpression(request.lowerSource, { symbols: [] });
     const upperParsed = parseMathExpression(request.upperSource, { symbols: [] });
-    const lower = exactRationalConstantFromAst(lowerParsed.ast);
-    const upper = exactRationalConstantFromAst(upperParsed.ast);
+    const lowerBound = exactLinearPiConstantFromAst(lowerParsed.ast);
+    const upperBound = exactLinearPiConstantFromAst(upperParsed.ast);
+    if (!(lowerBound instanceof ExactLinearPi) || !(upperBound instanceof ExactLinearPi)) {
+      throw new TypeError("定積分の上下限を厳密に型付けできませんでした。");
+    }
+    if (!lowerBound.isRational() || !upperBound.isRational()) {
+      if (!lowerBound.isPurePi() || !upperBound.isPurePi()) {
+        throw new ExactPiTrigonometricIntegralError(
+          "pi境界は上下限とも有理数倍piにしてください。",
+          { code: "MIXED_RATIONAL_PI_BOUNDS", unsupported: true },
+        );
+      }
+      return solvedPiTrigonometricDefiniteIntegral(
+        parsedIntegrand,
+        lowerBound,
+        upperBound,
+      );
+    }
+    const lower = lowerBound.rationalPart;
+    const upper = upperBound.rationalPart;
     try {
       return solvedPolynomialDefiniteIntegral(parsedIntegrand, lower, upper);
     } catch (error) {
@@ -390,7 +477,23 @@ export async function solveDefiniteIntegral(question) {
         throw error;
       }
     }
-    return solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper);
+    try {
+      return solvedTrigonometricDefiniteIntegral(parsedIntegrand, lower, upper);
+    } catch (error) {
+      if (
+        !(error instanceof ExactTrigonometricIntegralError)
+        || !error.unsupported
+        || !lower.isZero()
+        || !upper.isZero()
+      ) {
+        throw error;
+      }
+    }
+    return solvedPiTrigonometricDefiniteIntegral(
+      parsedIntegrand,
+      lowerBound,
+      upperBound,
+    );
   } catch (error) {
     return definiteIntegralFailure(error);
   }

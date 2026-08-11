@@ -243,3 +243,32 @@ exponential normal form. Every subtree is certified before zero coefficients,
 cancellation, or equal bounds can produce zero. Thus an invalid form such as
 `0*sin(1/x)` or an equal-bound `sin(x)^0` never becomes verified by a
 short-circuit.
+
+## D-017: Isolate pure pi-bound trigonometric integrals
+
+**Status:** accepted
+**Date:** 2026-08-11
+
+The first exact-angle extension is a separate route rather than a widening of
+the existing rational-bound evaluator. Both bounds must be pure rational
+multiples `q*pi` (with zero valid in either representation), and the complete
+integrand must be a finite rational-coefficient sum of `sin(ax+b*pi)` and
+`cos(cx+d*pi)` terms with rational slopes. Polynomial and exponential terms,
+mixed rational/`pi` bounds, nonzero rational phase shifts, and `pi`-valued
+slopes remain unsupported on this route; no supported subset is extracted from
+a larger expression.
+
+Angles are held as immutable `Q+Q*pi` pairs, while accepted bounds are further
+restricted to the pure `Q*pi` subset. Period and quadrant reduction uses only
+BigInt fractions. Multiples of 15 degrees are expanded into a flat rational
+basis over `1`, `√2`, `√3`, and `√6`; other rational multiples of `pi` remain
+typed formal atoms. Each flat basis term retains a rational coefficient, so
+the positive-before-negative canonical order never needs a numerical sign
+test involving `pi` or radicals. Math.PI, decimal trigonometry, numerical
+quadrature, CAS integration, and tolerance comparisons are forbidden as
+verification evidence.
+
+Every angle subtree and every source term is validated before zero scaling,
+cancellation, or equal bounds can produce zero. `sin` and `cos` keep separate
+32-term limits. Ambiguous forms such as `3/4pi`, nonlinear `pi` expressions,
+and malformed bounds remain invalid or unsupported rather than being guessed.

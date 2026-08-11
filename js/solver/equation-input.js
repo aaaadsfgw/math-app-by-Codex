@@ -3,6 +3,7 @@ import { normalizeMathNotation } from "../math-core/notation.js";
 const RELATION_PATTERN = /<=|>=|=|<|>/gu;
 const MAX_EQUATION_INPUT_LENGTH = 5_000;
 const FUNCTION_CALL_PATTERN = /^(?:arccos|arcsin|arctan|sqrt|abs|cos|exp|log|sin|tan)\s*(?=\()/iu;
+const MULTI_CHARACTER_CONSTANT_PATTERN = /^pi(?![A-Za-z0-9.])/iu;
 
 function hasStandaloneEquality(value) {
   return [...String(value ?? "").matchAll(RELATION_PATTERN)]
@@ -116,6 +117,8 @@ function consumePrimary(source, start) {
     const openingIndex = skipSpaces(source, index + functionCall[0].trimEnd().length);
     return consumeParenthesized(source, openingIndex);
   }
+  const constant = MULTI_CHARACTER_CONSTANT_PATTERN.exec(source.slice(index));
+  if (constant) return index + constant[0].length;
   return /[A-Za-z]/u.test(source[index] ?? "") ? index + 1 : index;
 }
 

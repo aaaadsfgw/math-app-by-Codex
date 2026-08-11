@@ -15,7 +15,7 @@ Classification alone never means a problem can be solved.
 | One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
-| Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos` atoms |
+| Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
@@ -75,11 +75,22 @@ quadrature, or floating-point values as proof. Reversed bounds retain their
 sign, and equal bounds return zero only after the complete integrand has
 passed the supported all-real certificate.
 
+A separate exact-angle route accepts both bounds as pure rational multiples of
+`pi`, including `0`, `-pi/4`, `pi`, and `3*pi/2`. On that route the entire
+integrand must be a finite sum of `q*sin(ax+b*pi)` and `r*cos(cx+d*pi)` with
+rational coefficients, rational slopes, and at most 32 terms in each family.
+The solver reduces periods and quadrants with BigInt fractions. Multiples of
+15 degrees are expanded in the exact basis `1`, `√2`, `√3`, and `√6`; values
+such as `sin(pi/5)` stay as formal exact atoms. Reversed and equal `pi` bounds
+are evaluated only after the complete integrand certificate succeeds.
+
 Variable denominators, negative variable powers, zero powers that can erase
 original holes, nonlinear function arguments, products such as `x*sin(x)` or
 `exp(x)*cos(x)`, powers such as `sin(x)^2`, `tan` and inverse trigonometric
-integrals, `pi` or degree-based angles, non-rational or variable bounds,
-infinite bounds, and all improper integrals remain unsupported.
+integrals, degree-based angles, non-rational or variable bounds, infinite
+bounds, and all improper integrals remain unsupported. The `pi`-bound route
+also rejects mixed rational/`pi` endpoints, polynomial or exponential terms,
+nonzero rational phase shifts, and `pi`-valued slopes such as `sin(pi*x)`.
 Scientific-notation-like input such as `1e2` is rejected rather than
 interpreted as multiplication by Euler's constant. These forms are not
 accepted merely because a symbolic antiderivative happens to have endpoint

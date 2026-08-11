@@ -1,4 +1,8 @@
 import { parseMathExpression } from "../math-core/expression-parser.js";
+import {
+  ExactLinearPiError,
+  exactPiMultipleFromAst,
+} from "../math-core/exact-linear-pi.js";
 import { normalizeMathNotation } from "../math-core/notation.js";
 import { hasAmbiguousDivisionMultiplication } from "./equation-input.js";
 
@@ -108,29 +112,113 @@ function validateBound(value) {
   if (decimal) {
     const digitCount = `${decimal[2] ?? ""}${decimal[3] ?? decimal[4] ?? ""}`.length;
     if (digitCount > MAX_BOUND_COMPONENT_DIGITS) {
-      return { ok: false, source: "", error: "積分区間の数値が長すぎます。" };
+      return {
+        ok: false,
+        source: "",
+        error: "積分区間の数値が長すぎます。",
+        errorCode: "BOUND_COMPONENT_TOO_LONG",
+      };
     }
-    return { ok: true, source, error: "" };
+    return { ok: true, source, error: "", errorCode: "" };
   }
 
   const fraction = /^([+-]?)(\d+)\/(\d+)$/u.exec(source);
-  if (!fraction) {
+  if (fraction) {
+    if (
+      fraction[2].length > MAX_BOUND_COMPONENT_DIGITS
+      || fraction[3].length > MAX_BOUND_COMPONENT_DIGITS
+    ) {
+      return {
+        ok: false,
+        source: "",
+        error: "積分区間の数値が長すぎます。",
+        errorCode: "BOUND_COMPONENT_TOO_LONG",
+      };
+    }
+    if (BigInt(fraction[3]) === 0n) {
+      return {
+        ok: false,
+        source: "",
+        error: "積分区間の分母を0にはできません。",
+        errorCode: "DIVISION_BY_ZERO",
+      };
+    }
+    return { ok: true, source, error: "", errorCode: "" };
+  }
+
+  if (!/pi/iu.test(source)) {
     return {
       ok: false,
       source: "",
-      error: "積分区間の上下限は、符号付き整数・有限小数・明示分数で入力してください。",
+      error: "積分区間の上下限は、符号付き整数・有限小数・明示分数・有理数倍piで入力してください。",
+      errorCode: "UNSUPPORTED_BOUND",
     };
   }
-  if (
-    fraction[2].length > MAX_BOUND_COMPONENT_DIGITS
-    || fraction[3].length > MAX_BOUND_COMPONENT_DIGITS
-  ) {
-    return { ok: false, source: "", error: "積分区間の数値が長すぎます。" };
+
+  const digitRuns = source.match(/\d+/gu) ?? [];
+  if (digitRuns.some((digits) => digits.length > MAX_BOUND_COMPONENT_DIGITS)) {
+    return {
+      ok: false,
+      source: "",
+      error: "積分区間の数値が長すぎます。",
+      errorCode: "BOUND_COMPONENT_TOO_LONG",
+    };
   }
-  if (BigInt(fraction[3]) === 0n) {
-    return { ok: false, source: "", error: "積分区間の分母を0にはできません。" };
+
+  const unsignedDecimal = String.raw`(?:\d+(?:\.\d*)?|\.\d+)`;
+  const explicitFraction = `${unsignedDecimal}\/${unsignedDecimal}`;
+  const safePiForms = [
+    new RegExp(`^[+-]?pi(?:\/${unsignedDecimal})?$`, "iu"),
+    new RegExp(`^[+-]?${unsignedDecimal}\\*?pi(?:\/${unsignedDecimal})?$`, "iu"),
+    new RegExp(`^[+-]?(?:\\(${explicitFraction}\\)|${explicitFraction})\\*pi$`, "iu"),
+  ];
+  const explicitlyAllowed = safePiForms.some((pattern) => pattern.test(source));
+  const ambiguousPiForm = hasAmbiguousDivisionMultiplication(source)
+    || /pi(?:\d|\.)/iu.test(source)
+    || /\)pi/iu.test(source);
+
+  if (ambiguousPiForm) {
+    return {
+      ok: false,
+      source: "",
+      error: "pi境界の係数と除算範囲を、括弧または*で明示してください。",
+      errorCode: "AMBIGUOUS_PI_BOUND",
+    };
   }
-  return { ok: true, source, error: "" };
+
+  let parsed;
+  try {
+    parsed = parseMathExpression(source, { symbols: [] });
+  } catch (error) {
+    return {
+      ok: false,
+      source: "",
+      error: error.message || "pi境界の形式が正しくありません。",
+      errorCode: error.code || "INVALID_PI_BOUND",
+    };
+  }
+  if (!explicitlyAllowed) {
+    return {
+      ok: false,
+      source: "",
+      error: "現在のpi境界は、pi・pi/2・3*pi/4のような明示的な有理数倍piに限定しています。",
+      errorCode: "UNSUPPORTED_PI_BOUND",
+    };
+  }
+  try {
+    const exact = exactPiMultipleFromAst(parsed.ast);
+    return { ok: true, source: exact.toString(), error: "", errorCode: "" };
+  } catch (error) {
+    if (error instanceof ExactLinearPiError) {
+      return {
+        ok: false,
+        source: "",
+        error: error.message,
+        errorCode: error.unsupported ? "UNSUPPORTED_PI_BOUND" : error.code,
+      };
+    }
+    throw error;
+  }
 }
 
 function elementaryFunctionNotationError(value) {
@@ -164,9 +252,21 @@ function elementaryFunctionNotationError(value) {
 
 function validatedCandidate(expressionValue, lowerValue, upperValue) {
   const lower = validateBound(lowerValue);
-  if (!lower.ok) return response({ recognized: true, error: lower.error });
+  if (!lower.ok) {
+    return response({
+      recognized: true,
+      error: lower.error,
+      errorCode: lower.errorCode,
+    });
+  }
   const upper = validateBound(upperValue);
-  if (!upper.ok) return response({ recognized: true, error: upper.error });
+  if (!upper.ok) {
+    return response({
+      recognized: true,
+      error: upper.error,
+      errorCode: upper.errorCode,
+    });
+  }
 
   const expression = String(expressionValue ?? "").trim();
   if (!expression) {

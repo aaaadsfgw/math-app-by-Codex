@@ -209,10 +209,10 @@ test("sin・cosを各32項まで受理し、各familyの33項目を安全に拒�
   }
 });
 
-test("pi・無理数・無限境界をradian formal atom対応と混同しない", async () => {
+test("mixed pi・無理数・無限境界をradian formal atom対応と混同しない", async () => {
   for (const question of [
-    "∫_0^pi sin(x) dx",
-    "∫_0^(pi/2) cos(x) dx",
+    "∫_1^pi sin(x) dx",
+    "∫_0^(pi+1) cos(x) dx",
     "∫_0^(sqrt(2)) sin(x) dx",
     "∫_e^2 cos(x) dx",
     "∫_0^infinity sin(x) dx",
