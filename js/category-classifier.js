@@ -154,6 +154,12 @@ export function classifyCategory(question) {
   if (/(?:^|[^a-z])area_(?:\s*\[|intersections\s*\()|面積[\s\S]*(?:y\s*=|x\s*軸)|(?:y\s*=|x\s*軸)[\s\S]*面積/u.test(text)) {
     addSignal(scores, reasons, "積分", 20, "式で指定された曲線間の面積を検出");
   }
+  if (
+    /(?:^|[^a-z])volume_(?:x_axis|xaxis|x)_\s*\[/iu.test(text)
+    || /体積[\s\S]*(?:回転|まわり|周り)[\s\S]*x\s*軸|x\s*軸[\s\S]*(?:回転|まわり|周り)[\s\S]*体積/u.test(text)
+  ) {
+    addSignal(scores, reasons, "積分", 20, "式で指定されたx軸回転体の体積を検出");
+  }
   if (/極限|(?:^|[^a-z])lim(?=$|[^a-z])|収束値|近づ(?:ける|けた|く)\s*とき/u.test(text)) {
     addSignal(scores, reasons, "極限", 20, "極限を示す語またはlimを検出");
   }

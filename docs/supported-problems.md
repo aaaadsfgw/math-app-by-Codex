@@ -18,6 +18,7 @@ Classification alone never means a problem can be solved.
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
 | Finite rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->1+) 1/(x-1)` | exact zero multiplicities, original-domain ledger, and separate left/right sign checks |
 | Polynomial area between curves | `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)` | exact intersections, sign partition, and piecewise `∫|f-g|dx` |
+| Polynomial x-axis volume of revolution | `volume_x_axis_[0,1](x)`, `volume_x_axis_[0,1](x+2;x+1)` | exact interval-wide radius/order certificate and `pi*∫(R²-r²)dx` |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
@@ -35,8 +36,8 @@ Classification alone never means a problem can be solved.
 - textual coordinate formulas and vector algebra;
 - infinite-point limits and limits containing trigonometric, exponential,
   logarithmic, or other non-rational functions; broader definite integrals;
-  volumes of revolution and other calculus applications through Mathematics
-  III;
+  broader volumes of revolution and other calculus applications through
+  Mathematics III;
 - broader derivative/integral forms after their real-domain case splits are
   implemented.
 
@@ -102,6 +103,30 @@ final absolute value. Identical curves, missing/double/single intersections in
 intersection mode, functions, variable denominators, source degree above four,
 difference degree above two, implicit diagram regions, and malformed or
 ambiguous notation remain unsupported or invalid rather than sampled.
+
+Polynomial volumes of revolution require an explicit finite rational interval
+and declared radii. Accepted symbolic forms are
+`volume_x_axis_[a,b](R)` and `volume_x_axis_[a,b](R;r)`; the shorter aliases
+`volume_xaxis_` and `volume_x_` and complete fixed Japanese forms are also
+accepted. The one-expression disk form sets `r=0`. In the washer form the
+first expression is the outer radius and the second is the inner radius.
+
+Every source expression and intermediate subtree is first reduced through the
+same bounded rational-polynomial parser, and each final radius must have degree
+at most two. On the closed interval the core computes all possible minimum
+locations: both endpoints, plus the vertex of an upward-opening quadratic when
+it lies inside. It separately certifies `r>=0`, `R-r>=0`, and `R>=0`. Only then
+does it convolve coefficient arrays to form `R²-r²`, integrate the resulting
+degree-four-or-lower polynomial, and format the nonnegative rational result as
+an exact multiple of `pi`.
+
+The initial path intentionally does not infer a geometric radius from signed
+curve values. A curve below or crossing the x-axis, an inner/outer switch,
+intersection-derived bounds, y-axis or arbitrary-axis rotation, shells,
+functions, variable denominators, higher-degree radii, figures, and shaded
+regions remain unsupported. General signed two-curve rotation would require
+partitioning at roots of `f`, `g`, `f-g`, and `f+g` and combining several
+independent quadratic fields; it is not approximated or partially solved.
 
 Definite integrals currently accept one variable `x` and finite rational
 bounds written as signed integers, finite decimals, or explicit fractions.

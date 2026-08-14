@@ -1019,7 +1019,7 @@ const CORPUS_PI_STANDARD_REFERENCES = [
   corpusRational(1n, 2n),
 ];
 
-function formatCorpusPiMultiple(coefficient) {
+function formatCorpusVolumePiMultiple(coefficient) {
   if (coefficient.numerator === 0n) return "0";
   const negative = coefficient.numerator < 0n;
   const numerator = negative ? -coefficient.numerator : coefficient.numerator;
@@ -2408,6 +2408,114 @@ function generatedPolynomialAreas() {
   });
 }
 
+function addCorpusPolynomials(left, right, sign = 1n) {
+  const result = Array.from(
+    { length: Math.max(left.length, right.length) },
+    (_, index) => addCorpusRationals(
+      left[index] ?? corpusRational(0n),
+      multiplyCorpusRationals(
+        right[index] ?? corpusRational(0n),
+        corpusRational(sign),
+      ),
+    ),
+  );
+  while (result.length > 1 && result.at(-1).numerator === 0n) result.pop();
+  return result;
+}
+
+function multiplyCorpusPolynomials(left, right) {
+  const result = Array.from(
+    { length: left.length + right.length - 1 },
+    () => corpusRational(0n),
+  );
+  for (let leftPower = 0; leftPower < left.length; leftPower += 1) {
+    for (let rightPower = 0; rightPower < right.length; rightPower += 1) {
+      const power = leftPower + rightPower;
+      result[power] = addCorpusRationals(
+        result[power],
+        multiplyCorpusRationals(left[leftPower], right[rightPower]),
+      );
+    }
+  }
+  while (result.length > 1 && result.at(-1).numerator === 0n) result.pop();
+  return result;
+}
+
+function nonnegativeQuadraticFromLinear(slope, intercept, offset) {
+  return [
+    addCorpusRationals(
+      multiplyCorpusRationals(intercept, intercept),
+      offset,
+    ),
+    multiplyCorpusRationals(
+      corpusRational(2n),
+      multiplyCorpusRationals(slope, intercept),
+    ),
+    multiplyCorpusRationals(slope, slope),
+  ];
+}
+
+function formatCorpusPiMultiple(coefficient) {
+  if (coefficient.numerator === 0n) return "0";
+  const negative = coefficient.numerator < 0n;
+  const numerator = negative ? -coefficient.numerator : coefficient.numerator;
+  const sign = negative ? "-" : "";
+  if (coefficient.denominator === 1n) {
+    return numerator === 1n ? `${sign}pi` : `${sign}${numerator}*pi`;
+  }
+  return numerator === 1n
+    ? `${sign}pi/${coefficient.denominator}`
+    : `${sign}${numerator}*pi/${coefficient.denominator}`;
+}
+
+function generatedPolynomialVolumes() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const lower = corpusRational(
+      BigInt(index - 125),
+      BigInt((index % 4) + 1),
+    );
+    const upper = addCorpusRationals(lower, corpusRational(
+      BigInt((index % 7) + 1),
+      BigInt(((index * 3) % 5) + 1),
+    ));
+    const zero = corpusRational(0n);
+    const disk = index % 5 === 0;
+    const inner = disk
+      ? [zero]
+      : nonnegativeQuadraticFromLinear(
+        corpusRational(BigInt(((index * 5) % 7) - 3), BigInt((index % 3) + 1)),
+        corpusRational(BigInt(((index * 7) % 9) - 4), BigInt(((index + 1) % 4) + 1)),
+        corpusRational(BigInt(index % 4), BigInt(((index * 2) % 3) + 1)),
+      );
+    const gap = nonnegativeQuadraticFromLinear(
+      corpusRational(BigInt(((index * 11) % 9) - 4), BigInt(((index + 2) % 3) + 1)),
+      corpusRational(BigInt(((index * 13) % 11) - 5), BigInt(((index + 3) % 4) + 1)),
+      corpusRational(BigInt((index % 6) + 1), BigInt(((index * 5) % 4) + 1)),
+    );
+    const outer = addCorpusPolynomials(inner, gap);
+    const crossSection = addCorpusPolynomials(
+      multiplyCorpusPolynomials(outer, outer),
+      multiplyCorpusPolynomials(inner, inner),
+      -1n,
+    );
+    const coefficient = definiteIntegralExpectedValue(crossSection, lower, upper);
+    return {
+      family: "polynomial-volume",
+      question: `volume_x_axis_[(${formatCorpusRational(lower)}),`
+        + `(${formatCorpusRational(upper)})](`
+        + `${formatRationalPolynomial(outer) || "0"};`
+        + `${formatRationalPolynomial(inner) || "0"})`,
+      answer: formatCorpusVolumePiMultiple(coefficient),
+      coverage: {
+        method: disk ? "disk" : "washer",
+        fractionalBound: lower.denominator !== 1n || upper.denominator !== 1n,
+        quadraticOuter: outer.length === 3,
+        quadraticInner: inner.length === 3,
+      },
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -2433,6 +2541,7 @@ const piAngleDefiniteIntegralCorpus = generatedPiAngleDefiniteIntegrals();
 const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
 const polynomialAreaCorpus = generatedPolynomialAreas();
+const polynomialVolumeCorpus = generatedPolynomialVolumes();
 const positiveCorpus = [
   ...generatedLinearEquations(),
   ...generatedLinearInequalities(),
@@ -2451,12 +2560,13 @@ const positiveCorpus = [
   ...piSlopeDefiniteIntegralCorpus,
   ...finiteRationalLimitCorpus,
   ...polynomialAreaCorpus,
+  ...polynomialVolumeCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("4,250問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 4_250);
+test("4,500問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 4_500);
   assert.equal(
     finiteRationalLimitCorpus.filter(({ question }) => (
       [...positiveCorpus, ...rejectedCorpus].some((item) => (
@@ -2501,6 +2611,26 @@ test("4,250問の生成評価コーパスで厳密解と安全な未対応を維
     new Set(polynomialAreaCorpus.map(({ coverage }) => coverage.pieceCount)),
     new Set([1, 2, 3]),
   );
+  assert.equal(polynomialVolumeCorpus.length, 250);
+  assert.equal(
+    new Set(polynomialVolumeCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.equal(
+    polynomialVolumeCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "polynomial-volume" && item.question === question
+      ))
+    )).length,
+    0,
+  );
+  assert.deepEqual(
+    new Set(polynomialVolumeCorpus.map(({ coverage }) => coverage.method)),
+    new Set(["disk", "washer"]),
+  );
+  assert.ok(polynomialVolumeCorpus.some(({ coverage }) => coverage.fractionalBound));
+  assert.ok(polynomialVolumeCorpus.some(({ coverage }) => coverage.quadraticOuter));
+  assert.ok(polynomialVolumeCorpus.some(({ coverage }) => coverage.quadraticInner));
   assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
   assert.equal(
     new Set(exponentialDefiniteIntegralCorpus.map(({ question }) => question)).size,

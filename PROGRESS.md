@@ -368,6 +368,33 @@ Last updated: 2026-08-15
   hostile-thrown-value boundary cases. The final 63-case parser rerun kept
   synchronous/asynchronous parity, and the final read-only reviews found no
   remaining P0-P2 issue.
+- Added a strict full-input x-axis volume parser for
+  `volume_x_axis_[a,b](R)` and `volume_x_axis_[a,b](R;r)`, documented aliases,
+  and complete fixed Japanese forms. It requires explicit increasing rational
+  bounds and declared outer/inner radii; other axes, diagram-dependent regions,
+  trailing answers, and ambiguous Unicode normalization are rejected.
+- Added an exact disk/washer core for degree-two-or-lower rational polynomial
+  radii. It certifies `r>=0`, `R-r>=0`, and `R>=0` over the complete interval
+  from exact endpoint and relevant vertex values before constructing and
+  integrating `R²-r²`. Results remain typed rational multiples of `pi` without
+  floating point, graph sampling, CAS, or numerical quadrature.
+- Routed recognized volume inputs before area/category solvers in synchronous
+  and asynchronous paths, with volume-specific teaching traces, hints, history
+  classification, storage round trips, exception containment, and non-stealing
+  regressions.
+- Added 24 volume parser/core/solver tests, including an independent 300-case
+  BigInt core oracle and algebraic invariants. Added 250 independently generated
+  public-path disk/washer cases with a test-owned convolution/integration
+  oracle, bringing the generated evaluation corpus to 4,500 unique problems.
+- Independent volume audits compared 8,232 interval-minimum certificates,
+  62,500 exact disk/washer calculations and `pi` normal forms, and 15,625 full
+  public solver executions against separate BigInt implementations with no
+  mathematical mismatch or false verification. Adversarial routing review
+  found that a non-string input could change its coercion result between
+  solvers; the public entry point now snapshots the problem text exactly once.
+  The final 36-case parser/routing audit had zero false verifications or
+  synchronous/asynchronous differences, and all read-only reviews found no
+  remaining P0-P2 issue.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -396,16 +423,17 @@ Last updated: 2026-08-15
 
 ## Next
 
-1. Add exact volumes of revolution only after the interval/domain and
-   nonnegative-radius rules are explicit.
+1. Add exact rational-function limits at positive and negative infinity only
+   after direction, degree, leading-sign, and original-domain rules are
+   explicit.
 2. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 344 passed, 0 failed on 2026-08-15, including 4,250 generated
+- `npm test` - 369 passed, 0 failed on 2026-08-15, including 4,500 generated
   evaluation cases.
-- `npm run check` - passed for 149 files, 10 HTML, 111 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 155 files, 10 HTML, 117 JS/MJS, and 11 CSS files
   on 2026-08-15.
 
 ## Restart procedure

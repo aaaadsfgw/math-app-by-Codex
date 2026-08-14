@@ -494,3 +494,49 @@ release smoke test.
 `npm run check` passes 149 files (10 HTML, 111 JS/MJS, and 11 CSS). Volumes of
 revolution and other remaining Mathematics III applications are still pending.
 The unpacked Chrome extension path still requires the release smoke test.
+
+## 2026-08-15: exact polynomial volumes of revolution
+
+- Added a full-input parser for `volume_x_axis_[a,b](R)` and
+  `volume_x_axis_[a,b](R;r)`, the documented aliases, and complete fixed
+  Japanese x-axis-rotation forms. The disk form uses inner radius zero; the
+  washer form declares outer radius first and inner radius second. Bounds are
+  explicit increasing rational numbers. Other axes, diagrams, trailing
+  answers, ambiguous notation, and unsafe Unicode normalization are rejected.
+- Added a dedicated exact volume core for rational-coefficient radii of degree
+  at most two. Endpoint values and any relevant upward-quadratic vertex certify
+  `r>=0`, `R-r>=0`, and `R>=0` on the entire closed interval before the core
+  constructs `R²-r²`. Direct coefficient convolution and BigInt-fraction
+  integration produce a typed exact rational multiple of `pi`; no signed curve
+  is silently converted to a geometric radius.
+- Routed recognized volume inputs before the area and category solvers in both
+  synchronous and asynchronous paths. Added volume-specific hints, teaching
+  trace, integral history classification, JSON round-trip coverage, and
+  non-stealing regressions for equations, ordinary integrals, area problems,
+  and general solid-geometry questions.
+- Added 24 parser/core/solver tests. The core suite includes a separate 300-case
+  BigInt fraction oracle plus interval-additivity and radius-scale invariants.
+  Another 250 independently generated public-path disk and washer problems use
+  test-owned polynomial convolution and integration, increasing the versioned
+  evaluation corpus from 4,250 to 4,500 unique problems.
+- Independent mathematical audits compared 8,232 exact interval-minimum
+  certificates, 62,500 disk/washer calculations and `pi` strings, and 15,625
+  public solver executions against separate BigInt implementations without a
+  mismatch, false acceptance, or false rejection. Public-boundary review also
+  confirmed immutable snapshots, sparse/noncanonical rejection, and exception
+  containment.
+- Adversarial routing review found one changing-coercion defect: a non-string
+  object could return a different problem each time a solver converted it to
+  text. The public synchronous and asynchronous entry points now convert once
+  and route only the fixed snapshot. The focused regression and final 36-case
+  Unicode/length/axis/non-stealing audit found no false verification or
+  remaining P0-P2 issue.
+- The initial path deliberately leaves signed/cross-axis curves, changing
+  inner/outer order, intersection-derived bounds, y-axis or arbitrary-axis
+  rotation, shells, functions, and higher-degree radii unsupported. General
+  signed two-curve rotation would require exact partitions over several
+  unrelated quadratic fields and is not approximated.
+
+`npm test` passes 369 tests including the 4,500-case generated corpus, and
+`npm run check` passes 155 files (10 HTML, 117 JS/MJS, and 11 CSS). The
+unpacked Chrome extension path still requires the release smoke test.

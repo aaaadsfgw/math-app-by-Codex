@@ -43,6 +43,9 @@ The current migration checkpoint supports:
 - exact areas between two explicitly stated rational-coefficient polynomial
   curves through degree four when their difference is quadratic or lower,
   over rational bounds or between exactly two distinct real intersections;
+- exact x-axis volumes of revolution over explicit rational intervals by the
+  disk or washer method, when both declared polynomial radii are degree two or
+  lower and their nonnegative outer/inner order can be certified everywhere;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
@@ -111,6 +114,20 @@ exact; for example `area_[-2,2](x^2;2)` returns `(-8+16√2)/3`. A
 diagram-dependent or otherwise inferred region, function call, variable
 denominator, higher-degree difference, or anything other than exactly two
 distinct intersections in the intersection form receives no verified answer.
+
+For a volume of revolution, write `volume_x_axis_[0,1](x)` for a disk or
+`volume_x_axis_[0,1](x+2;x+1)` for a washer. These return `pi/3` and `4*pi`.
+The one-expression form uses inner radius zero; in the two-expression form the
+order is explicitly outer radius `R`, then inner radius `r`. Bounds must be
+finite rational numbers with `a<b`, and both radii must be rational-coefficient
+polynomials of degree at most two. The solver certifies `R>=r>=0` over the
+whole interval using the endpoints and any relevant quadratic vertex, then
+computes `pi*∫(R^2-r^2)dx` as an exact rational multiple of `pi`. A fixed
+Japanese form that states both bounds, the curve or curves, the x-axis
+rotation, and the requested volume is also accepted. Curves that cross the
+x-axis, switch inner/outer order, use another rotation axis, require inferred
+intersections or a diagram, or exceed this polynomial scope are rejected
+instead of being reinterpreted as radii.
 
 For definite integrals, write `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.

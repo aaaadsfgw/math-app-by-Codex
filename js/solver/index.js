@@ -18,6 +18,10 @@ import {
   POLYNOMIAL_AREA_SOLVER_ID,
   solvePolynomialArea,
 } from "./polynomial-area.js";
+import {
+  POLYNOMIAL_VOLUME_SOLVER_ID,
+  solvePolynomialVolume,
+} from "./polynomial-volume.js";
 import { solveQuadraticEquation } from "./quadratic-equation.js";
 import { solveQuadraticInequality } from "./quadratic-inequality.js";
 import { solveRationalEquation } from "./rational-equation.js";
@@ -38,6 +42,7 @@ export {
   solveLogarithmicEquation,
   solvePercentage,
   solvePolynomialArea,
+  solvePolynomialVolume,
   solveQuadraticEquation,
   solveQuadraticInequality,
   solveRationalEquation,
@@ -135,33 +140,70 @@ function runSolvers(input, solvers, { preserveRecognizedFailure = false } = {}) 
     ?? unsupportedResult("対応するソルバーがありません");
 }
 
-function runAreaPreflight(input) {
+function runApplicationPreflight(input, solver, solverId) {
   try {
-    return solvePolynomialArea(input);
+    return solver(input);
   } catch (error) {
     return Object.freeze({
       ...failedResult(
-        POLYNOMIAL_AREA_SOLVER_ID,
+        solverId,
         `ソルバー処理中にエラーが発生しました: ${safeThrownReason(error)}`,
       ),
-      solverId: POLYNOMIAL_AREA_SOLVER_ID,
+      solverId,
+    });
+  }
+}
+
+function runApplicationPreflights(input) {
+  const volume = runApplicationPreflight(
+    input,
+    solvePolynomialVolume,
+    POLYNOMIAL_VOLUME_SOLVER_ID,
+  );
+  if (volume.supported || volume.recognized === true) return volume;
+  return runApplicationPreflight(
+    input,
+    solvePolynomialArea,
+    POLYNOMIAL_AREA_SOLVER_ID,
+  );
+}
+
+function prepareQuestionInput(value) {
+  if (typeof value === "string") {
+    return Object.freeze({ input: value, failure: null });
+  }
+  try {
+    return Object.freeze({ input: String(value ?? ""), failure: null });
+  } catch (error) {
+    return Object.freeze({
+      input: "",
+      failure: Object.freeze({
+        ...failedResult(
+          POLYNOMIAL_AREA_SOLVER_ID,
+          `ソルバー処理中にエラーが発生しました: ${safeThrownReason(error)}`,
+        ),
+        solverId: POLYNOMIAL_AREA_SOLVER_ID,
+      }),
     });
   }
 }
 
 export function solveQuestion(question, options = {}) {
-  const area = runAreaPreflight(question);
-  if (area.supported || area.recognized === true) return area;
-  const category = normalizedCategory(options.category, question);
+  const prepared = prepareQuestionInput(question);
+  if (prepared.failure) return prepared.failure;
+  const input = prepared.input;
+  const application = runApplicationPreflights(input);
+  if (application.supported || application.recognized === true) return application;
+  const category = normalizedCategory(options.category, input);
   const preferred = CATEGORY_SOLVERS[category] ?? [];
   const remaining = SOLVERS.filter((solver) => !preferred.includes(solver));
   if (preferred.length) {
-    const preferredResult = runSolvers(question, preferred, { preserveRecognizedFailure: true });
+    const preferredResult = runSolvers(input, preferred, { preserveRecognizedFailure: true });
     if (preferredResult.supported || preferredResult.recognized === true) {
       return preferredResult;
     }
   }
-  return runSolvers(question, remaining);
+  return runSolvers(input, remaining);
 }
 
 export const solveProblem = solveQuestion;
@@ -169,9 +211,12 @@ export const trySolve = solveQuestion;
 export const solveWithLocalSolver = solveQuestion;
 
 export async function solveQuestionAsync(question, options = {}) {
-  const area = runAreaPreflight(question);
-  if (area.supported || area.recognized === true) return area;
-  const category = normalizedCategory(options.category, question);
+  const prepared = prepareQuestionInput(question);
+  if (prepared.failure) return prepared.failure;
+  const input = prepared.input;
+  const application = runApplicationPreflights(input);
+  if (application.supported || application.recognized === true) return application;
+  const category = normalizedCategory(options.category, input);
   const asynchronousSolvers = category === "微分"
     ? [solveDerivative, solveDefiniteIntegral, solveIndefiniteIntegral, solveAlgebraTransformation]
     : category === "積分"
@@ -180,19 +225,19 @@ export async function solveQuestionAsync(question, options = {}) {
   const preferAsynchronous = ["式の計算", "微分", "積分"].includes(category);
   let immediate = null;
   if (!preferAsynchronous) {
-    immediate = solveQuestion(question, options);
+    immediate = solveQuestion(input, options);
     if (immediate.supported || immediate.recognized === true) return immediate;
   }
   let lastUnsupported = immediate;
   for (const solver of asynchronousSolvers) {
-    const result = await solver(question, {
+    const result = await solver(input, {
       symbolicOperations: options.symbolicOperations,
     });
     if (result.supported || result.recognized === true) return result;
     lastUnsupported = result;
   }
   if (preferAsynchronous) {
-    immediate = solveQuestion(question, options);
+    immediate = solveQuestion(input, options);
     if (immediate.supported) return immediate;
   }
   return lastUnsupported ?? immediate;

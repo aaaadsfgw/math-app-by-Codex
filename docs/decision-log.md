@@ -367,3 +367,35 @@ intersection mode, and inferred regions remain unsupported or invalid.
 Floating-point roots, graph sampling, CAS integration, and numerical quadrature
 are forbidden as verification evidence. The public core boundary revalidates
 canonical dense coefficient arrays and returns copied, deeply frozen evidence.
+
+## D-021: Start volumes of revolution with certified nonnegative washers
+
+**Status:** accepted
+**Date:** 2026-08-15
+
+The first volume-of-revolution path accepts only an explicit increasing
+rational interval and rotation about the x-axis. Its disk form declares one
+outer radius and uses inner radius zero; its washer form declares outer radius
+first and inner radius second. Both are complete rational-coefficient
+polynomials of degree at most two. No curve, interval, axis, or inside/outside
+relationship is inferred from a graph or from intersections.
+
+For a quadratic-or-lower polynomial, the minimum on a closed rational interval
+is determined exactly by its endpoint values and, only for an upward-opening
+quadratic whose vertex lies inside, its vertex value. The core uses this rule
+to certify `r>=0`, `R-r>=0`, and `R>=0`. It then forms `R²-r²` by direct
+coefficient convolution, integrates the degree-four-or-lower result with
+BigInt fractions, and returns `pi*∫(R²-r²)dx` as a typed exact rational
+multiple of `pi`. A negative integral after those certificates is a verification
+failure, never an absolute-value correction.
+
+Signed curves that cross the axis, profiles whose outer/inner order changes,
+intersection-derived bounds, y-axis or arbitrary-axis rotation, and shell
+methods remain unsupported. A general region between signed curves would need
+partitions at roots of `f`, `g`, `f-g`, and `f+g`; even quadratic inputs can
+then produce sums from several unrelated quadratic fields. The current
+single-field area value type cannot represent that result safely, so the
+engine rejects it rather than sampling, guessing an ordering, or using a
+decimal approximation. The public volume core revalidates dense canonical
+coefficient arrays and returns copied, deeply frozen curves, certificates,
+integral evidence, and exact values.
