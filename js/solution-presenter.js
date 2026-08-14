@@ -1,4 +1,11 @@
-const OUTPUT_MODES = new Set(["answer", "hint1", "hint2", "steps", "explain"]);
+export const OUTPUT_MODES = Object.freeze([
+  "answer",
+  "hint1",
+  "hint2",
+  "steps",
+  "explain",
+]);
+const OUTPUT_MODE_SET = new Set(OUTPUT_MODES);
 
 const METHOD_HINTS = Object.freeze({
   "linear-equation": "等号の両側で同じ操作を行い、変数を含む項と定数項を分けます。",
@@ -17,6 +24,7 @@ const METHOD_HINTS = Object.freeze({
   "definite-integral": "原始関数 F(x) を作り、指定された向きのまま F(上端)-F(下端) を厳密に計算します。",
   "indefinite-integral": "基本積分公式を適用し、最後に積分定数 C を付けます。",
   "finite-limit": "接近点での分子・分母の零点次数を比較し、必要なら左側と右側を分けて調べます。",
+  "polynomial-area": "2曲線の差の全交点で区間を分け、各区間の上下関係を確かめて絶対値積分を足します。",
 });
 
 function cleanText(value) {
@@ -137,7 +145,7 @@ function answerContent(result) {
 
 export function presentSolution(result, { mode = "answer", category = "その他" } = {}) {
   assertVerifiedResult(result);
-  const selectedMode = OUTPUT_MODES.has(mode) ? mode : "answer";
+  const selectedMode = OUTPUT_MODE_SET.has(mode) ? mode : "answer";
   const finalAnswer = cleanText(result.answer);
   const contentByMode = {
     answer: answerContent(result),
@@ -152,5 +160,3 @@ export function presentSolution(result, { mode = "answer", category = "その他
     finalAnswer,
   };
 }
-
-export { OUTPUT_MODES };

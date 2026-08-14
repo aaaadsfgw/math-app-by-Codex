@@ -2282,6 +2282,132 @@ function generatedFiniteRationalLimits() {
   return cases;
 }
 
+function polynomialAreaExpectedValue(coefficients, lower, upper, roots) {
+  const interiorRoots = roots
+    .filter((root) => (
+      compareCorpusRationals(lower, root) < 0
+      && compareCorpusRationals(root, upper) < 0
+    ))
+    .filter((root, index, values) => (
+      values.findIndex((candidate) => equalCorpusRationals(candidate, root)) === index
+    ))
+    .sort(compareCorpusRationals);
+  const partition = [lower, ...interiorRoots, upper];
+  let total = corpusRational(0n);
+  for (let index = 0; index < partition.length - 1; index += 1) {
+    const signedValue = definiteIntegralExpectedValue(
+      coefficients,
+      partition[index],
+      partition[index + 1],
+    );
+    total = addCorpusRationals(
+      total,
+      signedValue.numerator < 0n ? negateCorpusRational(signedValue) : signedValue,
+    );
+  }
+  return {
+    answer: formatCorpusRational(total),
+    interiorRootCount: interiorRoots.length,
+    pieceCount: partition.length - 1,
+  };
+}
+
+function corpusAreaDifference(root1, root2, coefficient) {
+  const constant = multiplyCorpusRationals(
+    coefficient,
+    multiplyCorpusRationals(root1, root2),
+  );
+  const linear = negateCorpusRational(multiplyCorpusRationals(
+    coefficient,
+    addCorpusRationals(root1, root2),
+  ));
+  return [constant, linear, coefficient];
+}
+
+function formatCorpusAreaDifference(root1, root2, coefficient) {
+  return `(${formatCorpusRational(coefficient)})`
+    + `*(x-(${formatCorpusRational(root1)}))`
+    + `*(x-(${formatCorpusRational(root2)}))`;
+}
+
+function generatedPolynomialAreas() {
+  return Array.from({ length: 250 }, (_, index) => {
+    const root1 = corpusRational(
+      BigInt(index - 125),
+      BigInt((index % 4) + 1),
+    );
+    const gap = corpusRational(
+      BigInt((index % 9) + 1),
+      BigInt(((index * 2) % 5) + 1),
+    );
+    const root2 = addCorpusRationals(root1, gap);
+    const coefficient = corpusRational(
+      BigInt((index % 2 === 0 ? 1 : -1) * ((index % 11) + 1)),
+      BigInt(((index * 3) % 7) + 1),
+    );
+    const differenceCoefficients = corpusAreaDifference(root1, root2, coefficient);
+    const difference = formatCorpusAreaDifference(root1, root2, coefficient);
+    const curveVariant = Math.floor(index / 5) % 5;
+    let firstExpression = difference;
+    let secondExpression = "0";
+    if (curveVariant === 1) {
+      firstExpression = "0";
+      secondExpression = difference;
+    } else if (curveVariant === 2) {
+      firstExpression = `x^4+(${difference})`;
+      secondExpression = "x^4";
+    } else if (curveVariant === 3) {
+      firstExpression = "x^4";
+      secondExpression = `x^4+(${difference})`;
+    } else if (curveVariant === 4) {
+      firstExpression = `x^3+(${difference})`;
+      secondExpression = "x^3";
+    }
+
+    const formVariant = index % 5;
+    let lower = root1;
+    let upper = root2;
+    if (formVariant === 1) {
+      lower = subtractCorpusRationals(root1, divideCorpusRationals(gap, corpusRational(2n)));
+      upper = addCorpusRationals(root2, divideCorpusRationals(gap, corpusRational(3n)));
+    } else if (formVariant === 3) {
+      lower = addCorpusRationals(root1, divideCorpusRationals(gap, corpusRational(3n)));
+      upper = addCorpusRationals(root2, divideCorpusRationals(gap, corpusRational(2n)));
+    } else if (formVariant === 4) {
+      lower = subtractCorpusRationals(root1, divideCorpusRationals(gap, corpusRational(2n)));
+      upper = addCorpusRationals(root1, divideCorpusRationals(gap, corpusRational(3n)));
+    }
+    const expected = polynomialAreaExpectedValue(
+      differenceCoefficients,
+      lower,
+      upper,
+      [root1, root2],
+    );
+    const intersectionForm = formVariant === 0;
+    const question = intersectionForm
+      ? `area_intersections(${firstExpression};${secondExpression})`
+      : `area_[(${formatCorpusRational(lower)}),(${formatCorpusRational(upper)})]`
+        + `(${firstExpression};${secondExpression})`;
+    return {
+      family: "polynomial-area",
+      question,
+      answer: expected.answer,
+      coverage: {
+        form: intersectionForm ? "two-intersections" : "explicit-interval",
+        curveSwap: curveVariant === 1 || curveVariant === 3,
+        commonHighTerm: curveVariant >= 2,
+        commonDegree: curveVariant === 4 ? 3 : curveVariant >= 2 ? 4 : 0,
+        negativeDifferenceLeading: coefficient.numerator < 0n,
+        fractionalRoot: root1.denominator !== 1n || root2.denominator !== 1n,
+        fractionalBound: lower.denominator !== 1n || upper.denominator !== 1n,
+        rootAtBoundary: !intersectionForm && formVariant === 2,
+        interiorRootCount: expected.interiorRootCount,
+        pieceCount: expected.pieceCount,
+      },
+    };
+  });
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -2306,6 +2432,7 @@ const trigonometricDefiniteIntegralCorpus = generatedTrigonometricDefiniteIntegr
 const piAngleDefiniteIntegralCorpus = generatedPiAngleDefiniteIntegrals();
 const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
+const polynomialAreaCorpus = generatedPolynomialAreas();
 const positiveCorpus = [
   ...generatedLinearEquations(),
   ...generatedLinearInequalities(),
@@ -2323,12 +2450,13 @@ const positiveCorpus = [
   ...piAngleDefiniteIntegralCorpus,
   ...piSlopeDefiniteIntegralCorpus,
   ...finiteRationalLimitCorpus,
+  ...polynomialAreaCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("4,000問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 4_000);
+test("4,250問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 4_250);
   assert.equal(
     finiteRationalLimitCorpus.filter(({ question }) => (
       [...positiveCorpus, ...rejectedCorpus].some((item) => (
@@ -2336,6 +2464,42 @@ test("4,000問の生成評価コーパスで厳密解と安全な未対応を維
       ))
     )).length,
     0,
+  );
+  assert.equal(polynomialAreaCorpus.length, 250);
+  assert.equal(
+    new Set(polynomialAreaCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.equal(
+    polynomialAreaCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "polynomial-area" && item.question === question
+      ))
+    )).length,
+    0,
+  );
+  assert.deepEqual(
+    new Set(polynomialAreaCorpus.map(({ coverage }) => coverage.form)),
+    new Set(["two-intersections", "explicit-interval"]),
+  );
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => coverage.curveSwap));
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => coverage.commonHighTerm));
+  assert.deepEqual(
+    new Set(polynomialAreaCorpus.map(({ coverage }) => coverage.commonDegree)),
+    new Set([0, 3, 4]),
+  );
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => coverage.negativeDifferenceLeading));
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => !coverage.negativeDifferenceLeading));
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => coverage.fractionalRoot));
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => coverage.fractionalBound));
+  assert.ok(polynomialAreaCorpus.some(({ coverage }) => coverage.rootAtBoundary));
+  assert.deepEqual(
+    new Set(polynomialAreaCorpus.map(({ coverage }) => coverage.interiorRootCount)),
+    new Set([0, 1, 2]),
+  );
+  assert.deepEqual(
+    new Set(polynomialAreaCorpus.map(({ coverage }) => coverage.pieceCount)),
+    new Set([1, 2, 3]),
   );
   assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
   assert.equal(

@@ -17,6 +17,7 @@ Classification alone never means a problem can be solved.
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
 | Finite rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->1+) 1/(x-1)` | exact zero multiplicities, original-domain ledger, and separate left/right sign checks |
+| Polynomial area between curves | `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)` | exact intersections, sign partition, and piecewise `∫|f-g|dx` |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
@@ -34,7 +35,8 @@ Classification alone never means a problem can be solved.
 - textual coordinate formulas and vector algebra;
 - infinite-point limits and limits containing trigonometric, exponential,
   logarithmic, or other non-rational functions; broader definite integrals;
-  and standard calculus applications through Mathematics III;
+  volumes of revolution and other calculus applications through Mathematics
+  III;
 - broader derivative/integral forms after their real-domain case splits are
   implemented.
 
@@ -81,6 +83,25 @@ trigonometric/exponential/logarithmic limits, standard special limits,
 sequences, and expressions above the profile bounds remain unsupported. No
 floating-point sampling, epsilon heuristic, CAS limit, or numerical tolerance
 is verification evidence.
+
+Polynomial area problems require both curves and the region description in
+text. Accepted full-input forms are `area_[a,b](f;g)`,
+`area_intersections(f;g)`, and the documented fixed Japanese forms. Explicit
+bounds must be finite rational numbers with `a<b`. Each source curve and every
+intermediate subtree must be a rational-coefficient polynomial of degree at
+most four. After forming `h=f-g`, its degree must be at most two so every real
+intersection can be enumerated exactly.
+
+For an explicit interval, every real root of `h` inside the interval becomes a
+partition point. For the intersection form, `h` must have exactly two distinct
+real roots and those roots become the bounds. On each resulting interval the
+solver certifies the sign of `h`, computes the exact antiderivative difference,
+and sums the nonnegative values. Rational and single-quadratic-field values
+`Q+Q√d` remain exact; signed integrals are never converted to area with one
+final absolute value. Identical curves, missing/double/single intersections in
+intersection mode, functions, variable denominators, source degree above four,
+difference degree above two, implicit diagram regions, and malformed or
+ambiguous notation remain unsupported or invalid rather than sampled.
 
 Definite integrals currently accept one variable `x` and finite rational
 bounds written as signed integers, finite decimals, or explicit fractions.

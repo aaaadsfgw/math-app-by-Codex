@@ -439,3 +439,58 @@ release smoke test.
 trigonometric/exponential/logarithmic, sequence, and standard special limits
 remain unsupported. The unpacked Chrome extension path still requires the
 release smoke test.
+
+## 2026-08-15: exact polynomial areas between curves
+
+- Added full-input parsing for `area_[a,b](f;g)`,
+  `area_intersections(f;g)`, and complete fixed Japanese forms. Explicit
+  intervals require increasing finite rational bounds; the intersection form
+  requires exactly two distinct real intersections. `x軸` is normalized to
+  `y=0`, while diagrams, inferred regions, missing components, trailing
+  answers, and ambiguous notation fail closed.
+- Added an exact area core for two rational-coefficient source curves through
+  degree four when their difference is quadratic or lower. Both complete
+  source ASTs are certified before cancellation. Rational and quadratic-
+  radical intersections are ordered without decimals, inserted into the
+  partition, and checked with exact rational sample signs.
+- Compute every piece as the nonnegative exact value of its own antiderivative
+  difference and add the pieces in `Q` or one field `Q+Q√d`. This prevents the
+  cancellation error from using `|∫(f-g)dx|` for a region where the upper curve
+  changes. No floating-point roots, graph samples, CAS integrals, numerical
+  quadrature, or tolerance comparisons participate in verification.
+- Hardened the low-level boundary against sparse, noncanonical, aliased,
+  subclassed, proxy-backed, and degree-overflow coefficient arrays. Returned
+  curves, intersections, partition points, and piece evidence are copied to
+  base-type snapshots and deeply frozen.
+- Routed recognized area input before equation/category solvers in synchronous
+  and asynchronous entry points. The router now preserves a complete invalid
+  result even when input conversion throws `null`, a hostile accessor, or
+  another nonstandard value. Presentation, hint answer-leak prevention,
+  integral history classification, storage JSON, and exported output-mode
+  immutability are covered by regressions.
+- Adversarial parser review found cases where NFKC, superscript sequences, and
+  `\\left`/`\\right` removal could turn one source string into another formula.
+  The area boundary now preserves supported superscript meaning, rejects
+  ambiguous sequence and token boundaries, rejects unsupported compatibility
+  folds and destructive delimiters before normalization, and retains area
+  recognition for overlong head/tail input without passing it to another
+  solver.
+- Added 29 area parser/core/solver tests and one shared presenter regression.
+  The generated evaluation corpus gained 250 public-path area problems with an
+  independent BigInt rational integral oracle, increasing the total from 4,000
+  to 4,250 unique problems.
+- Independent mathematical review executed 9,600 core cases with 215,640
+  BigInt/`Q+Q√d` comparisons; public-API review executed another 62,536 oracle
+  cases; and 4,551 false-exact boundary calls produced no mismatch or false
+  verification. The audits cover rational/irrational and endpoint roots,
+  zero/one/two interior intersections, curve swaps, common quartic terms,
+  partition completeness, piece signs, exact formatting, mutation isolation,
+  exception containment, and synchronous/asynchronous parity. A final
+  63-case parser rerun and an additional 30,000 integer-intersection oracle
+  corpus had no anomaly or mismatch; the final read-only reviews found no
+  remaining P0-P2 issue.
+
+`npm test` passes 344 tests including the 4,250-case generated corpus, and
+`npm run check` passes 149 files (10 HTML, 111 JS/MJS, and 11 CSS). Volumes of
+revolution and other remaining Mathematics III applications are still pending.
+The unpacked Chrome extension path still requires the release smoke test.

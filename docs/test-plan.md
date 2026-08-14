@@ -43,17 +43,25 @@ imported-verification downgrade.
     Confirm both hints hide those final results and history classifies them as
     limits. Submit `lim_(x->∞) 1/x`, `lim_(x->0) sin(x)/x`, and
     `lim_(x->1 2) x`; confirm none receives a verified answer.
-15. Submit an unsupported trigonometric equation, an improper integral such as
+15. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
+    `area_[-2,2](x^2;2)`; confirm the exact answers are `4/3`, `4/3`, and
+    `(-8+16√2)/3`. Confirm the working partitions at every intersection, both
+    hints hide the final area, and history classifies the results as integrals.
+    Also solve `曲線 y=x^2-1 と x軸 で囲まれた部分の面積を求めよ` and
+    confirm `x軸` is treated as `y=0` and the exact result is `4/3`.
+    Submit `area_intersections(x^2;0)`, `area_[0,1](sin(x);0)`, and a
+    diagram-dependent region; confirm none receives a verified answer.
+16. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-16. Verify history filters, JSON import/export, analytics, review rerun, setting
+17. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-17. Reload the extension and repeat the shortcut to cover service-worker
+18. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation
 
-Before completion, run the versioned 1,000+ case corpus and report:
+Before completion, run the current versioned 4,250-case corpus and report:
 
 - exact-answer accuracy by domain;
 - unsupported/invalid classification accuracy;

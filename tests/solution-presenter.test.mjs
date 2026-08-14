@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { presentSolution } from "../js/solution-presenter.js";
+import { OUTPUT_MODES, presentSolution } from "../js/solution-presenter.js";
 
 const verifiedResult = Object.freeze({
   supported: true,
@@ -52,6 +52,16 @@ test("未検証・未対応・空回答は表示生成へ通さない", () => {
 
 test("未知の出力モードは答えモードへ安全に戻す", () => {
   assert.equal(presentSolution(verifiedResult, { mode: "unknown" }).content, "x=4");
+});
+
+test("公開出力モード一覧を外部から変更できない", () => {
+  assert.equal(Object.isFrozen(OUTPUT_MODES), true);
+  assert.deepEqual(OUTPUT_MODES, ["answer", "hint1", "hint2", "steps", "explain"]);
+  assert.throws(() => OUTPUT_MODES.push("constructor"), TypeError);
+  assert.equal(
+    presentSolution(verifiedResult, { mode: "constructor" }).content,
+    "x=4",
+  );
 });
 
 test("厳密解を最終回答に保ったまま近似値を補助表示する", () => {

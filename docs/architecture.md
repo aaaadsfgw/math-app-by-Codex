@@ -6,6 +6,9 @@
 typed or selected question
           |
           v
+polynomial-area full-input preflight
+          |
+          v
 category classifier
           |
           v
@@ -59,6 +62,28 @@ and the domain-factor count rather than trusting only parser-created values.
 It copies coefficients, the approach point, and the domain ledger into
 base-type snapshots, rejects sparse arrays and invalid flags, keeps its
 direction allowlist private, and deeply freezes the returned evidence.
+
+## Polynomial-area verification
+
+Area requests pass through a strict shape preflight before category routing so
+multiple displayed `y=` relations cannot be stolen by an equation solver. The
+preflight accepts only the two documented symbolic forms or complete fixed
+Japanese forms. It requires both curve expressions and either ordered rational
+bounds or an explicit request for the interval between two intersections.
+Diagram cues and malformed trailing or leading content stop at this boundary.
+
+Each full curve AST is converted independently to an exact polynomial through
+degree four before subtraction, so cancellation cannot hide a degree overflow
+or unsupported subtree. The exact area core then accepts only a quadratic-or-
+lower difference. It enumerates rational or quadratic-radical real roots,
+orders and deduplicates typed real points, partitions the requested interval,
+and certifies the sign on every open piece with an exact rational sample. Each
+piece compares that sign with the exact antiderivative difference and stores a
+nonnegative area. The final value is the exact sum in either `Q` or one
+quadratic field `Q+Q√d`; floating-point roots, numerical integration, graph
+sampling, CAS proposals, and one final absolute value are not verification
+evidence. Public inputs and returned coefficient/point evidence are copied to
+canonical dense base-type snapshots and deeply frozen.
 
 ## Math core direction
 

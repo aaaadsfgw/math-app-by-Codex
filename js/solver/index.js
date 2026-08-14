@@ -14,11 +14,15 @@ import { solveLinearSystem } from "./linear-system.js";
 import { solveLogarithmicEquation } from "./logarithmic-equation.js";
 import { parseInequalityInput } from "./inequality-input.js";
 import { solvePercentage } from "./percentage.js";
+import {
+  POLYNOMIAL_AREA_SOLVER_ID,
+  solvePolynomialArea,
+} from "./polynomial-area.js";
 import { solveQuadraticEquation } from "./quadratic-equation.js";
 import { solveQuadraticInequality } from "./quadratic-inequality.js";
 import { solveRationalEquation } from "./rational-equation.js";
 import { solveRationalInequality } from "./rational-inequality.js";
-import { unsupportedResult } from "./utils.js";
+import { failedResult, unsupportedResult } from "./utils.js";
 
 export {
   solveAlgebraTransformation,
@@ -33,6 +37,7 @@ export {
   solveLinearSystem,
   solveLogarithmicEquation,
   solvePercentage,
+  solvePolynomialArea,
   solveQuadraticEquation,
   solveQuadraticInequality,
   solveRationalEquation,
@@ -90,6 +95,21 @@ function normalizedCategory(category, question) {
   return "その他";
 }
 
+function safeThrownReason(error) {
+  try {
+    if (typeof error === "string") return error;
+    if (["number", "boolean", "bigint", "symbol"].includes(typeof error)) {
+      return String(error);
+    }
+    if (error instanceof Error && typeof error.message === "string") {
+      return error.message;
+    }
+  } catch {
+    // A thrown value can itself contain hostile accessors or proxy traps.
+  }
+  return "詳細不明の例外";
+}
+
 function runSolvers(input, solvers, { preserveRecognizedFailure = false } = {}) {
   let lastUnsupported = null;
   let recognizedUnsupported = null;
@@ -98,16 +118,10 @@ function runSolvers(input, solvers, { preserveRecognizedFailure = false } = {}) 
     try {
       result = solver(input);
     } catch (error) {
-      return {
-        supported: true,
-        solved: false,
-        answer: "",
-        steps: [],
-        verified: false,
-        verification: "",
-        solverId: null,
-        error: `ソルバー処理中にエラーが発生しました: ${error.message}`,
-      };
+      return failedResult(
+        "solver-router",
+        `ソルバー処理中にエラーが発生しました: ${safeThrownReason(error)}`,
+      );
     }
     if (result.supported && (result.solved || preserveRecognizedFailure)) return result;
     if (result.recognized === true) {
@@ -121,7 +135,23 @@ function runSolvers(input, solvers, { preserveRecognizedFailure = false } = {}) 
     ?? unsupportedResult("対応するソルバーがありません");
 }
 
+function runAreaPreflight(input) {
+  try {
+    return solvePolynomialArea(input);
+  } catch (error) {
+    return Object.freeze({
+      ...failedResult(
+        POLYNOMIAL_AREA_SOLVER_ID,
+        `ソルバー処理中にエラーが発生しました: ${safeThrownReason(error)}`,
+      ),
+      solverId: POLYNOMIAL_AREA_SOLVER_ID,
+    });
+  }
+}
+
 export function solveQuestion(question, options = {}) {
+  const area = runAreaPreflight(question);
+  if (area.supported || area.recognized === true) return area;
   const category = normalizedCategory(options.category, question);
   const preferred = CATEGORY_SOLVERS[category] ?? [];
   const remaining = SOLVERS.filter((solver) => !preferred.includes(solver));
@@ -139,6 +169,8 @@ export const trySolve = solveQuestion;
 export const solveWithLocalSolver = solveQuestion;
 
 export async function solveQuestionAsync(question, options = {}) {
+  const area = runAreaPreflight(question);
+  if (area.supported || area.recognized === true) return area;
   const category = normalizedCategory(options.category, question);
   const asynchronousSolvers = category === "微分"
     ? [solveDerivative, solveDefiniteIntegral, solveIndefiniteIntegral, solveAlgebraTransformation]

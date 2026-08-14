@@ -39,6 +39,23 @@ non-rational functions, and sequence limits are currently unsupported.
 Do not write scientific notation or ambiguous forms such as `1/2x`; the
 extension rejects them instead of guessing.
 
+For an area between two polynomial curves, use
+`area_[0,2](x^2;2x)` for an explicit interval or
+`area_intersections(x^2;2x)` for the region between exactly two distinct real
+intersections. Both give `4/3`. You can also write the complete Japanese form
+`x=0からx=2までの区間で、y=x^2とy=2xの間の面積を求めよ`, or
+`曲線 y=x^2-1 と x軸 で囲まれた部分の面積を求めよ`. In a fixed
+Japanese form, `x軸` is treated as `y=0`. State both
+curves and either an ordered interval or the request for their two-intersection
+region explicitly; the extension does not infer a region from a diagram. Each
+curve may have rational coefficients and degree at most four,
+but their difference must be quadratic or lower. The extension finds every
+intersection, splits at every one, checks which curve is upper on each piece,
+and keeps rational or quadratic-radical areas exact. Explicit bounds must be
+finite rational numbers in increasing order. Functions, variable denominators,
+higher-degree differences, and an intersection request without exactly two
+distinct real intersections produce no verified answer.
+
 For an exact definite integral, enter `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
 Use signed integers, finite decimals, or explicit fractions for both bounds.

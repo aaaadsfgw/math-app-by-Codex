@@ -335,3 +335,35 @@ function calls, absolute values, piecewise expressions, sequences, and profile
 overflows remain unsupported or invalid. Floating-point samples, epsilon
 heuristics, CAS limits, and tolerance
 comparisons are forbidden as verification evidence.
+
+## D-020: Compute polynomial area by exact intersection partitions
+
+**Status:** accepted
+**Date:** 2026-08-15
+
+The first area-application path requires two complete curve expressions, or
+equivalent curve definitions in a fixed Japanese form, and either an ordered
+rational interval or an explicit request for the interval between two distinct
+real intersections. Each curve and every source subtree
+must be a rational-coefficient polynomial through degree four. Their difference
+must be quadratic or lower, which is the deliberate boundary that lets the
+engine enumerate every real intersection exactly without graph inference or a
+general algebraic-number system.
+
+The core forms `h=f-g`, inserts every exact root of `h` in the requested
+interval into an ordered partition, certifies the sign on each open piece with
+an exact rational sample, and compares that sign with the exact antiderivative
+difference. Area is the sum of those nonnegative piece values, not the absolute
+value of one signed integral. Rational roots and one quadratic field `Q+Q√d`
+remain exact throughout ordering, evaluation, addition, and formatting.
+
+The parser accepts only the documented `area_[a,b](f;g)`,
+`area_intersections(f;g)`, and fixed complete Japanese forms. It rejects
+diagram cues, missing curves or bounds, trailing answers, destructive LaTeX
+delimiters, and compatibility characters that could normalize into a different
+formula. Intersection mode fails unless there are exactly two distinct real
+roots. Functions, variable denominators, degree overflow, identical curves in
+intersection mode, and inferred regions remain unsupported or invalid.
+Floating-point roots, graph sampling, CAS integration, and numerical quadrature
+are forbidden as verification evidence. The public core boundary revalidates
+canonical dense coefficient arrays and returns copied, deeply frozen evidence.

@@ -338,6 +338,36 @@ Last updated: 2026-08-15
   cases. The final audits
   found zero mismatches, false verifications, or synchronous/asynchronous
   routing differences, with no remaining P0-P2 issue.
+- Added a strict full-input area parser for `area_[a,b](f;g)`,
+  `area_intersections(f;g)`, and complete fixed Japanese forms, including the
+  `x軸` alias. It requires both curves and either increasing rational bounds or
+  an explicit two-intersection request; diagram-dependent regions, trailing
+  answers, destructive LaTeX delimiters, and ambiguous Unicode normalization
+  are rejected rather than reinterpreted.
+- Added an exact polynomial-area core. Each source curve and every intermediate
+  subtree is certified through degree four before subtraction; the difference
+  must be quadratic or lower. All rational or quadratic-radical intersections
+  are ordered exactly, the interval is partitioned at every one, and each
+  nonnegative piece of `∫|f-g|dx` is accumulated in `Q` or `Q+Q√d` without
+  floating-point roots, graph sampling, CAS integration, or quadrature.
+- Routed recognized area inputs ahead of category solvers in both synchronous
+  and asynchronous entry points, while preserving exact/invalid/unsupported
+  result contracts and exception containment. Added area-specific hints,
+  five-mode presentation, integral history classification, JSON round trips,
+  immutable output-mode metadata, and answer-leak regressions.
+- Added 29 area parser/core/solver tests plus one shared presenter regression.
+  Another 250 independently generated public-path area cases cover rational
+  coefficients, fractional bounds, curve swaps, common cubic/quartic terms,
+  and intervals with zero through two interior intersections, bringing the
+  versioned evaluation corpus to 4,250 unique cases.
+- Independent area audits covered 9,600 exact core executions with 215,640
+  BigInt/`Q+Q√d` oracle comparisons, 62,536 public-API oracle executions, and
+  4,551 false-exact boundary calls without a mathematical mismatch or false
+  verification. Adversarial input review exposed and closed Unicode
+  superscript, compatibility-character, LaTeX-delimiter, overlong-routing, and
+  hostile-thrown-value boundary cases. The final 63-case parser rerun kept
+  synchronous/asynchronous parity, and the final read-only reviews found no
+  remaining P0-P2 issue.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -366,18 +396,16 @@ Last updated: 2026-08-15
 
 ## Next
 
-1. Add exact polynomial area applications with explicit intersection and sign
-   partitions; do not infer regions from a missing diagram.
-2. Add exact volumes of revolution only after the interval/domain and
+1. Add exact volumes of revolution only after the interval/domain and
    nonnegative-radius rules are explicit.
-3. Verify module-worker and offscreen loading in unpacked Chrome before
+2. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 314 passed, 0 failed on 2026-08-15, including 4,000 generated
+- `npm test` - 344 passed, 0 failed on 2026-08-15, including 4,250 generated
   evaluation cases.
-- `npm run check` - passed for 143 files, 10 HTML, 105 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 149 files, 10 HTML, 111 JS/MJS, and 11 CSS files
   on 2026-08-15.
 
 ## Restart procedure

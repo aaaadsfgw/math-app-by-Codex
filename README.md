@@ -40,6 +40,9 @@ The current migration checkpoint supports:
 - exact finite-point limits of one-variable rational functions through degree
   four, including removable holes, left/right limits, signed infinity, and
   exact nonexistence when the two one-sided limits differ;
+- exact areas between two explicitly stated rational-coefficient polynomial
+  curves through degree four when their difference is quadratic or lower,
+  over rational bounds or between exactly two distinct real intersections;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
@@ -95,6 +98,19 @@ multiplicities, and reports finite values, `+∞`, `-∞`, or a verified mismatc
 of the two one-sided limits. Infinite approach points, roots, absolute values,
 piecewise expressions, trigonometric/exponential/logarithmic limit laws, and
 sequence limits remain unsupported rather than being sampled numerically.
+
+For an area between two curves, write `area_[0,2](x^2;2x)` for an explicit
+interval or `area_intersections(x^2;2x)` for the interval between exactly two
+distinct real intersections. Both return `4/3`. A fixed Japanese form such as
+`x=0からx=2までの区間で、y=x^2とy=2xの間の面積を求めよ` is also accepted.
+Each complete source curve is checked as a rational-coefficient polynomial of
+degree at most four, and their difference must be degree two or lower. The
+solver enumerates all exact intersections in the interval, partitions at each
+one, and adds `∫|f-g|dx` piece by piece. Quadratic-radical intersections stay
+exact; for example `area_[-2,2](x^2;2)` returns `(-8+16√2)/3`. A
+diagram-dependent or otherwise inferred region, function call, variable
+denominator, higher-degree difference, or anything other than exactly two
+distinct intersections in the intersection form receives no verified answer.
 
 For definite integrals, write `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
