@@ -434,7 +434,7 @@ release smoke test.
   mismatch, false verification, sync/async routing difference, or remaining
   P0-P2 issue.
 
-`npm test` passes 313 tests, and `npm run check` passes 143 files (10 HTML,
+`npm test` passes 314 tests, and `npm run check` passes 143 files (10 HTML,
 105 JS/MJS, and 11 CSS). Infinite-point, radical, absolute-value, piecewise,
 trigonometric/exponential/logarithmic, sequence, and standard special limits
 remain unsupported. The unpacked Chrome extension path still requires the

@@ -375,7 +375,7 @@ Last updated: 2026-08-15
 
 ## Last verified commands
 
-- `npm test` - 313 passed, 0 failed on 2026-08-15, including 4,000 generated
+- `npm test` - 314 passed, 0 failed on 2026-08-15, including 4,000 generated
   evaluation cases.
 - `npm run check` - passed for 143 files, 10 HTML, 105 JS/MJS, and 11 CSS files
   on 2026-08-15.

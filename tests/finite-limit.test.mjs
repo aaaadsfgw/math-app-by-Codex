@@ -107,6 +107,20 @@ test("積分語が混ざる不正な極限も同期・非同期で同じinvalid�
   }
 });
 
+test("未対応関数を含む極限も式内部のカテゴリに奪わせない", async () => {
+  for (const question of [
+    "lim_(x->1) log(x)+2^x",
+    "lim_(x->0) sin(x)^2",
+    "lim_(x->1) exp(x)+cos(x)",
+  ]) {
+    assert.equal(classifyCategory(question).primary, "極限", question);
+    const direct = solveQuestion(question);
+    const asynchronous = await solveQuestionAsync(question);
+    assertRejected(direct, "unsupported");
+    assert.deepEqual(asynchronous, direct);
+  }
+});
+
 test("未対応の範囲と不正・曖昧な入力を検証済みにしない", () => {
   const unsupported = [
     "lim_(x->∞) 1/x",
