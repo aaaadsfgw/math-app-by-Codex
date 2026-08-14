@@ -304,3 +304,34 @@ Ambiguous source forms including `pi/2x`, `pi2*x`, and `pi 2*x` are invalid;
 explicit forms such as `(pi/2)*x` and `pi/2*x` remain distinct and accepted.
 Math.PI, floating-point trigonometry, CAS integration, numerical quadrature,
 and tolerance comparisons are forbidden as verification evidence.
+
+## D-019: Certify finite rational-point limits by exact zero orders
+
+**Status:** accepted
+**Date:** 2026-08-15
+
+The first project-owned limit path accepts a finite rational approach point
+and a complete one-variable polynomial or rational expression. It uses a
+separate rational-function profile that permits integer exponents from -4
+through 4 and polynomial or original-domain factors through degree four,
+with at most ten distinct nonconstant original-domain factors, without
+widening the existing equation and inequality profiles. Every AST subtree and
+every source denominator is validated before zero multiplication,
+cancellation, or zero powers can simplify the visible expression.
+
+At `x=a`, exact synthetic division determines the orders `m` and `n` of
+`x-a` in the numerator and denominator. If `m>n`, the limit is zero; if
+`m=n`, it is the exact residual ratio; and if `m<n`, the residual ratio sign
+and the parity of `n-m` determine the two one-sided signed infinities. A
+two-sided mismatch is a verified exact nonexistence result, not unsupported or
+an approximate answer. A zero numerator is handled only after the complete AST
+and punctured-domain ledger have been certified.
+
+Original denominator factors survive cancellation so removable holes and
+nested-division exclusions remain visible in the solution trace. The public
+core API rejects a zero domain factor because no punctured neighborhood then
+exists. Infinite and irrational approach points, expressions containing
+function calls, absolute values, piecewise expressions, sequences, and profile
+overflows remain unsupported or invalid. Floating-point samples, epsilon
+heuristics, CAS limits, and tolerance
+comparisons are forbidden as verification evidence.

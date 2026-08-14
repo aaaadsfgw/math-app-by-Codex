@@ -16,6 +16,7 @@ Classification alone never means a problem can be solved.
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
+| Finite rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->1+) 1/(x-1)` | exact zero multiplicities, original-domain ledger, and separate left/right sign checks |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
 | Exponential equation | `2^x=8`, `4^x=8`, `(1/2)^x=8` | exact prime-exponent comparison for every rational base factor |
 | Logarithmic equation | `log_2(x)=3`, `log_2(x-1)+log_2(x+1)=3`, `ln(x)=0` | exact same-base product transformation plus every original argument's strict-positive check |
@@ -31,8 +32,9 @@ Classification alone never means a problem can be solved.
 - sequences and common finite/infinite sums;
 - counting, probability, statistics, and data summaries;
 - textual coordinate formulas and vector algebra;
-- limits, broader definite integrals, and standard calculus applications
-  through Mathematics III;
+- infinite-point limits and limits containing trigonometric, exponential,
+  logarithmic, or other non-rational functions; broader definite integrals;
+  and standard calculus applications through Mathematics III;
 - broader derivative/integral forms after their real-domain case splits are
   implemented.
 
@@ -55,6 +57,30 @@ composition, `sin`, `cos`, `tan`, `exp`, `log`, and `sqrt`. Domain restrictions
 are retained as conditional results. Indefinite integrals are accepted only
 when the returned candidate parses safely, has no unresolved domain split, and
 differentiates back to the original integrand.
+
+Finite limits currently accept one variable `x`, a finite rational approach
+point, and a complete polynomial or rational expression. Accepted forms are
+`lim_(x->a) f(x)`, `lim_{x→a} f(x)`, `lim x→a f(x)`, and the documented
+Japanese approach form. A trailing `+` or `-`, or a matching Japanese
+right/left suffix, selects a one-sided limit. The finite-limit profile allows
+integer powers from -4 through 4 and keeps every intermediate numerator,
+denominator, and original domain factor at degree four or below, with at most
+ten distinct nonconstant original domain factors. Every source subtree and
+original denominator condition is certified before cancellation, zero
+multiplication, or a zero power may simplify the visible value.
+
+At a rational point `a`, the solver factors exact powers of `x-a` from the
+numerator and denominator with BigInt-fraction synthetic division. Equal
+multiplicities give the exact residual ratio, a larger numerator multiplicity
+gives zero, and a remaining denominator multiplicity gives signed infinity
+according to its parity and residual sign. A two-sided mismatch is returned as
+an exact verified nonexistence result. Removable holes remain recorded in the
+trace but are not appended as conditions on the final limit value. Infinite
+approach points, irrational or variable points, `abs`, roots, piecewise forms,
+trigonometric/exponential/logarithmic limits, standard special limits,
+sequences, and expressions above the profile bounds remain unsupported. No
+floating-point sampling, epsilon heuristic, CAS limit, or numerical tolerance
+is verification evidence.
 
 Definite integrals currently accept one variable `x` and finite rational
 bounds written as signed integers, finite decimals, or explicit fractions.

@@ -38,12 +38,17 @@ imported-verification downgrade.
     answers are `2/pi` and `5*sin(pi/5)/pi`. Confirm
     `∫_0^1 (sin(x)+sin(pi*x)) dx` is unsupported and `pi/2x`, `pi2*x`, and
     `pi 2*x` inside a trigonometric argument are invalid rather than guessed.
-14. Submit an unsupported trigonometric equation, an improper integral such as
+14. Solve `lim_(x->1) (x^2-1)/(x-1)`, `lim_(x->1+) 1/(x-1)`, and
+    `lim_(x->1) 1/(x-1)`; confirm `2`, `+∞`, and the exact left/right mismatch.
+    Confirm both hints hide those final results and history classifies them as
+    limits. Submit `lim_(x->∞) 1/x`, `lim_(x->0) sin(x)/x`, and
+    `lim_(x->1 2) x`; confirm none receives a verified answer.
+15. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-15. Verify history filters, JSON import/export, analytics, review rerun, setting
+16. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-16. Reload the extension and repeat the shortcut to cover service-worker
+17. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation

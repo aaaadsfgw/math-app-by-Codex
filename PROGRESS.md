@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-08-11
+Last updated: 2026-08-15
 
 ## Repository checkpoint
 
@@ -304,6 +304,40 @@ Last updated: 2026-08-11
   compatibility cases. The audit found spaced `pi 2*x`/`pi .5*x` ambiguity;
   after the source guard was fixed, no P0-P2 issue or false verification
   remained.
+- Added a finite rational-point limit parser for `lim_(x->a) f(x)`, LaTeX and
+  Unicode variants, loose `lim x->a f(x)`, and explicit Japanese approach
+  forms. Signed integers, finite decimals, fractions, left/right markers, and
+  matching Japanese direction suffixes are normalized without guessing
+  scientific notation, numeric whitespace, or ambiguous division scope.
+- Added a dedicated rational-function profile with integer exponents from -4
+  through 4 and degree-four intermediate polynomials for limits, without
+  widening the existing equation or inequality profiles. Exact synthetic
+  division computes numerator and denominator zero orders, then the residual
+  sign and pole parity determine finite values, signed infinity, or a verified
+  left/right mismatch.
+- Preserved every original denominator factor through cancellation, nested
+  division, zero multiplication, and zero powers. The typed core records
+  excluded factors, target definition, removable holes, and the certified
+  punctured neighborhood; the solution trace exposes that ledger without
+  turning a hole into a final-answer condition.
+- Hardened the public core boundary to reject noncanonical or degree-overflow
+  polynomials, more than ten source domain factors, and a zero domain factor
+  for which no punctured neighborhood exists. Coefficients, approach points,
+  and domain ledgers are copied into immutable base-type snapshots; sparse
+  arrays, invalid flags, and mutable direction-list injection are rejected.
+  Unsupported subtrees such as `0*sin(x)` or `(x^5)^0` are fully validated
+  before any zero shortcut.
+- Added direct core, parser, classifier, synchronous/asynchronous routing,
+  five-mode display, history, masking, profile-isolation, and malformed-input
+  regressions. A separate BigInt oracle covers 250 zero-order cases, and 250
+  more independently generated limit problems bring the versioned evaluation
+  corpus to 4,000 unique cases.
+- Independently audited 8,332 mathematical executions, including 8,000
+  comparisons against a separate BigInt-rational oracle; 14 adversarial and
+  1,140 normal public-API cases; and 130,276 generated and mutated parser
+  cases. The final audits
+  found zero mismatches, false verifications, or synchronous/asynchronous
+  routing differences, with no remaining P0-P2 issue.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -332,19 +366,19 @@ Last updated: 2026-08-11
 
 ## Next
 
-1. Add finite textual limits with one-sided/domain case splits and exact
-   verification before beginning area or volume applications.
-2. Add exact area and volume applications only after the finite-limit and
-   interval-domain rules are explicit.
+1. Add exact polynomial area applications with explicit intersection and sign
+   partitions; do not infer regions from a missing diagram.
+2. Add exact volumes of revolution only after the interval/domain and
+   nonnegative-radius rules are explicit.
 3. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 285 passed, 0 failed on 2026-08-11, including 3,750 generated
+- `npm test` - 313 passed, 0 failed on 2026-08-15, including 4,000 generated
   evaluation cases.
-- `npm run check` - passed for 137 files, 10 HTML, 99 JS/MJS, and 11 CSS files
-  on 2026-08-11.
+- `npm run check` - passed for 143 files, 10 HTML, 105 JS/MJS, and 11 CSS files
+  on 2026-08-15.
 
 ## Restart procedure
 

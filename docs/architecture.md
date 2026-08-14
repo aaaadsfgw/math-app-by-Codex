@@ -38,12 +38,35 @@ verified-history creation.
   only for stored-data compatibility. New runtime paths never create them.
 - No input string is executed as JavaScript.
 
-## Planned math core
+## Finite-limit verification
 
-The next architecture layer is a project-owned parser and expression tree. It
-will normalize Japanese notation, create a restricted AST, dispatch to
-domain-specific solvers, and use an audited symbolic backend only through a
-small adapter. Exact values remain exact where possible; approximations and
-conditional answers are labeled explicitly.
+Finite rational-point limits use a dedicated profile of the shared exact
+rational-function converter. The default equation and inequality profiles
+retain their existing exponent and domain-factor bounds, while the limit
+profile permits integer exponents from -4 through 4 and degree-four
+numerators, denominators, and domain factors, with at most ten distinct
+nonconstant original-domain factors. Every division and zero power contributes
+to an immutable original-domain ledger before algebraic cancellation.
+
+At the approach point, the limit core uses exact BigInt-fraction Horner
+evaluation and synthetic division to determine the numerator and denominator
+zero multiplicities. The residual ratio and the parity of any remaining pole
+determine the left and right outcomes. A finite value, signed infinity, and a
+left/right mismatch are all typed exact outcomes; no nearby decimal samples or
+CAS limit call participate in verification. The public core API independently
+validates canonical degree-bounded polynomials, a nonempty punctured domain,
+and the domain-factor count rather than trusting only parser-created values.
+It copies coefficients, the approach point, and the domain ledger into
+base-type snapshots, rejects sparse arrays and invalid flags, keeps its
+direction allowlist private, and deeply freezes the returned evidence.
+
+## Math core direction
+
+The project-owned parser and expression tree normalize Japanese notation,
+create a restricted AST, and dispatch to domain-specific solvers. An audited
+symbolic backend is used only through a small adapter for the operations that
+need it; exact project-owned solvers do not treat a CAS proposal as proof.
+Exact values remain exact where possible, while approximations and conditional
+answers are labeled explicitly.
 
 See `PLAN.md` and `docs/decision-log.md`.

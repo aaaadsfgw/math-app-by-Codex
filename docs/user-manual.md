@@ -22,6 +22,23 @@ every denominator, for example `1/(x-1)>0`, `1/(x(x+1))>=0`, or
 or `1/2x<1`. Values that made an original denominator zero remain excluded
 even when algebraic cancellation removes that factor from the visible formula.
 
+For a finite limit, use `lim_(x->2) (x^2-4)/(x-2)`,
+`lim_(x->1+) 1/(x-1)`, `lim x→1 1/(x-1)^2 を求めよ`, or a Japanese form such
+as `xを1に左から近づけるとき 1/(x-1) の極限を求めよ`. The approach point
+may be a signed integer, finite decimal, or explicit fraction. A trailing `+`
+or `-` selects the right- or left-hand limit. The current exact path accepts
+integer exponents from -4 through 4 and requires every intermediate
+one-variable polynomial, rational numerator/denominator, and original domain
+factor to stay at degree four or below. At most ten distinct nonconstant
+original domain factors are accepted. It retains holes from every original
+denominator and returns an exact finite
+fraction, signed infinity, or a verified statement that the two-sided limit
+does not exist. Infinite approach points, roots, absolute values, piecewise
+expressions, limits containing trigonometric/exponential/logarithmic or other
+non-rational functions, and sequence limits are currently unsupported.
+Do not write scientific notation or ambiguous forms such as `1/2x`; the
+extension rejects them instead of guessing.
+
 For an exact definite integral, enter `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.
 Use signed integers, finite decimals, or explicit fractions for both bounds.

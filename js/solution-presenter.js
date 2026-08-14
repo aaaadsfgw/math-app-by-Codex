@@ -16,6 +16,7 @@ const METHOD_HINTS = Object.freeze({
   derivative: "各項に微分公式を適用し、合成関数では内側の導関数を掛けます。",
   "definite-integral": "原始関数 F(x) を作り、指定された向きのまま F(上端)-F(下端) を厳密に計算します。",
   "indefinite-integral": "基本積分公式を適用し、最後に積分定数 C を付けます。",
+  "finite-limit": "接近点での分子・分母の零点次数を比較し、必要なら左側と右側を分けて調べます。",
 });
 
 function cleanText(value) {

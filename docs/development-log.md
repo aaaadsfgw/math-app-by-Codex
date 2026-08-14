@@ -395,3 +395,47 @@ Node tests and source validation pass. Mixed elementary angle families, finite
 textual limits, rational-function interval domains, and improper integrals
 remain unsupported. The unpacked Chrome extension path still requires the
 release smoke test.
+
+## 2026-08-15: exact finite rational-point limits
+
+- Added a full-input parser for finite limits in symbolic, LaTeX/Unicode,
+  loose, and explicit Japanese approach forms, including left- and right-hand
+  limits. Invalid syntax is checked before unsupported scope so malformed
+  equations, conflicting directions, scientific notation, numeric whitespace,
+  and ambiguous division never become a partially parsed answer.
+- Refactored the exact rational-function converter behind profiles. The
+  existing equation and inequality behavior keeps its previous exponent and
+  domain-factor limits, while finite limits accept integer exponents from -4
+  through 4 and source domain factors through degree four.
+- Added an exact limit core that computes powers of `x-a` with BigInt-fraction
+  synthetic division. Residual values, pole parity, and sign determine finite
+  answers, `+∞`, `-∞`, or an exact verified two-sided mismatch without
+  floating-point sampling, CAS limits, or epsilon tolerances.
+- Retained every original denominator factor through cancellation, nested
+  division, zero multiplication, and zero powers. Removable holes, excluded
+  factors, and the certified punctured neighborhood are recorded in the typed
+  result and solution trace.
+- Hardened the exported low-level evaluator against zero domain factors,
+  noncanonical or degree-overflow coefficient arrays, and excessive domain
+  ledgers. It creates immutable base-type snapshots of coefficients, the
+  approach point, and domain evidence; rejects sparse arrays and invalid flags;
+  and does not trust a mutable public direction list. A zero domain factor is
+  invalid because no punctured neighborhood exists, even when the simplified
+  numerator and denominator are both one.
+- Added parser, core, direct/async router, classifier, display-mode, history,
+  zero-masking, public-API, and profile-isolation regressions. A production-
+  independent BigInt oracle covers 250 zero-order/direction combinations, and
+  250 generated public-path cases bring the evaluation corpus to 4,000 unique
+  problems.
+- Final independent audits covered 8,332 mathematical executions with
+  8,000 separate BigInt-rational oracle comparisons, 14 adversarial and 1,140
+  normal public-API cases, and 130,276 generated and mutated parser cases. They
+  found no
+  mismatch, false verification, sync/async routing difference, or remaining
+  P0-P2 issue.
+
+`npm test` passes 313 tests, and `npm run check` passes 143 files (10 HTML,
+105 JS/MJS, and 11 CSS). Infinite-point, radical, absolute-value, piecewise,
+trigonometric/exponential/logarithmic, sequence, and standard special limits
+remain unsupported. The unpacked Chrome extension path still requires the
+release smoke test.

@@ -5,6 +5,20 @@ const MAX_DOMAIN_FACTOR_DEGREE = 2;
 const MAX_DOMAIN_FACTORS = 10;
 const MAX_ABSOLUTE_EXPONENT = 2n;
 
+const DEFAULT_PROFILE = Object.freeze({
+  maxIntermediateDegree: MAX_INTERMEDIATE_DEGREE,
+  maxDomainFactorDegree: MAX_DOMAIN_FACTOR_DEGREE,
+  maxDomainFactors: MAX_DOMAIN_FACTORS,
+  maxAbsoluteExponent: MAX_ABSOLUTE_EXPONENT,
+});
+
+const FINITE_LIMIT_PROFILE = Object.freeze({
+  maxIntermediateDegree: 4,
+  maxDomainFactorDegree: 4,
+  maxDomainFactors: 10,
+  maxAbsoluteExponent: 4n,
+});
+
 export class ExactRationalFunctionError extends Error {
   constructor(message, { code = "EXACT_RATIONAL_FUNCTION_ERROR", unsupported = false } = {}) {
     super(message);
@@ -58,11 +72,11 @@ export function subtractExactRationalPolynomials(left, right) {
   return addPolynomials(left, right, -1n);
 }
 
-export function multiplyExactRationalPolynomials(left, right) {
+function multiplyPolynomials(left, right, profile) {
   const degree = exactRationalPolynomialDegree(left) + exactRationalPolynomialDegree(right);
-  if (degree > MAX_INTERMEDIATE_DEGREE) {
+  if (degree > profile.maxIntermediateDegree) {
     throw new ExactRationalFunctionError(
-      `有理式の途中次数が${MAX_INTERMEDIATE_DEGREE}を超えます。`,
+      `有理式の途中次数が${profile.maxIntermediateDegree}を超えます。`,
       { code: "INTERMEDIATE_DEGREE_TOO_HIGH", unsupported: true },
     );
   }
@@ -81,10 +95,14 @@ export function multiplyExactRationalPolynomials(left, right) {
   return trimPolynomial(output);
 }
 
-function powerPolynomial(base, exponent) {
+export function multiplyExactRationalPolynomials(left, right) {
+  return multiplyPolynomials(left, right, DEFAULT_PROFILE);
+}
+
+function powerPolynomial(base, exponent, profile) {
   let output = onePolynomial();
   for (let count = 0n; count < exponent; count += 1n) {
-    output = multiplyExactRationalPolynomials(output, base);
+    output = multiplyPolynomials(output, base, profile);
   }
   return output;
 }
@@ -93,7 +111,7 @@ function polynomialKey(polynomial) {
   return polynomial.map(String).join("|");
 }
 
-function mergeDomainFactors(...groups) {
+function mergeDomainFactors(profile, ...groups) {
   const factors = new Map();
   for (const group of groups) {
     for (const factor of group) {
@@ -103,16 +121,18 @@ function mergeDomainFactors(...groups) {
         });
       }
       if (exactRationalPolynomialDegree(factor) === 0) continue;
-      if (exactRationalPolynomialDegree(factor) > MAX_DOMAIN_FACTOR_DEGREE) {
+      if (exactRationalPolynomialDegree(factor) > profile.maxDomainFactorDegree) {
         throw new ExactRationalFunctionError(
-          "三次以上の式を分母の定義域として解決できません。",
+          profile.maxDomainFactorDegree === 2
+            ? "三次以上の式を分母の定義域として解決できません。"
+            : `${profile.maxDomainFactorDegree + 1}次以上の式を分母の定義域として解決できません。`,
           { code: "DOMAIN_FACTOR_DEGREE_TOO_HIGH", unsupported: true },
         );
       }
       factors.set(polynomialKey(factor), factor);
     }
   }
-  if (factors.size > MAX_DOMAIN_FACTORS) {
+  if (factors.size > profile.maxDomainFactors) {
     throw new ExactRationalFunctionError("分母条件が多すぎます。", {
       code: "TOO_MANY_DOMAIN_FACTORS",
       unsupported: true,
@@ -126,7 +146,7 @@ function rationalFunction({
   denominator,
   domainFactors = [],
   hasVariableDenominator = false,
-}) {
+}, profile) {
   if (isZeroExactRationalPolynomial(denominator)) {
     throw new ExactRationalFunctionError("分母が恒等的に0です。", {
       code: "ZERO_DENOMINATOR",
@@ -135,7 +155,7 @@ function rationalFunction({
   return Object.freeze({
     numerator,
     denominator,
-    domainFactors: mergeDomainFactors(domainFactors),
+    domainFactors: mergeDomainFactors(profile, domainFactors),
     hasVariableDenominator,
   });
 }
@@ -163,42 +183,45 @@ function integerLiteral(node) {
   return null;
 }
 
-function addFunctions(left, right, sign = 1n) {
-  const leftNumerator = multiplyExactRationalPolynomials(
+function addFunctions(left, right, sign, profile) {
+  const leftNumerator = multiplyPolynomials(
     left.numerator,
     right.denominator,
+    profile,
   );
-  const rightNumerator = multiplyExactRationalPolynomials(
+  const rightNumerator = multiplyPolynomials(
     right.numerator,
     left.denominator,
+    profile,
   );
   return rationalFunction({
     numerator: addPolynomials(leftNumerator, rightNumerator, sign),
-    denominator: multiplyExactRationalPolynomials(left.denominator, right.denominator),
-    domainFactors: mergeDomainFactors(left.domainFactors, right.domainFactors),
+    denominator: multiplyPolynomials(left.denominator, right.denominator, profile),
+    domainFactors: mergeDomainFactors(profile, left.domainFactors, right.domainFactors),
     hasVariableDenominator: left.hasVariableDenominator || right.hasVariableDenominator,
-  });
+  }, profile);
 }
 
-function multiplyFunctions(left, right) {
+function multiplyFunctions(left, right, profile) {
   return rationalFunction({
-    numerator: multiplyExactRationalPolynomials(left.numerator, right.numerator),
-    denominator: multiplyExactRationalPolynomials(left.denominator, right.denominator),
-    domainFactors: mergeDomainFactors(left.domainFactors, right.domainFactors),
+    numerator: multiplyPolynomials(left.numerator, right.numerator, profile),
+    denominator: multiplyPolynomials(left.denominator, right.denominator, profile),
+    domainFactors: mergeDomainFactors(profile, left.domainFactors, right.domainFactors),
     hasVariableDenominator: left.hasVariableDenominator || right.hasVariableDenominator,
-  });
+  }, profile);
 }
 
-function divideFunctions(left, right, rightAst) {
+function divideFunctions(left, right, rightAst, profile) {
   if (isZeroExactRationalPolynomial(right.numerator)) {
     throw new ExactRationalFunctionError("0では割れません。", {
       code: "DIVISION_BY_ZERO",
     });
   }
   return rationalFunction({
-    numerator: multiplyExactRationalPolynomials(left.numerator, right.denominator),
-    denominator: multiplyExactRationalPolynomials(left.denominator, right.numerator),
+    numerator: multiplyPolynomials(left.numerator, right.denominator, profile),
+    denominator: multiplyPolynomials(left.denominator, right.numerator, profile),
     domainFactors: mergeDomainFactors(
+      profile,
       left.domainFactors,
       right.domainFactors,
       [right.numerator],
@@ -206,13 +229,16 @@ function divideFunctions(left, right, rightAst) {
     hasVariableDenominator: left.hasVariableDenominator
       || right.hasVariableDenominator
       || containsVariable(rightAst),
-  });
+  }, profile);
 }
 
-function powerFunction(base, exponent, baseAst) {
-  if (exponent < -MAX_ABSOLUTE_EXPONENT || exponent > MAX_ABSOLUTE_EXPONENT) {
+function powerFunction(base, exponent, baseAst, profile) {
+  if (
+    exponent < -profile.maxAbsoluteExponent
+    || exponent > profile.maxAbsoluteExponent
+  ) {
     throw new ExactRationalFunctionError(
-      `有理式の指数は-${MAX_ABSOLUTE_EXPONENT}以上${MAX_ABSOLUTE_EXPONENT}以下の整数にしてください。`,
+      `有理式の指数は-${profile.maxAbsoluteExponent}以上${profile.maxAbsoluteExponent}以下の整数にしてください。`,
       { code: "UNSUPPORTED_EXPONENT", unsupported: true },
     );
   }
@@ -227,18 +253,18 @@ function powerFunction(base, exponent, baseAst) {
       numerator: onePolynomial(),
       denominator: onePolynomial(),
       domainFactors: variableBase
-        ? mergeDomainFactors(base.domainFactors, [base.numerator])
+        ? mergeDomainFactors(profile, base.domainFactors, [base.numerator])
         : base.domainFactors,
       hasVariableDenominator: base.hasVariableDenominator || variableBase,
-    });
+    }, profile);
   }
   if (exponent > 0n) {
     return rationalFunction({
-      numerator: powerPolynomial(base.numerator, exponent),
-      denominator: powerPolynomial(base.denominator, exponent),
+      numerator: powerPolynomial(base.numerator, exponent, profile),
+      denominator: powerPolynomial(base.denominator, exponent, profile),
       domainFactors: base.domainFactors,
       hasVariableDenominator: base.hasVariableDenominator,
-    });
+    }, profile);
   }
   if (isZeroExactRationalPolynomial(base.numerator)) {
     throw new ExactRationalFunctionError("0を負の指数で累乗できません。", {
@@ -247,20 +273,20 @@ function powerFunction(base, exponent, baseAst) {
   }
   const magnitude = -exponent;
   return rationalFunction({
-    numerator: powerPolynomial(base.denominator, magnitude),
-    denominator: powerPolynomial(base.numerator, magnitude),
-    domainFactors: mergeDomainFactors(base.domainFactors, [base.numerator]),
+    numerator: powerPolynomial(base.denominator, magnitude, profile),
+    denominator: powerPolynomial(base.numerator, magnitude, profile),
+    domainFactors: mergeDomainFactors(profile, base.domainFactors, [base.numerator]),
     hasVariableDenominator: base.hasVariableDenominator || containsVariable(baseAst),
-  });
+  }, profile);
 }
 
-export function exactRationalFunctionFromAst(node) {
+function rationalFunctionFromAst(node, profile) {
   switch (node?.type) {
     case "number":
       return rationalFunction({
         numerator: constantPolynomial(ExactRational.parse(node.value)),
         denominator: onePolynomial(),
-      });
+      }, profile);
     case "symbol":
       if (node.name !== "x") {
         throw new ExactRationalFunctionError(`変数${node.name}には対応していません。`, {
@@ -271,7 +297,7 @@ export function exactRationalFunctionFromAst(node) {
       return rationalFunction({
         numerator: variablePolynomial(),
         denominator: onePolynomial(),
-      });
+      }, profile);
     case "constant":
     case "call":
       throw new ExactRationalFunctionError(
@@ -279,14 +305,14 @@ export function exactRationalFunctionFromAst(node) {
         { code: "UNSUPPORTED_FUNCTION", unsupported: true },
       );
     case "unary": {
-      const value = exactRationalFunctionFromAst(node.argument);
+      const value = rationalFunctionFromAst(node.argument, profile);
       if (node.operator !== "-") return value;
       return rationalFunction({
         numerator: Object.freeze(value.numerator.map((coefficient) => coefficient.negate())),
         denominator: value.denominator,
         domainFactors: value.domainFactors,
         hasVariableDenominator: value.hasVariableDenominator,
-      });
+      }, profile);
     }
     case "binary": {
       if (node.operator === "^") {
@@ -298,17 +324,18 @@ export function exactRationalFunctionFromAst(node) {
           );
         }
         return powerFunction(
-          exactRationalFunctionFromAst(node.left),
+          rationalFunctionFromAst(node.left, profile),
           exponent,
           node.left,
+          profile,
         );
       }
-      const left = exactRationalFunctionFromAst(node.left);
-      const right = exactRationalFunctionFromAst(node.right);
-      if (node.operator === "+") return addFunctions(left, right);
-      if (node.operator === "-") return addFunctions(left, right, -1n);
-      if (node.operator === "*") return multiplyFunctions(left, right);
-      if (node.operator === "/") return divideFunctions(left, right, node.right);
+      const left = rationalFunctionFromAst(node.left, profile);
+      const right = rationalFunctionFromAst(node.right, profile);
+      if (node.operator === "+") return addFunctions(left, right, 1n, profile);
+      if (node.operator === "-") return addFunctions(left, right, -1n, profile);
+      if (node.operator === "*") return multiplyFunctions(left, right, profile);
+      if (node.operator === "/") return divideFunctions(left, right, node.right, profile);
       throw new ExactRationalFunctionError(`演算子${node.operator}には対応していません。`, {
         code: "UNSUPPORTED_OPERATOR",
         unsupported: true,
@@ -319,6 +346,14 @@ export function exactRationalFunctionFromAst(node) {
         code: "UNKNOWN_AST_NODE",
       });
   }
+}
+
+export function exactRationalFunctionFromAst(node) {
+  return rationalFunctionFromAst(node, DEFAULT_PROFILE);
+}
+
+export function exactRationalFunctionForFiniteLimitFromAst(node) {
+  return rationalFunctionFromAst(node, FINITE_LIMIT_PROFILE);
 }
 
 export function exactRationalEquationPolynomial(left, right) {

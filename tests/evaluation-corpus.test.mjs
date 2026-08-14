@@ -2081,6 +2081,207 @@ function generatedPiSlopeDefiniteIntegrals() {
   });
 }
 
+const FINITE_LIMIT_CORPUS_POINTS = Object.freeze([
+  corpusRational(-3n),
+  corpusRational(2n),
+  corpusRational(-1n, 2n),
+  corpusRational(3n, 2n),
+  corpusRational(-5n, 3n),
+  corpusRational(1n, 4n),
+  corpusRational(-7n, 4n),
+  corpusRational(5n, 2n),
+  corpusRational(-2n, 3n),
+  corpusRational(4n),
+]);
+
+const FINITE_LIMIT_CORPUS_DIRECTIONS = Object.freeze([
+  "both",
+  "left",
+  "right",
+  "both",
+  "right",
+  "left",
+  "both",
+  "right",
+  "left",
+  "both",
+]);
+
+function corpusLimitFactor(point, reverse) {
+  const pointText = formatCorpusRational(point);
+  return reverse
+    ? `((${pointText})-x)`
+    : `(x-(${pointText}))`;
+}
+
+function corpusLimitFactorPower(factor, multiplicity, repeated) {
+  if (multiplicity === 0) return "1";
+  if (multiplicity === 1) return factor;
+  return repeated
+    ? Array.from({ length: multiplicity }, () => factor).join("*")
+    : `${factor}^${multiplicity}`;
+}
+
+function corpusLimitOrientationSign(reverse, multiplicity) {
+  return reverse && multiplicity % 2 === 1 ? -1n : 1n;
+}
+
+function corpusLimitInfinity(sign) {
+  return sign < 0 ? "-∞" : "+∞";
+}
+
+function corpusLimitExpectedAnswer({
+  numeratorMultiplicity,
+  denominatorMultiplicity,
+  leadingRatio,
+  direction,
+}) {
+  if (numeratorMultiplicity > denominatorMultiplicity) {
+    return { answer: "0", outcomeKind: "finite" };
+  }
+  if (numeratorMultiplicity === denominatorMultiplicity) {
+    return {
+      answer: formatCorpusRational(leadingRatio),
+      outcomeKind: "finite",
+    };
+  }
+
+  const poleOrder = denominatorMultiplicity - numeratorMultiplicity;
+  const rightSign = leadingRatio.numerator < 0n ? -1 : 1;
+  const leftSign = poleOrder % 2 === 0 ? rightSign : -rightSign;
+  if (direction === "left") {
+    return {
+      answer: corpusLimitInfinity(leftSign),
+      outcomeKind: leftSign < 0 ? "negative-infinity" : "positive-infinity",
+    };
+  }
+  if (direction === "right") {
+    return {
+      answer: corpusLimitInfinity(rightSign),
+      outcomeKind: rightSign < 0 ? "negative-infinity" : "positive-infinity",
+    };
+  }
+  if (leftSign === rightSign) {
+    return {
+      answer: corpusLimitInfinity(leftSign),
+      outcomeKind: leftSign < 0 ? "negative-infinity" : "positive-infinity",
+    };
+  }
+  return {
+    answer: `存在しない（左極限=${corpusLimitInfinity(leftSign)}`
+      + `、右極限=${corpusLimitInfinity(rightSign)}）`,
+    outcomeKind: "does-not-exist",
+  };
+}
+
+function corpusLimitApproach(point, direction) {
+  const marker = direction === "left" ? "-" : direction === "right" ? "+" : "";
+  return `(${formatCorpusRational(point)})${marker}`;
+}
+
+function generatedFiniteRationalLimits() {
+  const cases = [];
+  for (let numeratorMultiplicity = 0; numeratorMultiplicity <= 4; numeratorMultiplicity += 1) {
+    for (
+      let denominatorMultiplicity = 0;
+      denominatorMultiplicity <= 4;
+      denominatorMultiplicity += 1
+    ) {
+      for (let variant = 0; variant < 10; variant += 1) {
+        const point = FINITE_LIMIT_CORPUS_POINTS[variant];
+        const direction = FINITE_LIMIT_CORPUS_DIRECTIONS[variant];
+        const numeratorReverse = variant % 4 >= 2;
+        const denominatorReverse = variant % 4 === 1 || variant % 4 === 2;
+        const numeratorRepeated = numeratorMultiplicity >= 2 && variant % 2 === 1;
+        const denominatorRepeated = denominatorMultiplicity >= 2 && variant % 3 === 1;
+        const desiredLeadingSign = variant % 2 === 0 ? 1n : -1n;
+        const orientationSign = corpusLimitOrientationSign(
+          numeratorReverse,
+          numeratorMultiplicity,
+        ) * corpusLimitOrientationSign(
+          denominatorReverse,
+          denominatorMultiplicity,
+        );
+        const numeratorMagnitude = corpusRational(
+          BigInt((variant % 5) + 1),
+          BigInt((variant % 3) + 1),
+        );
+        const denominatorCoefficient = corpusRational(
+          BigInt((variant % 7) + 1),
+          BigInt((variant % 4) + 1),
+        );
+        const numeratorCoefficient = multiplyCorpusRationals(
+          numeratorMagnitude,
+          corpusRational(desiredLeadingSign * orientationSign),
+        );
+        const leadingRatio = multiplyCorpusRationals(
+          divideCorpusRationals(numeratorCoefficient, denominatorCoefficient),
+          corpusRational(orientationSign),
+        );
+        const numeratorFactor = corpusLimitFactor(point, numeratorReverse);
+        const denominatorFactor = corpusLimitFactor(point, denominatorReverse);
+        const numerator = `(${formatCorpusRational(numeratorCoefficient)})*`
+          + corpusLimitFactorPower(
+            numeratorFactor,
+            numeratorMultiplicity,
+            numeratorRepeated,
+          );
+        const denominator = `(${formatCorpusRational(denominatorCoefficient)})*`
+          + corpusLimitFactorPower(
+            denominatorFactor,
+            denominatorMultiplicity,
+            denominatorRepeated,
+          );
+        const expected = corpusLimitExpectedAnswer({
+          numeratorMultiplicity,
+          denominatorMultiplicity,
+          leadingRatio,
+          direction,
+        });
+        const powerExponents = [];
+        const repeatedExponents = [];
+        if (numeratorMultiplicity >= 2 && !numeratorRepeated) {
+          powerExponents.push(numeratorMultiplicity);
+        }
+        if (denominatorMultiplicity >= 2 && !denominatorRepeated) {
+          powerExponents.push(denominatorMultiplicity);
+        }
+        if (numeratorRepeated) repeatedExponents.push(numeratorMultiplicity);
+        if (denominatorRepeated) repeatedExponents.push(denominatorMultiplicity);
+        cases.push({
+          family: "finite-rational-limit",
+          question: `lim_(x->${corpusLimitApproach(point, direction)}) `
+            + `(${numerator})/(${denominator})`,
+          answer: expected.answer,
+          coverage: {
+            numeratorMultiplicity,
+            denominatorMultiplicity,
+            direction,
+            fractionalPoint: point.denominator !== 1n,
+            pointSign: point.numerator < 0n ? "negative" : "positive",
+            leadingRatioSign: leadingRatio.numerator < 0n ? "negative" : "positive",
+            normalFactor: (
+              numeratorMultiplicity > 0 && !numeratorReverse
+            ) || (
+              denominatorMultiplicity > 0 && !denominatorReverse
+            ),
+            reverseFactor: (
+              numeratorMultiplicity > 0 && numeratorReverse
+            ) || (
+              denominatorMultiplicity > 0 && denominatorReverse
+            ),
+            repeatedProduct: numeratorRepeated || denominatorRepeated,
+            powerExponents,
+            repeatedExponents,
+            outcomeKind: expected.outcomeKind,
+          },
+        });
+      }
+    }
+  }
+  return cases;
+}
+
 function generatedRejectedInputs() {
   const templates = [
     (value) => `sin x = ${value}`,
@@ -2104,6 +2305,7 @@ const exponentialDefiniteIntegralCorpus = generatedExponentialDefiniteIntegrals(
 const trigonometricDefiniteIntegralCorpus = generatedTrigonometricDefiniteIntegrals();
 const piAngleDefiniteIntegralCorpus = generatedPiAngleDefiniteIntegrals();
 const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
+const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
 const positiveCorpus = [
   ...generatedLinearEquations(),
   ...generatedLinearInequalities(),
@@ -2120,12 +2322,21 @@ const positiveCorpus = [
   ...trigonometricDefiniteIntegralCorpus,
   ...piAngleDefiniteIntegralCorpus,
   ...piSlopeDefiniteIntegralCorpus,
+  ...finiteRationalLimitCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("3,750問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 3_750);
+test("4,000問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 4_000);
+  assert.equal(
+    finiteRationalLimitCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "finite-rational-limit" && item.question === question
+      ))
+    )).length,
+    0,
+  );
   assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
   assert.equal(
     new Set(exponentialDefiniteIntegralCorpus.map(({ question }) => question)).size,
@@ -2261,6 +2472,77 @@ test("3,750問の生成評価コーパスで厳密解と安全な未対応を維
   assert.deepEqual(
     new Set(piSlopeDefiniteIntegralCorpus.flatMap(({ coverage }) => coverage.piPowers)),
     new Set([-1, 0]),
+  );
+  assert.equal(finiteRationalLimitCorpus.length, 250);
+  assert.equal(
+    new Set(finiteRationalLimitCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  for (let numeratorMultiplicity = 0; numeratorMultiplicity <= 4; numeratorMultiplicity += 1) {
+    for (
+      let denominatorMultiplicity = 0;
+      denominatorMultiplicity <= 4;
+      denominatorMultiplicity += 1
+    ) {
+      const multiplicityCases = finiteRationalLimitCorpus.filter(({ coverage }) => (
+        coverage.numeratorMultiplicity === numeratorMultiplicity
+        && coverage.denominatorMultiplicity === denominatorMultiplicity
+      ));
+      assert.equal(
+        multiplicityCases.length,
+        10,
+      );
+      assert.deepEqual(
+        new Set(multiplicityCases.map(({ coverage }) => coverage.direction)),
+        new Set(["both", "left", "right"]),
+      );
+      assert.deepEqual(
+        new Set(multiplicityCases.map(({ coverage }) => coverage.pointSign)),
+        new Set(["negative", "positive"]),
+      );
+      assert.ok(multiplicityCases.some(({ coverage }) => coverage.fractionalPoint));
+      assert.deepEqual(
+        new Set(multiplicityCases.map(({ coverage }) => coverage.leadingRatioSign)),
+        new Set(["negative", "positive"]),
+      );
+      if (numeratorMultiplicity + denominatorMultiplicity > 0) {
+        assert.ok(multiplicityCases.some(({ coverage }) => coverage.normalFactor));
+        assert.ok(multiplicityCases.some(({ coverage }) => coverage.reverseFactor));
+      }
+    }
+  }
+  assert.deepEqual(
+    new Set(finiteRationalLimitCorpus.map(({ coverage }) => coverage.direction)),
+    new Set(["both", "left", "right"]),
+  );
+  assert.deepEqual(
+    new Set(finiteRationalLimitCorpus.map(({ coverage }) => coverage.pointSign)),
+    new Set(["negative", "positive"]),
+  );
+  assert.ok(finiteRationalLimitCorpus.some(({ coverage }) => coverage.fractionalPoint));
+  assert.deepEqual(
+    new Set(finiteRationalLimitCorpus.map(({ coverage }) => coverage.leadingRatioSign)),
+    new Set(["negative", "positive"]),
+  );
+  assert.ok(finiteRationalLimitCorpus.some(({ coverage }) => coverage.normalFactor));
+  assert.ok(finiteRationalLimitCorpus.some(({ coverage }) => coverage.reverseFactor));
+  assert.ok(finiteRationalLimitCorpus.some(({ coverage }) => coverage.repeatedProduct));
+  assert.deepEqual(
+    new Set(finiteRationalLimitCorpus.flatMap(({ coverage }) => coverage.powerExponents)),
+    new Set([2, 3, 4]),
+  );
+  assert.deepEqual(
+    new Set(finiteRationalLimitCorpus.flatMap(({ coverage }) => coverage.repeatedExponents)),
+    new Set([2, 3, 4]),
+  );
+  assert.deepEqual(
+    new Set(finiteRationalLimitCorpus.map(({ coverage }) => coverage.outcomeKind)),
+    new Set([
+      "finite",
+      "positive-infinity",
+      "negative-infinity",
+      "does-not-exist",
+    ]),
   );
 
   for (const item of positiveCorpus) {

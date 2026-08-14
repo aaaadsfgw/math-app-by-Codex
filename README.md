@@ -37,6 +37,9 @@ The current migration checkpoint supports:
   32 plus finite sums of affine `exp`, `sin`, and `cos` terms over finite
   rational bounds, evaluated as BigInt fractions and typed formal endpoint
   values;
+- exact finite-point limits of one-variable rational functions through degree
+  four, including removable holes, left/right limits, signed infinity, and
+  exact nonexistence when the two one-sided limits differ;
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
@@ -79,6 +82,19 @@ the calculus parser. Parentheses around every logarithm argument are required.
 For rational inequalities, make every denominator boundary explicit. Write
 `1/(x(x+1))>0` or `(1/x)*(x+1)>0`; ambiguous forms such as `1/x(x+1)>0` and
 `1/2x<1` are rejected instead of guessed.
+
+For a finite rational-function limit, write `lim_(x->1) (x^2-1)/(x-1)`,
+`lim_(x->1+) 1/(x-1)`, or
+`xを1に左から近づけるとき 1/(x-1) の極限を求めよ`. The approach point
+may be a signed integer, finite decimal, or explicit fraction. The current
+exact path accepts integer exponents from -4 through 4 and requires every
+intermediate numerator, denominator, and original domain factor to stay at
+degree four or below, with at most ten distinct nonconstant original domain
+factors. It keeps every original hole after cancellation, compares exact zero
+multiplicities, and reports finite values, `+∞`, `-∞`, or a verified mismatch
+of the two one-sided limits. Infinite approach points, roots, absolute values,
+piecewise expressions, trigonometric/exponential/logarithmic limit laws, and
+sequence limits remain unsupported rather than being sampled numerically.
 
 For definite integrals, write `∫_0^1 x^2 dx`,
 `0から1までx^2を定積分せよ`, or `x^2を0から1まで定積分せよ`.

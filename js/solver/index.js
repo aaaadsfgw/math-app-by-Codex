@@ -7,6 +7,7 @@ import {
   solveIndefiniteIntegral,
 } from "./calculus.js";
 import { solveExponentialEquation } from "./exponential-equation.js";
+import { solveFiniteLimit } from "./finite-limit.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solveLinearInequality } from "./linear-inequality.js";
 import { solveLinearSystem } from "./linear-system.js";
@@ -25,6 +26,7 @@ export {
   solveDefiniteIntegral,
   solveDerivative,
   solveExponentialEquation,
+  solveFiniteLimit,
   solveIndefiniteIntegral,
   solveLinearEquation,
   solveLinearInequality,
@@ -38,6 +40,7 @@ export {
 };
 
 export const SOLVERS = Object.freeze([
+  solveFiniteLimit,
   solveLinearSystem,
   solveRationalInequality,
   solveQuadraticInequality,
@@ -75,6 +78,7 @@ const CATEGORY_SOLVERS = Object.freeze({
   "連立方程式": [solveLinearSystem],
   "二次方程式": [solveRationalEquation, solveQuadraticEquation],
   "指数・対数": [solveLogarithmicEquation, solveExponentialEquation],
+  "極限": [solveFiniteLimit],
   "基数変換": [solveBaseConversion],
   "パーセント": [solvePercentage],
 });

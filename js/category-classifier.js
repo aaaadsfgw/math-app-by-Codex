@@ -94,6 +94,7 @@ function hasParsedVariableDenominator(question) {
 
 export function classifyCategory(question) {
   const text = normalizedText(question);
+  const relationText = text.replace(/->|→/gu, "");
   const scores = new Map();
   const reasons = new Map();
 
@@ -109,7 +110,7 @@ export function classifyCategory(question) {
   ) {
     addSignal(scores, reasons, "連立方程式", 6, "複数の未知数と等式を検出");
   }
-  if (/不等式|[<>≤≥≦≧]/u.test(text)) {
+  if (/不等式|[<>≤≥≦≧]/u.test(relationText)) {
     addSignal(scores, reasons, "不等式", 8, "不等式を示す語または記号を検出");
   }
 
@@ -150,7 +151,9 @@ export function classifyCategory(question) {
 
   if (/微分|導関数|接線の傾き|d\s*\/\s*dx|[a-z]\s*['′]/i.test(text)) addSignal(scores, reasons, "微分", 10, "微分を示す語または記号を検出");
   if (/積分|不定積分|定積分|∫/u.test(text)) addSignal(scores, reasons, "積分", 10, "積分を示す語または記号を検出");
-  if (/極限|\blim\b|収束値/u.test(text)) addSignal(scores, reasons, "極限", 10, "極限を示す語またはlimを検出");
+  if (/極限|(?:^|[^a-z])lim(?=$|[^a-z])|収束値|近づ(?:ける|けた|く)\s*とき/u.test(text)) {
+    addSignal(scores, reasons, "極限", 12, "極限を示す語またはlimを検出");
+  }
   if (/数列|等差|等比|漸化式|一般項|初項|公差|公比|a[_ₙn]|Σ/u.test(text)) addSignal(scores, reasons, "数列", 7, "数列を示す語または記号を検出");
   if (/確率|場合の数|順列|組合せ|組み合わせ|サイコロ|硬貨|カードを引/u.test(text)) addSignal(scores, reasons, "確率", 7, "確率・場合の数を示す語を検出");
 
