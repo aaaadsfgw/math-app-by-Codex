@@ -59,7 +59,23 @@ imported-verification downgrade.
     `tangent_x_[1](1/x)`, `tangent_x_[1](x^5)`, and a graph-dependent
     tangent; confirm the false point is invalid, the others are unsupported,
     and none receives a verified answer.
-16. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
+16. Solve `monotonicity(x^3-3x)`, `extrema(x^3)`,
+    `monotonicity_extrema(x^3+x^2-2x)`, and
+    `関数 f(x)=x^3-3x の増減を調べ、極値を求めよ`. Confirm the first
+    result is increasing on `(-∞,-1]` and `[1,+∞)` and decreasing on
+    `[-1,1]`; confirm the second has no local extrema and reports `(0,0)` as a
+    stationary non-extremum. The combined radical case must keep its critical
+    coordinates `(-1-√7)/3`, `(-1+√7)/3` and their values in exact
+    `Q+Q√d` form. Confirm the working contains exact derivative-root and sign-
+    cell certificates, both hints hide critical coordinates, completed
+    intervals, and extrema, and history uses solver ID `polynomial-variation`
+    with category `微分`. Submit `monotonicity(x^4)`,
+    `monotonicity_[0,1](x^2)`, `関数 y=x^2 の最大値を求めよ`,
+    `monotonicity(sin(x))`, and a graph-dependent variation request; confirm
+    all are unsupported. Submit `monotonicity(x^2=1)` and
+    `関数 y=x^2 の極値は0`; confirm both are invalid and none of these
+    rejection cases receives a verified answer.
+17. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
     `area_[-2,2](x^2;2)`; confirm the exact answers are `4/3`, `4/3`, and
     `(-8+16√2)/3`. Confirm the working partitions at every intersection, both
     hints hide the final area, and history classifies the results as integrals.
@@ -67,22 +83,22 @@ imported-verification downgrade.
     confirm `x軸` is treated as `y=0` and the exact result is `4/3`.
     Submit `area_intersections(x^2;0)`, `area_[0,1](sin(x);0)`, and a
     diagram-dependent region; confirm none receives a verified answer.
-17. Solve `volume_x_axis_[0,1](x)` and
+18. Solve `volume_x_axis_[0,1](x)` and
     `volume_x_axis_[0,1](x+2;x+1)`; confirm the exact answers are `pi/3` and
     `4*pi`, the working certifies both radii over the whole interval, and both
     hints hide the final volume. Submit a y-axis rotation, a crossing radius,
     and a diagram-only region; confirm none receives a verified answer.
-18. Submit an unsupported trigonometric equation, an improper integral such as
+19. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-19. Verify history filters, JSON import/export, analytics, review rerun, setting
+20. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-20. Reload the extension and repeat the shortcut to cover service-worker
+21. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation
 
-Before completion, run the current versioned 5,000-case corpus and report:
+Before completion, run the current versioned 5,250-case corpus and report:
 
 - exact-answer accuracy by domain;
 - unsupported/invalid classification accuracy;

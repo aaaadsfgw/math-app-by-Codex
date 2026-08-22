@@ -42,11 +42,11 @@ function add(left, right, sign = 1n) {
   )));
 }
 
-function multiply(left, right) {
+function multiply(left, right, maxIntermediateDegree = MAX_INTERMEDIATE_DEGREE) {
   const resultDegree = degree(left) + degree(right);
-  if (resultDegree > MAX_INTERMEDIATE_DEGREE) {
+  if (resultDegree > maxIntermediateDegree) {
     throw new ExactPolynomialError(
-      `多項式の途中次数が${MAX_INTERMEDIATE_DEGREE}を超えます。`,
+      `多項式の途中次数が${maxIntermediateDegree}を超えます。`,
       {
         code: "DEGREE_TOO_HIGH",
         unsupported: true,
@@ -81,10 +81,10 @@ function divide(left, right) {
   return polynomial(left.map((coefficient) => coefficient.divide(right[0])));
 }
 
-function power(base, exponentPolynomial) {
+function power(base, exponentPolynomial, maxIntermediateDegree = MAX_INTERMEDIATE_DEGREE) {
   if (degree(exponentPolynomial) !== 0 || exponentPolynomial[0].denominator !== 1n) {
     throw new ExactPolynomialError(
-      `指数は0以上${MAX_INTERMEDIATE_DEGREE}以下の整数にしてください。`,
+      `指数は0以上${maxIntermediateDegree}以下の整数にしてください。`,
       {
         code: "UNSUPPORTED_EXPONENT",
         unsupported: true,
@@ -92,9 +92,9 @@ function power(base, exponentPolynomial) {
     );
   }
   const exponent = exponentPolynomial[0].numerator;
-  if (exponent < 0n || exponent > BigInt(MAX_INTERMEDIATE_DEGREE)) {
+  if (exponent < 0n || exponent > BigInt(maxIntermediateDegree)) {
     throw new ExactPolynomialError(
-      `指数は0以上${MAX_INTERMEDIATE_DEGREE}以下の整数にしてください。`,
+      `指数は0以上${maxIntermediateDegree}以下の整数にしてください。`,
       {
         code: "UNSUPPORTED_EXPONENT",
         unsupported: true,
@@ -114,17 +114,46 @@ function power(base, exponentPolynomial) {
   }
   let output = constant(ExactRational.one());
   for (let count = 0n; count < exponent; count += 1n) {
-    output = multiply(output, base);
+    output = multiply(output, base, maxIntermediateDegree);
   }
   return output;
 }
 
-export function exactPolynomialFromAst(node) {
+function parsedPolynomial(coefficients, sourceDegree) {
+  return { coefficients, sourceDegree };
+}
+
+function requireSourceDegree(sourceDegree, maxIntermediateDegree) {
+  if (sourceDegree <= maxIntermediateDegree) return sourceDegree;
+  throw new ExactPolynomialError(
+    `多項式の途中次数が${maxIntermediateDegree}を超えます。`,
+    {
+      code: "DEGREE_TOO_HIGH",
+      unsupported: true,
+    },
+  );
+}
+
+function normalizeMaxIntermediateDegree(value) {
+  if (
+    !Number.isSafeInteger(value)
+    || value < 1
+    || value > MAX_INTERMEDIATE_DEGREE
+  ) {
+    throw new ExactPolynomialError(
+      `途中次数の上限は1以上${MAX_INTERMEDIATE_DEGREE}以下の整数にしてください。`,
+      { code: "INVALID_MAX_INTERMEDIATE_DEGREE" },
+    );
+  }
+  return value;
+}
+
+function polynomialFromAst(node, maxIntermediateDegree) {
   switch (node?.type) {
     case "number":
-      return constant(ExactRational.parse(node.value));
+      return parsedPolynomial(constant(ExactRational.parse(node.value)), 0);
     case "symbol":
-      if (node.name === "x") return variable();
+      if (node.name === "x") return parsedPolynomial(variable(), 1);
       throw new ExactPolynomialError(`変数${node.name}には対応していません。`, {
         code: "UNSUPPORTED_SYMBOL",
         unsupported: true,
@@ -136,19 +165,77 @@ export function exactPolynomialFromAst(node) {
         unsupported: true,
       });
     case "unary": {
-      const value = exactPolynomialFromAst(node.argument);
-      return node.operator === "-"
-        ? polynomial(value.map((coefficient) => coefficient.negate()))
-        : value;
+      const value = polynomialFromAst(node.argument, maxIntermediateDegree);
+      return parsedPolynomial(
+        node.operator === "-"
+          ? polynomial(value.coefficients.map((coefficient) => coefficient.negate()))
+          : value.coefficients,
+        value.sourceDegree,
+      );
     }
     case "binary": {
-      const left = exactPolynomialFromAst(node.left);
-      const right = exactPolynomialFromAst(node.right);
-      if (node.operator === "+") return add(left, right);
-      if (node.operator === "-") return add(left, right, -1n);
-      if (node.operator === "*") return multiply(left, right);
-      if (node.operator === "/") return divide(left, right);
-      if (node.operator === "^") return power(left, right);
+      const left = polynomialFromAst(node.left, maxIntermediateDegree);
+      const right = polynomialFromAst(node.right, maxIntermediateDegree);
+      if (node.operator === "+" || node.operator === "-") {
+        return parsedPolynomial(
+          add(
+            left.coefficients,
+            right.coefficients,
+            node.operator === "-" ? -1n : 1n,
+          ),
+          Math.max(left.sourceDegree, right.sourceDegree),
+        );
+      }
+      if (node.operator === "*") {
+        const sourceDegree = requireSourceDegree(
+          left.sourceDegree + right.sourceDegree,
+          maxIntermediateDegree,
+        );
+        return parsedPolynomial(
+          multiply(left.coefficients, right.coefficients, maxIntermediateDegree),
+          sourceDegree,
+        );
+      }
+      if (node.operator === "/") {
+        if (right.sourceDegree !== 0) {
+          throw new ExactPolynomialError("xを含む式では割れません。", {
+            code: "VARIABLE_DENOMINATOR",
+            unsupported: true,
+          });
+        }
+        return parsedPolynomial(
+          divide(left.coefficients, right.coefficients),
+          left.sourceDegree,
+        );
+      }
+      if (node.operator === "^") {
+        if (right.sourceDegree !== 0) {
+          throw new ExactPolynomialError(
+            `指数は0以上${maxIntermediateDegree}以下の整数にしてください。`,
+            {
+              code: "UNSUPPORTED_EXPONENT",
+              unsupported: true,
+            },
+          );
+        }
+        const exponent = right.coefficients.length === 1
+          && right.coefficients[0].denominator === 1n
+          ? right.coefficients[0].numerator
+          : null;
+        const coefficients = power(
+          left.coefficients,
+          right.coefficients,
+          maxIntermediateDegree,
+        );
+        const sourceDegree = requireSourceDegree(
+          left.sourceDegree * Number(exponent),
+          maxIntermediateDegree,
+        );
+        return parsedPolynomial(
+          coefficients,
+          sourceDegree,
+        );
+      }
       throw new ExactPolynomialError(`演算子${node.operator}には対応していません。`, {
         code: "UNSUPPORTED_OPERATOR",
         unsupported: true,
@@ -157,6 +244,16 @@ export function exactPolynomialFromAst(node) {
     default:
       throw new ExactPolynomialError("未知の数式要素です。", { code: "UNKNOWN_AST_NODE" });
   }
+}
+
+export function exactPolynomialFromAst(
+  node,
+  { maxIntermediateDegree = MAX_INTERMEDIATE_DEGREE } = {},
+) {
+  return polynomialFromAst(
+    node,
+    normalizeMaxIntermediateDegree(maxIntermediateDegree),
+  ).coefficients;
 }
 
 export function subtractExactPolynomials(left, right) {

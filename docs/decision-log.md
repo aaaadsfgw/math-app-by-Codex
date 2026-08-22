@@ -457,8 +457,54 @@ differentiation, graph sampling, and CAS proposals are not proof.
 
 The verified solver ID is `polynomial-tangent`, with history category `微分`.
 Its full-input preflight runs after volume and area and before rational-function
-limits, in the order `volume -> area -> tangent -> rational-limit`, so an
+limits. D-024 inserts variation after tangent, making the current order
+`volume -> area -> tangent -> variation -> rational-limit`, so an
 explicit curve or point cannot be intercepted by a general equation solver.
 Functions, variable denominators and negative powers, degree five or above,
 other variables, geometric tangents, and curve/contact information requiring a
 figure or graph remain unsupported rather than being approximated or inferred.
+
+## D-024: Bound polynomial variation to exact quadratic derivative partitions
+
+**Status:** accepted
+**Date:** 2026-08-23
+
+The first monotonicity and local-extrema path accepts only complete
+rational-coefficient polynomials in `x` through degree three, over the whole
+real line. Its canonical forms are `monotonicity(f)`, `extrema(f)`, and
+`monotonicity_extrema(f)`. Four fixed Japanese instructions carry the same
+three intentions and may use either `関数 y=f` or `関数 f(x)=f`, with an
+optional initial `次の`. The strict full-input boundary rejects malformed,
+answer-attached, relation-valued, and ambiguous-Unicode input while recognizing
+well-formed out-of-profile variation requests as unsupported.
+
+The degree bound makes `f'` quadratic or lower, so every real stationary point
+can be represented and ordered exactly as a rational number or in one quadratic
+field `Q+Q√d`. The project-owned core partitions the real line at those points,
+certifies the derivative sign in every open cell with exact arithmetic, merges
+adjacent same-sign cells into maximal monotonic intervals, and evaluates all
+critical-point values exactly. Separate evidence rechecks derivative zeros,
+cell signs, interval maximality, function values, and the sign-change-based
+classification. No floating-point roots, graph sampling, or CAS proposal is
+proof.
+
+A zero of `f'` is not automatically an extremum. It is a local maximum or
+minimum only when the derivative sign changes; otherwise it is retained as a
+stationary non-extremum, as at `(0,0)` for `x^3`. A constant polynomial is
+reported constant on all real numbers and has no isolated extrema. The word
+`極値` in this path means local extrema, not an absolute maximum or minimum.
+
+Degree-four and higher polynomials remain unsupported because their cubic-or-
+higher derivatives require exact real-root representation, comparison, and
+sign-partition machinery beyond the current rational/quadratic-field types.
+The same rejection applies when a high-degree source subtree is hidden by
+cancellation. Interval-scoped variation, maximum/minimum, functions, variable
+denominators, concavity, inflection points, graph outlines, other variables,
+and figure/graph/table-derived requests also remain outside this decision.
+
+Verified results use solver ID `polynomial-variation` and history category
+`微分`. Their full-input preflight runs in both sync and async paths in the
+order `volume -> area -> tangent -> variation -> rational-limit`, before the
+general category solvers. Public inputs are independently revalidated and
+snapshotted, returned evidence is deeply frozen, and both hint modes omit
+critical-point coordinates, completed intervals, and extremum conclusions.

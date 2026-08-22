@@ -6,7 +6,7 @@
 typed or selected question
           |
           v
-volume -> area -> tangent -> rational-limit full-input preflights
+volume -> area -> tangent -> variation -> rational-limit full-input preflights
           |
           v
 category classifier
@@ -68,6 +68,52 @@ evidence re-evaluates the line at `a` and compares its slope with `f'(a)`; both
 must be exact zero differences. Numerical differentiation, graph sampling, and
 CAS proposals do not participate in verification. Verified results use solver
 ID `polynomial-tangent` and history category `微分`.
+
+## Polynomial-variation verification
+
+Polynomial monotonicity and local-extrema requests use a strict full-input
+preflight after tangent and before rational-function limits. The accepted
+canonical forms are `monotonicity(f)`, `extrema(f)`, and
+`monotonicity_extrema(f)`. Complete Japanese input may use `関数 y=f` or
+`関数 f(x)=f`, optionally preceded by `次の`, followed by exactly one of
+`増減を調べよ`, `極値を求めよ`, `増減を調べ、極値を求めよ`, or
+`増減と極値を求めよ` (including only the parser's documented safe terminal
+variants). This boundary keeps ordinary differentiation and equations outside
+the variation path while retaining recognized but unsupported variation forms.
+
+The complete expression AST is converted to a canonical dense
+rational-coefficient polynomial in `x` through degree three. Source-subtree
+validation prevents cancellation or zero multiplication/powers from hiding a
+degree-four term, function, variable denominator, negative power, or another
+variable. The public core copies coefficients into base `ExactRational`
+snapshots, rejects sparse or noncanonical arrays, revalidates the degree, and
+deeply freezes all returned input and evidence.
+
+The core forms the coefficient derivative, whose degree is at most two, and
+finds all real derivative zeros exactly as rational values or members of one
+quadratic field. It orders and deduplicates those points, partitions the real
+line, and certifies `f'` on every open cell with an exact rational sample.
+Adjacent cells with the same sign across an even-multiplicity stationary point
+are merged into one maximal monotonic interval. Sign changes classify local
+maxima and minima; a zero with no sign change remains explicit as a stationary
+non-extremum. Thus `x^3` is increasing on all real numbers while `(0,0)` is not
+an extremum. A constant polynomial is constant on all real numbers and has no
+isolated local extrema.
+
+Every critical-point value is evaluated exactly. When a derivative root is
+irrational, both its coordinate and function value remain in the same typed
+quadratic field `Q+Q√d`; decimals, floating-point roots, graph samples, and CAS
+proposals never become verification evidence. Independent checks cover the
+derivative equation, interval signs, maximal interval construction,
+critical-point evaluation, and extremum classification.
+
+Verified requests use solver ID `polynomial-variation` and history category
+`微分`. Typed traces feed monotonicity, extrema, and combined presentations,
+while both hint modes omit critical-point coordinates, completed intervals,
+and extremum conclusions. Interval-scoped variation, maximum/minimum,
+degree-four-or-higher polynomials, concavity, inflection points, graph outlines,
+diagram/graph/table-derived information, and other out-of-profile forms remain
+unsupported instead of being inferred or approximated.
 
 ## Rational-function limit verification
 

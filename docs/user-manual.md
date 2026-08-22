@@ -58,6 +58,39 @@ contact point and the slope. A point not on the curve is invalid. Functions,
 variable denominators, degree five or above, geometric tangents, and any curve
 or contact point that must be read from a figure or graph are unsupported.
 
+For the monotonicity or local extrema of a polynomial over all real numbers,
+enter `monotonicity(f)`, `extrema(f)`, or
+`monotonicity_extrema(f)`. For example, `monotonicity(x^3-3x)` returns
+`増加区間: (-∞,-1] または [1,+∞); 減少区間: [-1,1]; 一定区間: なし`,
+and `extrema(x^3-3x)` returns
+`極大: (-1,2); 極小: (1,-2); 極値でない停留点: なし`.
+
+The four complete Japanese instruction forms are `関数 y=f の増減を調べよ`,
+`関数 y=f の極値を求めよ`, `関数 y=f の増減を調べ、極値を求めよ`, and
+`関数 y=f の増減と極値を求めよ`. You may write `関数 f(x)=f` instead of
+`関数 y=f`, and may begin with `次の`. The entire function must be a
+rational-coefficient polynomial in `x` of degree at most three. The extension
+finds the zeros of `f'`, checks its sign between them, and evaluates every
+critical point exactly. Irrational coordinates and values stay in the exact
+form `Q+Q√d`; for `x^3+x^2-2x`, the critical coordinates are
+`(-1-√7)/3` and `(-1+√7)/3` rather than decimal approximations.
+
+A derivative zero is labeled a local extremum only when the sign changes.
+Therefore `extrema(x^3)` returns no maximum or minimum and reports `(0,0)` as
+an `極値でない停留点`; its monotonicity result is one increasing interval
+over all real numbers. A constant function is reported constant on all real
+numbers with no isolated extrema. Here `極値` means local extrema. Requests
+for an absolute maximum or minimum are a different, currently unsupported
+problem type. Both hint levels avoid revealing the critical coordinates,
+finished intervals, or extremum conclusions.
+
+Degree four or above, including a high-degree term hidden by cancellation, an
+explicit interval, maximum/minimum, a function or variable denominator,
+another variable, concavity or inflection points, a graph outline, and any
+information that must be read from a figure, graph, or variation table are
+unsupported. Malformed, incomplete, relation-valued, ambiguous-Unicode, or
+answer-attached input is invalid rather than guessed.
+
 For an area between two polynomial curves, use
 `area_[0,2](x^2;2x)` for an explicit interval or
 `area_intersections(x^2;2x)` for the region between exactly two distinct real

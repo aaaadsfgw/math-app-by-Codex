@@ -444,7 +444,8 @@ Last updated: 2026-08-23
   `m=f'(a)`, and `c=f(a)-ma`, then deeply freezes evidence that independently
   rechecks both point passage and slope agreement.
 - Routed tangent preflight in the application order
-  `volume -> area -> tangent -> rational-limit`, before category solvers, in
+  `volume -> area -> tangent -> variation -> rational-limit`, before category
+  solvers, in
   both synchronous and asynchronous paths. Added tangent-specific teaching
   traces and answer-safe hints, solver ID `polynomial-tangent`, `微分` history
   classification, storage round trips, exception containment, wrong-category
@@ -459,6 +460,40 @@ Last updated: 2026-08-23
   variables, geometric tangents, and figure/graph-derived contact information
   unsupported. No numerical differentiation, graph sampling, or CAS proposal
   is accepted as tangent verification.
+- Added strict full-input parsing for `monotonicity(f)`, `extrema(f)`, and
+  `monotonicity_extrema(f)`, plus four complete Japanese instruction forms
+  using either `関数 y=f` or `関数 f(x)=f` and an optional initial `次の`.
+  Malformed, relation-valued, ambiguous-Unicode, and answer-attached inputs are
+  invalid; well-formed requests outside the bounded profile remain recognized
+  but unsupported without stealing ordinary derivative or equation problems.
+- Added a project-owned exact polynomial-variation core for
+  rational-coefficient polynomials through degree three on all real numbers.
+  It snapshots and revalidates canonical dense coefficients, formally
+  differentiates, solves the quadratic-or-lower derivative exactly, certifies
+  the sign on every open cell, merges maximal monotonic intervals, evaluates
+  every critical point exactly, and deeply freezes its evidence. Irrational
+  roots and values stay in one exact quadratic field `Q+Q√d`.
+- Represented a repeated derivative zero with no sign change as a stationary
+  non-extremum, so `x^3` is increasing on all real numbers while `(0,0)` is not
+  reported as an extremum. A constant polynomial is constant on all real
+  numbers and has no isolated local extrema.
+- Added variation preflight after tangent and before rational-function limits
+  in both synchronous and asynchronous paths, completing the current order
+  `volume -> area -> tangent -> variation -> rational-limit`. Verified results
+  use solver ID `polynomial-variation` and history category `微分`; the typed
+  presentation and both hints omit critical-point coordinates, completed
+  intervals, and extrema until the answer-bearing modes.
+- Added 33 variation parser/core/solver/public tests (11 parser, 10 core, and 12
+  solver/public), including an independent 500-case BigInt fraction and
+  quadratic-field core oracle. Added 250 generated public-path cases across
+  degrees zero through three, all three canonical modes, all derivative-root
+  kinds, Japanese forms, and exact radical values, bringing the versioned
+  evaluation corpus to 5,250 unique problems.
+- Kept degree four or above even when hidden by cancellation, interval-scoped
+  requests, maximum/minimum, functions and variable denominators, concavity,
+  inflection points, graph outlines, other variables, and figure/graph/table-
+  derived information unsupported. No graph sampling, floating-point root,
+  or CAS proposal is accepted as variation verification.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -487,17 +522,14 @@ Last updated: 2026-08-23
 
 ## Next
 
-1. Add exact monotonicity and local-extrema problems for bounded
-   rational-coefficient polynomials, with project-owned derivative sign
-   partitions and no graph inference.
-2. Verify module-worker and offscreen loading in unpacked Chrome before
+1. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 414 passed, 0 failed on 2026-08-23, including 5,000 generated
+- `npm test` - 448 passed, 0 failed on 2026-08-23, including 5,250 generated
   evaluation cases.
-- `npm run check` - passed for 161 files, 10 HTML, 123 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 167 files, 10 HTML, 129 JS/MJS, and 11 CSS files
   on 2026-08-23.
 
 ## Restart procedure

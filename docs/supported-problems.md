@@ -15,6 +15,7 @@ Classification alone never means a problem can be solved.
 | One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Polynomial tangent line | `tangent_x_[1](x^2)`, `tangent_point_(1,1)(x^2)` | exact coefficient differentiation, declared-point membership, and point/slope re-verification |
+| Polynomial monotonicity and local extrema | `monotonicity(x^3-3x)`, `extrema(x^3)`, `monotonicity_extrema(x^3+x^2-2x)` | exact derivative roots, sign-cell certificates, maximal intervals, and exact critical-point values |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
 | Rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->+∞) (2x²+1)/(x²-3)` | exact zero multiplicities at finite points or degree/leading-coefficient comparison at signed infinity, with the original-domain ledger retained |
@@ -88,6 +89,44 @@ contact point or curve that must be inferred from a figure or graph remain
 unsupported. Malformed notation, attached answers, and a declared point that
 is not on the curve receive no verified answer. No numerical derivative,
 graph sampling, or CAS proposal is verification evidence.
+
+Polynomial monotonicity and local-extrema problems accept the strict full-input
+forms `monotonicity(f)`, `extrema(f)`, and
+`monotonicity_extrema(f)`. Complete Japanese input may begin with `次の`, use
+either `関数 y=f` or `関数 f(x)=f`, and end with one of the four instructions
+`増減を調べよ`, `極値を求めよ`, `増減を調べ、極値を求めよ`, or
+`増減と極値を求めよ`. The request always concerns the whole real line. Every
+source subtree must be a rational-coefficient polynomial in `x`, and the
+complete expression must have pre-cancellation structural degree at most three.
+Multiplication by zero, cancellation, or a zero power cannot hide a higher
+source degree.
+
+The exact core formally differentiates the dense coefficient array, finds every
+real zero of the quadratic-or-lower derivative, orders those zeros exactly,
+and certifies the derivative sign on every open cell with a rational sample.
+It merges cells across a stationary point when the sign does not change, so
+the returned increasing, decreasing, and constant intervals are maximal. A
+sign change determines a local maximum or minimum; a zero without a sign
+change remains an explicit stationary non-extremum. Thus `x^3` is increasing
+on all real numbers and has the stationary non-extremum `(0,0)`, not a local
+extremum. A constant polynomial is constant on all real numbers and has no
+isolated extrema.
+
+Critical coordinates and values are exact rational numbers or values in one
+quadratic field `Q+Q√d`. For example, `x^3+x^2-2x` has critical coordinates
+`(-1-√7)/3` and `(-1+√7)/3`, with exact function values in the same field.
+The verified solver ID is `polynomial-variation`, and history uses category
+`微分`. Both hint modes withhold the critical-point coordinates, finished
+intervals, and extremum conclusions.
+
+Degree four or above (including a high-degree source subtree hidden by
+cancellation), an explicit interval, maximum/minimum rather than local extrema,
+function calls, variable denominators or negative variable powers, other
+variables, concavity, inflection points, graph outlines, and information that
+must be inferred from a figure, graph, or variation table remain unsupported.
+Malformed or incomplete notation, relation-valued expressions, ambiguous
+Unicode, and attached answers are invalid. No floating-point roots, graph
+sampling, numerical sign guesses, or CAS proposal is verification evidence.
 
 Rational-function limits currently accept one variable `x`, a finite rational
 approach point or separately signed positive/negative infinity, and a complete

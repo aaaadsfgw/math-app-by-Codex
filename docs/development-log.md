@@ -634,3 +634,50 @@ unpacked Chrome extension path still requires the release smoke test.
 `npm test` passes 414 tests including the 5,000-case generated corpus, and
 `npm run check` passes 161 files (10 HTML, 123 JS/MJS, and 11 CSS). The
 unpacked Chrome extension path still requires the release smoke test.
+
+## 2026-08-23: exact polynomial monotonicity and local extrema
+
+- Added strict full-input parsing for `monotonicity(f)`, `extrema(f)`, and
+  `monotonicity_extrema(f)`, plus four complete Japanese instruction forms
+  using `関数 y=f` or `関数 f(x)=f` with an optional initial `次の`.
+  Malformed, incomplete, relation-valued, ambiguous-Unicode, and
+  answer-attached inputs are invalid. Well-formed interval, maximum/minimum,
+  graph, and other out-of-profile variation requests are unsupported, while
+  ordinary differentiation, equations, tangents, areas, volumes, limits, and
+  sequence monotonicity retain their existing routes.
+- Added a project-owned exact core for rational-coefficient polynomials through
+  degree three over all real numbers. It snapshots and revalidates dense
+  canonical coefficients, differentiates formally, finds every real zero of
+  the quadratic-or-lower derivative, certifies its sign on each open cell,
+  merges maximal monotonic intervals, evaluates critical points, and deeply
+  freezes all returned evidence. Irrational roots and values remain exact in a
+  single quadratic field `Q+Q√d`.
+- Classified derivative zeros by actual sign change. `x^3` is increasing on
+  all real numbers and reports `(0,0)` as a stationary non-extremum; a constant
+  polynomial is constant on all real numbers and has no isolated extrema.
+  Independent verification rechecks derivative zeros, interval signs,
+  maximality, critical values, and the final local-extremum classification.
+- Routed recognized variation input after tangent and before rational-function
+  limits, yielding the full sync/async preflight order
+  `volume -> area -> tangent -> variation -> rational-limit`. Added solver ID
+  `polynomial-variation`, `微分` history classification, typed monotonicity,
+  extrema, and combined presentations, storage round trips, wrong-category
+  priority, exception containment, and non-stealing regressions. Both hint
+  levels withhold critical coordinates, completed intervals, and extrema.
+- Added 33 focused tests: 10 core, 11 parser, and 12 solver/public-path tests.
+  The core suite includes an independent 500-case BigInt fraction and
+  quadratic-field oracle spanning degrees zero through three and stationary
+  non-extrema. Another 250 generated public-path cases cover all three modes,
+  every derivative-root kind, complete Japanese forms, rational and radical
+  critical values, hint safety, routing, presentation, and storage, increasing
+  the versioned evaluation corpus from 5,000 to 5,250 unique problems.
+- Degree four or above even when hidden by cancellation, interval-scoped
+  requests, maximum/minimum, functions, variable denominators, negative
+  powers, concavity, inflection points, graph outlines, other variables, and
+  figure/graph/table-derived information remain unsupported. No floating-point
+  root, numerical or graph-sampled sign guess, graph inference, or CAS proposal
+  is accepted as proof.
+
+`npm test` passes 448 tests including the 5,250-case generated corpus, and
+`npm run check` passes 167 files (10 HTML, 129 JS/MJS, and 11 CSS). The
+unpacked Chrome extension path still requires the release smoke test.

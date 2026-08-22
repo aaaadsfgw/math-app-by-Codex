@@ -2502,6 +2502,275 @@ function generatedPolynomialTangents() {
   return cases;
 }
 
+function formatCorpusVariationPoint(x, y) {
+  return `(${x},${y})`;
+}
+
+function formatCorpusVariationInterval(lower, upper) {
+  return `${lower === null ? "(-∞" : `[${lower}`},`
+    + `${upper === null ? "+∞)" : `${upper}]`}`;
+}
+
+function formatCorpusIntegerLinearRadical(rationalPart, radicalPart, radicand) {
+  if (radicalPart === 0n) return String(rationalPart);
+  const magnitude = radicalPart < 0n ? -radicalPart : radicalPart;
+  const radical = `${magnitude === 1n ? "" : magnitude}√${radicand}`;
+  if (rationalPart === 0n) return `${radicalPart < 0n ? "-" : ""}${radical}`;
+  return `${rationalPart}${radicalPart < 0n ? "-" : "+"}${radical}`;
+}
+
+function corpusVariationAnswer(mode, profile) {
+  const monotonicity = `増加区間: ${profile.increasing ?? "なし"}; `
+    + `減少区間: ${profile.decreasing ?? "なし"}; `
+    + `一定区間: ${profile.constant ?? "なし"}`;
+  const extrema = `極大: ${profile.maximum ?? "なし"}; `
+    + `極小: ${profile.minimum ?? "なし"}; `
+    + `極値でない停留点: ${profile.stationary ?? "なし"}`;
+  if (mode === "monotonicity") return monotonicity;
+  if (mode === "extrema") return extrema;
+  return `${monotonicity}; ${extrema}`;
+}
+
+function corpusVariationQuestion(index, expression, profile) {
+  const form = index % 7;
+  let mode;
+  let question;
+  if (form === 0) {
+    mode = "monotonicity";
+    question = `monotonicity(${expression})`;
+  } else if (form === 1) {
+    mode = "extrema";
+    question = `extrema(${expression})`;
+  } else if (form === 2) {
+    mode = "combined";
+    question = `monotonicity_extrema(${expression})`;
+  } else if (form === 3) {
+    mode = "monotonicity";
+    question = `関数 y=${expression} の増減を調べよ`;
+  } else if (form === 4) {
+    mode = "extrema";
+    question = `関数 f(x)=${expression} の極値を求めよ`;
+  } else if (form === 5) {
+    mode = "combined";
+    question = `関数 y=${expression} の増減と極値を求めよ`;
+  } else {
+    mode = "combined";
+    question = `関数 f(x)=${expression} の増減を調べ、極値を求めよ`;
+  }
+  return {
+    family: "polynomial-variation",
+    question,
+    answer: corpusVariationAnswer(mode, profile),
+    coverage: {
+      ...profile.coverage,
+      mode,
+      form,
+    },
+  };
+}
+
+function generatedPolynomialVariations() {
+  const cases = [];
+  const allReal = "(-∞,+∞)";
+
+  for (let index = 0; index < 20; index += 1) {
+    const coefficients = [corpusRational(BigInt(index - 10))];
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients) || "0", {
+      constant: allReal,
+      coverage: { degree: 0, criticalKind: "all-real", irrationalCritical: false },
+    }));
+  }
+
+  for (let offset = 0; offset < 30; offset += 1) {
+    const index = cases.length;
+    const slopeValue = (offset % 9) - 4 || 5;
+    const slope = corpusRational(BigInt(slopeValue), BigInt((offset % 3) + 1));
+    const coefficients = [corpusRational(BigInt(offset - 15)), slope];
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients), {
+      increasing: slope.numerator > 0n ? allReal : undefined,
+      decreasing: slope.numerator < 0n ? allReal : undefined,
+      coverage: { degree: 1, criticalKind: "none", irrationalCritical: false },
+    }));
+  }
+
+  for (let offset = 0; offset < 50; offset += 1) {
+    const index = cases.length;
+    const signed = offset % 2 === 0 ? 1n : -1n;
+    const leading = corpusRational(
+      signed * BigInt((offset % 5) + 1),
+      BigInt((offset % 3) + 1),
+    );
+    const point = corpusRational(
+      BigInt((offset % 17) - 8),
+      BigInt(((offset * 2) % 5) + 1),
+    );
+    const value = corpusRational(BigInt(offset - 25), BigInt((offset % 4) + 1));
+    const coefficients = [
+      addCorpusRationals(multiplyCorpusRationals(
+        leading,
+        multiplyCorpusRationals(point, point),
+      ), value),
+      negateCorpusRational(multiplyCorpusRationals(
+        corpusRational(2n),
+        multiplyCorpusRationals(leading, point),
+      )),
+      leading,
+    ];
+    const pointExact = formatCorpusRational(point);
+    const extremum = formatCorpusVariationPoint(pointExact, formatCorpusRational(value));
+    const left = formatCorpusVariationInterval(null, pointExact);
+    const right = formatCorpusVariationInterval(pointExact, null);
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients), {
+      increasing: leading.numerator > 0n ? right : left,
+      decreasing: leading.numerator > 0n ? left : right,
+      maximum: leading.numerator < 0n ? extremum : undefined,
+      minimum: leading.numerator > 0n ? extremum : undefined,
+      coverage: { degree: 2, criticalKind: "one-rational", irrationalCritical: false },
+    }));
+  }
+
+  for (let offset = 0; offset < 40; offset += 1) {
+    const index = cases.length;
+    const signed = offset % 2 === 0 ? 1n : -1n;
+    const leading = corpusRational(signed * BigInt((offset % 5) + 1));
+    const linear = corpusRational(signed * BigInt((offset % 7) + 1));
+    const coefficients = [
+      corpusRational(BigInt(offset - 20)),
+      linear,
+      corpusRational(0n),
+      leading,
+    ];
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients), {
+      increasing: signed > 0n ? allReal : undefined,
+      decreasing: signed < 0n ? allReal : undefined,
+      coverage: { degree: 3, criticalKind: "none", irrationalCritical: false },
+    }));
+  }
+
+  for (let offset = 0; offset < 40; offset += 1) {
+    const index = cases.length;
+    const signed = offset % 2 === 0 ? 1n : -1n;
+    const leading = corpusRational(
+      signed * BigInt((offset % 5) + 1),
+      BigInt((offset % 3) + 1),
+    );
+    const point = corpusRational(
+      BigInt((offset % 13) - 6),
+      BigInt(((offset * 2) % 5) + 1),
+    );
+    const value = corpusRational(BigInt(offset - 20), BigInt((offset % 4) + 1));
+    const pointSquared = multiplyCorpusRationals(point, point);
+    const pointCubed = multiplyCorpusRationals(pointSquared, point);
+    const coefficients = [
+      subtractCorpusRationals(value, multiplyCorpusRationals(leading, pointCubed)),
+      multiplyCorpusRationals(
+        corpusRational(3n),
+        multiplyCorpusRationals(leading, pointSquared),
+      ),
+      negateCorpusRational(multiplyCorpusRationals(
+        corpusRational(3n),
+        multiplyCorpusRationals(leading, point),
+      )),
+      leading,
+    ];
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients), {
+      increasing: signed > 0n ? allReal : undefined,
+      decreasing: signed < 0n ? allReal : undefined,
+      stationary: formatCorpusVariationPoint(
+        formatCorpusRational(point),
+        formatCorpusRational(value),
+      ),
+      coverage: { degree: 3, criticalKind: "double", irrationalCritical: false },
+    }));
+  }
+
+  for (let offset = 0; offset < 40; offset += 1) {
+    const index = cases.length;
+    const signed = offset % 2 === 0 ? 1n : -1n;
+    const leading = corpusRational(
+      signed * BigInt((offset % 5) + 1),
+      BigInt((offset % 3) + 1),
+    );
+    const lowerPoint = corpusRational(
+      BigInt((offset % 13) - 6),
+      BigInt((offset % 3) + 1),
+    );
+    const upperPoint = addCorpusRationals(lowerPoint, corpusRational(
+      BigInt((offset % 5) + 1),
+      BigInt(((offset + 1) % 3) + 1),
+    ));
+    const sum = addCorpusRationals(lowerPoint, upperPoint);
+    const product = multiplyCorpusRationals(lowerPoint, upperPoint);
+    const coefficients = [
+      corpusRational(BigInt(offset - 20), BigInt((offset % 4) + 1)),
+      multiplyCorpusRationals(corpusRational(3n), multiplyCorpusRationals(leading, product)),
+      negateCorpusRational(divideCorpusRationals(
+        multiplyCorpusRationals(corpusRational(3n), multiplyCorpusRationals(leading, sum)),
+        corpusRational(2n),
+      )),
+      leading,
+    ];
+    const lowerExact = formatCorpusRational(lowerPoint);
+    const upperExact = formatCorpusRational(upperPoint);
+    const lowerValue = formatCorpusRational(evaluateCorpusPolynomial(coefficients, lowerPoint));
+    const upperValue = formatCorpusRational(evaluateCorpusPolynomial(coefficients, upperPoint));
+    const outside = `${formatCorpusVariationInterval(null, lowerExact)} または `
+      + formatCorpusVariationInterval(upperExact, null);
+    const inside = formatCorpusVariationInterval(lowerExact, upperExact);
+    const lowerExtremum = formatCorpusVariationPoint(lowerExact, lowerValue);
+    const upperExtremum = formatCorpusVariationPoint(upperExact, upperValue);
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients), {
+      increasing: signed > 0n ? outside : inside,
+      decreasing: signed > 0n ? inside : outside,
+      maximum: signed > 0n ? lowerExtremum : upperExtremum,
+      minimum: signed > 0n ? upperExtremum : lowerExtremum,
+      coverage: { degree: 3, criticalKind: "two-rational", irrationalCritical: false },
+    }));
+  }
+
+  const squareFreeRadicands = [2n, 3n, 5n, 6n, 7n, 10n, 11n, 13n, 14n, 15n];
+  for (let offset = 0; offset < 30; offset += 1) {
+    const index = cases.length;
+    const signed = offset % 2 === 0 ? 1n : -1n;
+    const leadingInteger = signed * BigInt((offset % 5) + 1);
+    const radicand = squareFreeRadicands[offset % squareFreeRadicands.length];
+    const constant = BigInt(offset - 15);
+    const coefficients = [
+      corpusRational(constant),
+      corpusRational(-3n * leadingInteger * radicand),
+      corpusRational(0n),
+      corpusRational(leadingInteger),
+    ];
+    const lowerExact = `-√${radicand}`;
+    const upperExact = `√${radicand}`;
+    const radicalMagnitude = 2n * leadingInteger * radicand;
+    const lowerValue = formatCorpusIntegerLinearRadical(
+      constant,
+      radicalMagnitude,
+      radicand,
+    );
+    const upperValue = formatCorpusIntegerLinearRadical(
+      constant,
+      -radicalMagnitude,
+      radicand,
+    );
+    const outside = `${formatCorpusVariationInterval(null, lowerExact)} または `
+      + formatCorpusVariationInterval(upperExact, null);
+    const inside = formatCorpusVariationInterval(lowerExact, upperExact);
+    const lowerExtremum = formatCorpusVariationPoint(lowerExact, lowerValue);
+    const upperExtremum = formatCorpusVariationPoint(upperExact, upperValue);
+    cases.push(corpusVariationQuestion(index, formatRationalPolynomial(coefficients), {
+      increasing: signed > 0n ? outside : inside,
+      decreasing: signed > 0n ? inside : outside,
+      maximum: signed > 0n ? lowerExtremum : upperExtremum,
+      minimum: signed > 0n ? upperExtremum : lowerExtremum,
+      coverage: { degree: 3, criticalKind: "two-radical", irrationalCritical: true },
+    }));
+  }
+
+  return cases;
+}
+
 function polynomialAreaExpectedValue(coefficients, lower, upper, roots) {
   const interiorRoots = roots
     .filter((root) => (
@@ -2762,6 +3031,7 @@ const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
 const infinityRationalLimitCorpus = generatedInfinityRationalLimits();
 const polynomialTangentCorpus = generatedPolynomialTangents();
+const polynomialVariationCorpus = generatedPolynomialVariations();
 const polynomialAreaCorpus = generatedPolynomialAreas();
 const polynomialVolumeCorpus = generatedPolynomialVolumes();
 const positiveCorpus = [
@@ -2783,14 +3053,15 @@ const positiveCorpus = [
   ...finiteRationalLimitCorpus,
   ...infinityRationalLimitCorpus,
   ...polynomialTangentCorpus,
+  ...polynomialVariationCorpus,
   ...polynomialAreaCorpus,
   ...polynomialVolumeCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("5,000問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 5_000);
+test("5,250問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 5_250);
   assert.equal(
     finiteRationalLimitCorpus.filter(({ question }) => (
       [...positiveCorpus, ...rejectedCorpus].some((item) => (
@@ -2855,6 +3126,32 @@ test("5,000問の生成評価コーパスで厳密解と安全な未対応を維
   assert.ok(polynomialVolumeCorpus.some(({ coverage }) => coverage.fractionalBound));
   assert.ok(polynomialVolumeCorpus.some(({ coverage }) => coverage.quadraticOuter));
   assert.ok(polynomialVolumeCorpus.some(({ coverage }) => coverage.quadraticInner));
+  assert.equal(polynomialVariationCorpus.length, 250);
+  assert.equal(
+    new Set(polynomialVariationCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.equal(
+    polynomialVariationCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "polynomial-variation" && item.question === question
+      ))
+    )).length,
+    0,
+  );
+  assert.deepEqual(
+    new Set(polynomialVariationCorpus.map(({ coverage }) => coverage.degree)),
+    new Set([0, 1, 2, 3]),
+  );
+  assert.deepEqual(
+    new Set(polynomialVariationCorpus.map(({ coverage }) => coverage.criticalKind)),
+    new Set(["all-real", "none", "one-rational", "double", "two-rational", "two-radical"]),
+  );
+  assert.deepEqual(
+    new Set(polynomialVariationCorpus.map(({ coverage }) => coverage.mode)),
+    new Set(["monotonicity", "extrema", "combined"]),
+  );
+  assert.ok(polynomialVariationCorpus.some(({ coverage }) => coverage.irrationalCritical));
   assert.equal(exponentialDefiniteIntegralCorpus.length, 250);
   assert.equal(
     new Set(exponentialDefiniteIntegralCorpus.map(({ question }) => question)).size,

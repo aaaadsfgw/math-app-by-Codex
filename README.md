@@ -34,6 +34,9 @@ The current migration checkpoint supports:
 - exact tangent lines to rational-coefficient polynomials through degree four
   at an explicitly stated rational x-coordinate or point, with exact
   curve-membership, point, and slope verification;
+- exact monotonicity and local extrema of rational-coefficient polynomials
+  through degree three over all real numbers, with exact derivative roots,
+  sign partitions, critical-point values, and stationary non-extrema;
 - indefinite integrals whose candidate can be differentiated back over the
   whole supported domain;
 - exact definite integrals of rational-coefficient polynomials through degree
@@ -124,6 +127,29 @@ checks `f(a)=b` exactly. It then differentiates the coefficient array, computes
 contact point and that its slope is `m`. A false declared point is invalid;
 functions, variable denominators, degree five or above, and a contact point or
 curve that must be read from a figure or graph remain unsupported.
+
+For polynomial monotonicity and local extrema over all real numbers, write
+`monotonicity(x^3-3x)`, `extrema(x^3-3x)`, or
+`monotonicity_extrema(x^3-3x)`. The corresponding complete Japanese forms are
+`関数 y=f の増減を調べよ`, `関数 y=f の極値を求めよ`,
+`関数 y=f の増減を調べ、極値を求めよ`, and
+`関数 y=f の増減と極値を求めよ`; `関数 f(x)=f` may replace `関数 y=f`,
+and an initial `次の` is accepted. The function must be a complete
+rational-coefficient polynomial in `x` of degree at most three. The solver
+forms `f'`, finds its rational or quadratic-radical zeros exactly, partitions
+the real line, and checks the derivative sign in every open cell. For example,
+`monotonicity(x^3-3x)` reports increasing on
+`(-∞,-1]` and `[1,+∞)` and decreasing on `[-1,1]`. A repeated derivative
+zero that does not change sign is retained as a stationary non-extremum and
+does not split a maximal monotonic interval: `extrema(x^3)` reports no local
+maximum or minimum and the stationary non-extremum `(0,0)`. A constant is
+reported constant on all real numbers with no isolated extrema. Irrational
+critical points and values remain exact in one quadratic field `Q+Q√d`.
+Degree four or above (including a source term hidden by cancellation),
+interval-scoped requests, maximum/minimum requests, functions or variable
+denominators, concavity/inflection/graph-outline requests, other variables,
+and anything that must be read from a figure, graph, or variation table remain
+unsupported rather than approximated.
 
 For an area between two curves, write `area_[0,2](x^2;2x)` for an explicit
 interval or `area_intersections(x^2;2x)` for the interval between exactly two

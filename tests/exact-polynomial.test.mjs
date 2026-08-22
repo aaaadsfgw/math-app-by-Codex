@@ -63,3 +63,66 @@ test("四次までを厳密展開し、変数分母・上限超過・0除算を�
     (error) => error instanceof ExactPolynomialError && error.unsupported,
   );
 });
+
+test("呼び出し側が途中次数を3次へ制限でき、高次項の相殺も受理しない", () => {
+  const parse = (expression) => parseMathExpression(expression, { symbols: ["x"] }).ast;
+  const cubic = exactPolynomialFromAst(parse("(x-1)^3"), {
+    maxIntermediateDegree: 3,
+  });
+  assert.deepEqual(cubic.map(String), ["-1", "3", "-3", "1"]);
+
+  for (const expression of ["x^4-x^4", "0*x^4", "(x-x)^4"]) {
+    assert.throws(
+      () => exactPolynomialFromAst(parse(expression), { maxIntermediateDegree: 3 }),
+      (error) => (
+        error instanceof ExactPolynomialError
+        && error.unsupported
+        && error.code === "UNSUPPORTED_EXPONENT"
+      ),
+    );
+  }
+
+  for (const expression of [
+    "0*x*x*x*x",
+    "(x^2-x^2)*x^2+x",
+    "(x-x)*(x*x*x)+x",
+    "(x^2-x^2)^2+x",
+  ]) {
+    assert.throws(
+      () => exactPolynomialFromAst(parse(expression), { maxIntermediateDegree: 3 }),
+      (error) => (
+        error instanceof ExactPolynomialError
+        && error.unsupported
+        && error.code === "DEGREE_TOO_HIGH"
+      ),
+    );
+  }
+
+  assert.throws(
+    () => exactPolynomialFromAst(parse("x^2*x^2"), { maxIntermediateDegree: 3 }),
+    (error) => (
+      error instanceof ExactPolynomialError
+      && error.unsupported
+      && error.code === "DEGREE_TOO_HIGH"
+    ),
+  );
+
+  for (const maxIntermediateDegree of [0, 5, 1.5]) {
+    assert.throws(
+      () => exactPolynomialFromAst(parse("x"), { maxIntermediateDegree }),
+      (error) => (
+        error instanceof ExactPolynomialError
+        && error.code === "INVALID_MAX_INTERMEDIATE_DEGREE"
+        && !error.unsupported
+      ),
+    );
+  }
+
+
+  for (const expression of ["1/((x-x)+1)", "x^((x-x)+2)"]) {
+    assert.throws(
+      () => exactPolynomialFromAst(parse(expression), { maxIntermediateDegree: 3 }),
+      (error) => error instanceof ExactPolynomialError && error.unsupported,
+    );
+  }
+});
