@@ -25,6 +25,7 @@ const METHOD_HINTS = Object.freeze({
   "indefinite-integral": "基本積分公式を適用し、最後に積分定数 C を付けます。",
   "finite-limit": "有限点では分子・分母の零点次数を、無限遠では次数と最高次係数を比較します。",
   "polynomial-area": "2曲線の差の全交点で区間を分け、各区間の上下関係を確かめて絶対値積分を足します。",
+  "polynomial-tangent": "接点での関数値と導関数値を厳密に求め、点と傾きから直線の方程式を作ります。",
   "polynomial-volume": "区間全体で外半径と内半径の非負性・順序を確かめ、pi(R²-r²)を積分します。",
 });
 

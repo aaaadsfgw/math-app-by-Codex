@@ -432,3 +432,33 @@ No common-factor cancellation, numerical sampling, floating point, CAS limit,
 or heuristic asymptote detection is accepted as proof. Non-rational function
 limits and expressions above the existing degree/factor profile remain
 unsupported.
+
+## D-023: Construct polynomial tangents only from an explicit exact contact coordinate
+
+**Status:** accepted
+**Date:** 2026-08-23
+
+The first tangent-line path accepts only a complete rational-coefficient
+polynomial in `x` through degree four together with an explicit finite rational
+x-coordinate or an explicit finite rational point. Canonical forms are
+`tangent_x_[a](f)`, its alias `tangent_[a](f)`, and
+`tangent_point_(a,b)(f)`; two fixed Japanese sentence forms carry the same
+information. A declared point is not treated as trusted geometry: its
+y-coordinate must equal `f(a)` exactly or the request is invalid.
+
+The project-owned core evaluates `f(a)`, differentiates the dense coefficient
+array formally, evaluates `m=f'(a)`, and constructs `c=f(a)-ma`. It returns the
+line as exact coefficients `[c,m]` and canonical `y=mx+c` text. Verification
+then independently evaluates that line at `a` and compares its slope with
+`f'(a)`; both exact differences must be zero. The public boundary revalidates
+canonical degree-bounded inputs, snapshots base `ExactRational` values, rejects
+sparse arrays, and deeply freezes all returned evidence. Numerical
+differentiation, graph sampling, and CAS proposals are not proof.
+
+The verified solver ID is `polynomial-tangent`, with history category `微分`.
+Its full-input preflight runs after volume and area and before rational-function
+limits, in the order `volume -> area -> tangent -> rational-limit`, so an
+explicit curve or point cannot be intercepted by a general equation solver.
+Functions, variable denominators and negative powers, degree five or above,
+other variables, geometric tangents, and curve/contact information requiring a
+figure or graph remain unsupported rather than being approximated or inferred.

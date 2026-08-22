@@ -2374,6 +2374,134 @@ function generatedInfinityRationalLimits() {
   return cases;
 }
 
+function evaluateCorpusPolynomial(coefficients, point) {
+  return coefficients.reduceRight(
+    (value, coefficient) => addCorpusRationals(
+      multiplyCorpusRationals(value, point),
+      coefficient,
+    ),
+    corpusRational(0n),
+  );
+}
+
+function evaluateCorpusPolynomialDerivative(coefficients, point) {
+  let value = corpusRational(0n);
+  for (let power = 1; power < coefficients.length; power += 1) {
+    value = addCorpusRationals(value, multiplyCorpusRationals(
+      multiplyCorpusRationals(coefficients[power], corpusRational(BigInt(power))),
+      powerCorpusRational(point, power - 1),
+    ));
+  }
+  return value;
+}
+
+function formatCorpusTangentLine(slope, intercept) {
+  if (slope.numerator === 0n) return `y=${formatCorpusRational(intercept)}`;
+  const slopeNegative = slope.numerator < 0n;
+  const slopeMagnitude = slopeNegative ? negateCorpusRational(slope) : slope;
+  const slopeBody = equalCorpusRationals(slopeMagnitude, corpusRational(1n))
+    ? "x"
+    : slopeMagnitude.denominator === 1n
+      ? `${slopeMagnitude.numerator}x`
+      : `(${formatCorpusRational(slopeMagnitude)})x`;
+  let expression = `${slopeNegative ? "-" : ""}${slopeBody}`;
+  if (intercept.numerator !== 0n) {
+    const interceptNegative = intercept.numerator < 0n;
+    const magnitude = interceptNegative ? negateCorpusRational(intercept) : intercept;
+    expression += `${interceptNegative ? "-" : "+"}${formatCorpusRational(magnitude)}`;
+  }
+  return `y=${expression}`;
+}
+
+function generatedTangentPolynomial(degree, variant, point) {
+  const coefficients = Array.from({ length: degree + 1 }, (_, power) => (
+    corpusRational(
+      BigInt(((variant + 3) * (power + 5) + power * 7) % 17) - 8n,
+      BigInt(((variant * 2 + power) % 5) + 1),
+    )
+  ));
+  if (coefficients[degree].numerator === 0n) {
+    coefficients[degree] = corpusRational(
+      variant % 2 === 0 ? 1n : -1n,
+      BigInt((variant % 4) + 1),
+    );
+  }
+  if (degree >= 2 && variant % 10 === 0) {
+    let higherDerivative = corpusRational(0n);
+    for (let power = 2; power <= degree; power += 1) {
+      higherDerivative = addCorpusRationals(
+        higherDerivative,
+        multiplyCorpusRationals(
+          multiplyCorpusRationals(
+            coefficients[power],
+            corpusRational(BigInt(power)),
+          ),
+          powerCorpusRational(point, power - 1),
+        ),
+      );
+    }
+    coefficients[1] = negateCorpusRational(higherDerivative);
+  }
+  return coefficients;
+}
+
+function generatedPolynomialTangents() {
+  const forms = [
+    "x-coordinate",
+    "x-alias",
+    "point",
+    "japanese-x",
+    "japanese-point",
+  ];
+  const cases = [];
+  for (let degree = 0; degree <= 4; degree += 1) {
+    for (let variant = 0; variant < 50; variant += 1) {
+      const point = corpusRational(
+        BigInt(((variant * 7 + degree * 3) % 31) - 15),
+        BigInt(((variant + degree) % 5) + 1),
+      );
+      const coefficients = generatedTangentPolynomial(degree, variant, point);
+      const pointValue = evaluateCorpusPolynomial(coefficients, point);
+      const slope = evaluateCorpusPolynomialDerivative(coefficients, point);
+      const intercept = subtractCorpusRationals(
+        pointValue,
+        multiplyCorpusRationals(slope, point),
+      );
+      const expression = formatRationalPolynomial(coefficients) || "0";
+      const form = forms[variant % forms.length];
+      let question;
+      if (form === "x-coordinate") {
+        question = `tangent_x_[(${formatCorpusRational(point)})](${expression})`;
+      } else if (form === "x-alias") {
+        question = `tangent_[(${formatCorpusRational(point)})](${expression})`;
+      } else if (form === "point") {
+        question = `tangent_point_((${formatCorpusRational(point)}),`
+          + `(${formatCorpusRational(pointValue)}))(${expression})`;
+      } else if (form === "japanese-x") {
+        question = `曲線 y=${expression} の x=${formatCorpusRational(point)} `
+          + `における接線の方程式を求めよ`;
+      } else {
+        question = `曲線 y=${expression} 上の点 (`
+          + `${formatCorpusRational(point)},${formatCorpusRational(pointValue)}) `
+          + `における接線の方程式を求めよ`;
+      }
+      cases.push({
+        family: "polynomial-tangent",
+        question,
+        answer: formatCorpusTangentLine(slope, intercept),
+        coverage: {
+          degree,
+          form,
+          fractionalPoint: point.denominator !== 1n,
+          fractionalCoefficient: coefficients.some(({ denominator }) => denominator !== 1n),
+          horizontal: slope.numerator === 0n,
+        },
+      });
+    }
+  }
+  return cases;
+}
+
 function polynomialAreaExpectedValue(coefficients, lower, upper, roots) {
   const interiorRoots = roots
     .filter((root) => (
@@ -2633,6 +2761,7 @@ const piAngleDefiniteIntegralCorpus = generatedPiAngleDefiniteIntegrals();
 const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
 const infinityRationalLimitCorpus = generatedInfinityRationalLimits();
+const polynomialTangentCorpus = generatedPolynomialTangents();
 const polynomialAreaCorpus = generatedPolynomialAreas();
 const polynomialVolumeCorpus = generatedPolynomialVolumes();
 const positiveCorpus = [
@@ -2653,14 +2782,15 @@ const positiveCorpus = [
   ...piSlopeDefiniteIntegralCorpus,
   ...finiteRationalLimitCorpus,
   ...infinityRationalLimitCorpus,
+  ...polynomialTangentCorpus,
   ...polynomialAreaCorpus,
   ...polynomialVolumeCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("4,750問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 4_750);
+test("5,000問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 5_000);
   assert.equal(
     finiteRationalLimitCorpus.filter(({ question }) => (
       [...positiveCorpus, ...rejectedCorpus].some((item) => (
@@ -2971,6 +3101,37 @@ test("4,750問の生成評価コーパスで厳密解と安全な未対応を維
     new Set(infinityRationalLimitCorpus.map(({ coverage }) => coverage.outcomeKind)),
     new Set(["finite", "positive-infinity", "negative-infinity"]),
   );
+  assert.equal(polynomialTangentCorpus.length, 250);
+  assert.equal(
+    new Set(polynomialTangentCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.equal(
+    polynomialTangentCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "polynomial-tangent" && item.question === question
+      ))
+    )).length,
+    0,
+  );
+  assert.deepEqual(
+    new Set(polynomialTangentCorpus.map(({ coverage }) => coverage.degree)),
+    new Set([0, 1, 2, 3, 4]),
+  );
+  for (let degree = 0; degree <= 4; degree += 1) {
+    assert.equal(
+      polynomialTangentCorpus.filter(({ coverage }) => coverage.degree === degree).length,
+      50,
+    );
+  }
+  assert.deepEqual(
+    new Set(polynomialTangentCorpus.map(({ coverage }) => coverage.form)),
+    new Set(["x-coordinate", "x-alias", "point", "japanese-x", "japanese-point"]),
+  );
+  assert.ok(polynomialTangentCorpus.some(({ coverage }) => coverage.fractionalPoint));
+  assert.ok(polynomialTangentCorpus.some(({ coverage }) => coverage.fractionalCoefficient));
+  assert.ok(polynomialTangentCorpus.some(({ coverage }) => coverage.horizontal));
+  assert.ok(polynomialTangentCorpus.some(({ coverage }) => !coverage.horizontal));
 
   for (const item of positiveCorpus) {
     const result = item.family.endsWith("definite-integral")

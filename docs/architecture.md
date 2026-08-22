@@ -6,7 +6,7 @@
 typed or selected question
           |
           v
-volume -> area -> rational-limit full-input preflights
+volume -> area -> tangent -> rational-limit full-input preflights
           |
           v
 category classifier
@@ -40,6 +40,34 @@ verified-history creation.
 - Legacy `demo`, `ai-only`, `geometry`, and obsolete setting fields are read
   only for stored-data compatibility. New runtime paths never create them.
 - No input string is executed as JavaScript.
+
+## Polynomial-tangent verification
+
+Tangent requests use a strict full-input preflight after volume and area, and
+before rational-function limits and category routing. It accepts only the
+documented canonical forms or complete fixed Japanese forms with an explicit
+rational x-coordinate or explicit rational point. This prevents a displayed
+curve equation or point from being stolen by a general equation solver while
+leaving ordinary differentiation untouched and classifying geometric tangent
+requests as unsupported. Diagram or graph inference, attached answers,
+malformed coordinates, and false declared points stop within this recognized
+path.
+
+The complete curve AST is converted to a canonical dense
+rational-coefficient polynomial through degree four. Source-subtree validation
+prevents cancellation or a zero multiplier/power from hiding functions,
+variable denominators, or degree-five terms. The public core snapshots every
+coefficient and coordinate into base `ExactRational` values, rejects sparse or
+noncanonical arrays, and deeply freezes the returned values and evidence.
+
+Using only project-owned exact arithmetic, the core evaluates `f(a)`, forms
+the coefficient derivative, evaluates `m=f'(a)`, and computes
+`c=f(a)-ma`. An explicitly declared `b` must first equal `f(a)`. The returned
+line has dense coefficients `[c,m]` and canonical form `y=mx+c`. Separate
+evidence re-evaluates the line at `a` and compares its slope with `f'(a)`; both
+must be exact zero differences. Numerical differentiation, graph sampling, and
+CAS proposals do not participate in verification. Verified results use solver
+ID `polynomial-tangent` and history category `微分`.
 
 ## Rational-function limit verification
 

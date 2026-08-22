@@ -31,6 +31,9 @@ The current migration checkpoint supports:
   retained;
 - verified derivatives for bounded algebraic and standard elementary-function
   expressions;
+- exact tangent lines to rational-coefficient polynomials through degree four
+  at an explicitly stated rational x-coordinate or point, with exact
+  curve-membership, point, and slope verification;
 - indefinite integrals whose candidate can be differentiated back over the
   whole supported domain;
 - exact definite integrals of rational-coefficient polynomials through degree
@@ -106,6 +109,21 @@ factor is nonzero on the relevant tail. A combined `±∞` target or malformed
 infinity expression is invalid. Roots, absolute values, piecewise expressions,
 trigonometric/exponential/logarithmic limit laws, and sequence limits remain
 unsupported rather than being sampled numerically.
+
+For a polynomial tangent line, write `tangent_x_[1](x^2)` or its shorter alias
+`tangent_[1](x^2)`; both return `y=2x-1`. To state the whole contact point, use
+`tangent_point_((1/2),(1/8))(x^3)`, which returns
+`y=(3/4)x-1/4`. The fixed Japanese forms
+`曲線 y=x^2 の x=1 における接線の方程式を求めよ` and
+`曲線 y=x^2 上の点 (1,1) における接線の方程式を求めよ` are also
+accepted. The curve must be a rational-coefficient polynomial in `x` of degree
+at most four, and every coordinate must be a signed integer, finite decimal,
+or explicit fraction. When a point `(a,b)` is supplied, the solver first
+checks `f(a)=b` exactly. It then differentiates the coefficient array, computes
+`m=f'(a)` and `c=f(a)-ma`, and rechecks both that `y=mx+c` passes through the
+contact point and that its slope is `m`. A false declared point is invalid;
+functions, variable denominators, degree five or above, and a contact point or
+curve that must be read from a figure or graph remain unsupported.
 
 For an area between two curves, write `area_[0,2](x^2;2x)` for an explicit
 interval or `area_intersections(x^2;2x)` for the interval between exactly two

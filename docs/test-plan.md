@@ -47,7 +47,19 @@ imported-verification downgrade.
     `lim_(x->±∞) 1/x`, `lim_(x->0) sin(x)/x`, and `lim_(x->1 2) x`;
     confirm the first and third are invalid, the second is unsupported, and
     none receives a verified answer.
-15. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
+15. Solve `tangent_x_[1](x^2)`,
+    `tangent_point_((1/2),(1/8))(x^3)`, and
+    `曲線 y=x^2 上の点 (1,1) における接線の方程式を求めよ`; confirm the
+    exact answers are `y=2x-1`, `y=(3/4)x-1/4`, and `y=2x-1`.
+    Confirm the working records exact coefficient differentiation, declared
+    point membership where applicable, and the final point/slope checks. Both
+    hints must hide the final line, and history must use solver ID
+    `polynomial-tangent` and category `微分`. Submit
+    `tangent_point_(1,2)(x^2)`, `tangent_x_[0](sin(x))`,
+    `tangent_x_[1](1/x)`, `tangent_x_[1](x^5)`, and a graph-dependent
+    tangent; confirm the false point is invalid, the others are unsupported,
+    and none receives a verified answer.
+16. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
     `area_[-2,2](x^2;2)`; confirm the exact answers are `4/3`, `4/3`, and
     `(-8+16√2)/3`. Confirm the working partitions at every intersection, both
     hints hide the final area, and history classifies the results as integrals.
@@ -55,22 +67,22 @@ imported-verification downgrade.
     confirm `x軸` is treated as `y=0` and the exact result is `4/3`.
     Submit `area_intersections(x^2;0)`, `area_[0,1](sin(x);0)`, and a
     diagram-dependent region; confirm none receives a verified answer.
-16. Solve `volume_x_axis_[0,1](x)` and
+17. Solve `volume_x_axis_[0,1](x)` and
     `volume_x_axis_[0,1](x+2;x+1)`; confirm the exact answers are `pi/3` and
     `4*pi`, the working certifies both radii over the whole interval, and both
     hints hide the final volume. Submit a y-axis rotation, a crossing radius,
     and a diagram-only region; confirm none receives a verified answer.
-17. Submit an unsupported trigonometric equation, an improper integral such as
+18. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-18. Verify history filters, JSON import/export, analytics, review rerun, setting
+19. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-19. Reload the extension and repeat the shortcut to cover service-worker
+20. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation
 
-Before completion, run the current versioned 4,750-case corpus and report:
+Before completion, run the current versioned 5,000-case corpus and report:
 
 - exact-answer accuracy by domain;
 - unsupported/invalid classification accuracy;

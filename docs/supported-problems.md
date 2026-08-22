@@ -14,6 +14,7 @@ Classification alone never means a problem can be solved.
 | One-variable quadratic inequality | `x^2-5x+6<=0`, `x^2-2<0` | exact discriminant and sign chart |
 | One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
+| Polynomial tangent line | `tangent_x_[1](x^2)`, `tangent_point_(1,1)(x^2)` | exact coefficient differentiation, declared-point membership, and point/slope re-verification |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
 | Rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->+∞) (2x²+1)/(x²-3)` | exact zero multiplicities at finite points or degree/leading-coefficient comparison at signed infinity, with the original-domain ledger retained |
@@ -60,6 +61,33 @@ composition, `sin`, `cos`, `tan`, `exp`, `log`, and `sqrt`. Domain restrictions
 are retained as conditional results. Indefinite integrals are accepted only
 when the returned candidate parses safely, has no unresolved domain split, and
 differentiates back to the original integrand.
+
+Polynomial tangent-line problems accept the full-input forms
+`tangent_x_[a](f)`, `tangent_[a](f)`, and
+`tangent_point_(a,b)(f)`, plus the fixed Japanese forms
+`曲線 y=f の x=a における接線の方程式を求めよ` and
+`曲線 y=f 上の点 (a,b) における接線の方程式を求めよ`. Every supplied
+coordinate must be a finite exact rational written as a signed integer, finite
+decimal, or explicit fraction. The complete curve and every source subtree
+must reduce to a rational-coefficient polynomial in `x` of degree at most four.
+
+At `x=a`, the project-owned core evaluates `f(a)`, formally differentiates the
+dense coefficient array, evaluates `m=f'(a)`, and constructs
+`c=f(a)-ma`. The canonical exact answer is `y=mx+c`, such as `y=2x-1`,
+`y=(3/4)x-1/4`, or the horizontal form `y=3`. If `(a,b)` is declared,
+`f(a)=b` is checked exactly before the line is constructed; a mismatch is an
+invalid point rather than a different tangent problem. Verification then
+independently checks that the line evaluates to `f(a)` at `a` and that its
+slope equals `f'(a)`. The verified solver ID is `polynomial-tangent`, and its
+history category is `微分`.
+
+Function calls, variable denominators or negative variable powers, degree five
+or above (including a high-degree source subtree hidden by cancellation),
+non-rational coordinates, other curve variables, geometric tangents, and any
+contact point or curve that must be inferred from a figure or graph remain
+unsupported. Malformed notation, attached answers, and a declared point that
+is not on the curve receive no verified answer. No numerical derivative,
+graph sampling, or CAS proposal is verification evidence.
 
 Rational-function limits currently accept one variable `x`, a finite rational
 approach point or separately signed positive/negative infinity, and a complete

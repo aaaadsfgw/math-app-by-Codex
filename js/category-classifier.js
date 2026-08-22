@@ -150,6 +150,12 @@ export function classifyCategory(question) {
   }
 
   if (/微分|導関数|接線の傾き|d\s*\/\s*dx|[a-z]\s*['′]/i.test(text)) addSignal(scores, reasons, "微分", 10, "微分を示す語または記号を検出");
+  if (
+    /(?:^|[^a-z])tangent_(?:x_\s*\[|point_\s*\(|\s*\[)/iu.test(text)
+    || /(?:曲線|関数)[\s\S]*(?:y\s*=|f\s*\(\s*x\s*\)\s*=)[\s\S]*接線\s*の\s*方程式/u.test(text)
+  ) {
+    addSignal(scores, reasons, "微分", 20, "式と接点が指定された接線の方程式を検出");
+  }
   if (/積分|不定積分|定積分|∫/u.test(text)) addSignal(scores, reasons, "積分", 10, "積分を示す語または記号を検出");
   if (/(?:^|[^a-z])area_(?:\s*\[|intersections\s*\()|面積[\s\S]*(?:y\s*=|x\s*軸)|(?:y\s*=|x\s*軸)[\s\S]*面積/u.test(text)) {
     addSignal(scores, reasons, "積分", 20, "式で指定された曲線間の面積を検出");

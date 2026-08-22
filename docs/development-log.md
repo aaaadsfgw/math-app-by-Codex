@@ -596,3 +596,41 @@ unpacked Chrome extension path still requires the release smoke test.
 `npm test` passes 383 tests including the 4,750-case generated corpus, and
 `npm run check` passes 155 files (10 HTML, 117 JS/MJS, and 11 CSS). The
 unpacked Chrome extension path still requires the release smoke test.
+
+## 2026-08-23: exact tangent lines to rational-coefficient polynomials
+
+- Added strict full-input parsing for `tangent_x_[a](f)`, the
+  `tangent_[a](f)` alias, `tangent_point_(a,b)(f)`, and two complete fixed
+  Japanese forms. Coordinates are finite exact rationals, while malformed or
+  answer-attached inputs are invalid and figure/graph or geometric tangents
+  remain recognized but unsupported.
+- Added a project-owned exact tangent core for canonical dense
+  rational-coefficient polynomials through degree four. It snapshots and
+  revalidates every public input, evaluates `f(a)`, formally differentiates
+  coefficients, computes `m=f'(a)` and `c=f(a)-ma`, and returns deeply frozen
+  line coefficients and evidence. A declared `b` must equal `f(a)` exactly;
+  the completed line is rechecked for both contact-point passage and slope.
+- Routed recognized tangent requests after volume and area but before
+  rational-function limits and category solvers in both synchronous and
+  asynchronous paths. Added tangent-specific teaching traces and answer-safe
+  hints, solver ID `polynomial-tangent`, `微分` history classification, storage
+  round trips, exception containment, wrong-category priority, and
+  non-stealing regressions.
+- Added 31 parser/core/solver/presenter/storage tests. The core suite includes
+  an independent 400-case BigInt fraction oracle, plus constant, horizontal,
+  fractional, huge-value, degree-overflow, sparse-array, derived-type, and
+  hostile-boundary cases. Another 250 independently generated public-path
+  problems cover 50 cases at each degree zero through four, all five accepted
+  canonical/Japanese forms, fractional coordinates and coefficients, and
+  horizontal and non-horizontal lines. This increases the versioned evaluation
+  corpus from 4,750 to 5,000 unique problems.
+- The initial path deliberately leaves functions, variable denominators and
+  negative variable powers, degree five or above even when hidden by
+  cancellation, non-rational coordinates, other variables, geometric
+  tangents, and any curve/contact information inferred from a figure or graph
+  unsupported. It never substitutes numerical differentiation, graph
+  sampling, or a CAS proposal for exact verification.
+
+`npm test` passes 414 tests including the 5,000-case generated corpus, and
+`npm run check` passes 161 files (10 HTML, 123 JS/MJS, and 11 CSS). The
+unpacked Chrome extension path still requires the release smoke test.

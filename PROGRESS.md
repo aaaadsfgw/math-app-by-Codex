@@ -433,6 +433,32 @@ Last updated: 2026-08-23
   infinity accepts separator whitespace without accepting mixed signs.
   Reaudits of 120 category/routing calls, eight signed-infinity hint cases, and
   49 focused limit/presenter cases passed with no answer leakage.
+- Added strict canonical and fixed-Japanese parsing for polynomial tangent
+  lines at an explicit rational x-coordinate or explicit rational point. A
+  declared point must satisfy `f(a)=b` exactly; malformed or false-point input
+  is invalid, while figure/graph and geometric tangent requests remain
+  unsupported without inference.
+- Added a project-owned exact tangent core for canonical dense
+  rational-coefficient polynomials through degree four. It snapshots and
+  revalidates inputs, computes `f(a)`, the formal coefficient derivative,
+  `m=f'(a)`, and `c=f(a)-ma`, then deeply freezes evidence that independently
+  rechecks both point passage and slope agreement.
+- Routed tangent preflight in the application order
+  `volume -> area -> tangent -> rational-limit`, before category solvers, in
+  both synchronous and asynchronous paths. Added tangent-specific teaching
+  traces and answer-safe hints, solver ID `polynomial-tangent`, `微分` history
+  classification, storage round trips, exception containment, wrong-category
+  priority, and non-stealing regressions.
+- Added 31 tangent parser/core/solver/presenter/storage tests, including an
+  independent 400-case BigInt fraction core oracle and hostile public-boundary
+  coverage. Added 250 generated public-path tangent problems, 50 at each degree
+  zero through four and spanning all five canonical/Japanese forms, bringing
+  the versioned evaluation corpus to 5,000 unique problems.
+- Kept functions, variable denominators and negative powers, degree five or
+  above even when hidden by cancellation, non-rational coordinates, other
+  variables, geometric tangents, and figure/graph-derived contact information
+  unsupported. No numerical differentiation, graph sampling, or CAS proposal
+  is accepted as tangent verification.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -461,17 +487,17 @@ Last updated: 2026-08-23
 
 ## Next
 
-1. Add exact tangent-line problems for an explicitly given rational point on a
-   rational-coefficient polynomial, with project-owned differentiation,
-   point-membership verification, and no graph inference.
+1. Add exact monotonicity and local-extrema problems for bounded
+   rational-coefficient polynomials, with project-owned derivative sign
+   partitions and no graph inference.
 2. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 383 passed, 0 failed on 2026-08-23, including 4,750 generated
+- `npm test` - 414 passed, 0 failed on 2026-08-23, including 5,000 generated
   evaluation cases.
-- `npm run check` - passed for 155 files, 10 HTML, 117 JS/MJS, and 11 CSS files
+- `npm run check` - passed for 161 files, 10 HTML, 123 JS/MJS, and 11 CSS files
   on 2026-08-23.
 
 ## Restart procedure

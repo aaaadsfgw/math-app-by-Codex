@@ -244,6 +244,7 @@ const VERIFIED_SOLVER_CATEGORIES = Object.freeze({
   "definite-integral": "積分",
   "finite-limit": "極限",
   "polynomial-area": "積分",
+  "polynomial-tangent": "微分",
   "polynomial-volume": "積分",
   "exponential-equation": "指数・対数",
   "logarithmic-equation": "指数・対数",

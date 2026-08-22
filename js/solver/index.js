@@ -22,6 +22,10 @@ import {
   solvePolynomialArea,
 } from "./polynomial-area.js";
 import {
+  POLYNOMIAL_TANGENT_SOLVER_ID,
+  solvePolynomialTangent,
+} from "./polynomial-tangent.js";
+import {
   POLYNOMIAL_VOLUME_SOLVER_ID,
   solvePolynomialVolume,
 } from "./polynomial-volume.js";
@@ -45,6 +49,7 @@ export {
   solveLogarithmicEquation,
   solvePercentage,
   solvePolynomialArea,
+  solvePolynomialTangent,
   solvePolynomialVolume,
   solveQuadraticEquation,
   solveQuadraticInequality,
@@ -170,6 +175,12 @@ function runApplicationPreflights(input) {
     POLYNOMIAL_AREA_SOLVER_ID,
   );
   if (area.supported || area.recognized === true) return area;
+  const tangent = runApplicationPreflight(
+    input,
+    solvePolynomialTangent,
+    POLYNOMIAL_TANGENT_SOLVER_ID,
+  );
+  if (tangent.supported || tangent.recognized === true) return tangent;
   return runApplicationPreflight(
     input,
     solveFiniteLimit,

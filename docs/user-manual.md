@@ -44,6 +44,20 @@ sequence limits are currently unsupported.
 Do not write scientific notation or ambiguous forms such as `1/2x`; the
 extension rejects them instead of guessing.
 
+For a tangent to a polynomial curve, enter `tangent_x_[1](x^2)` or the alias
+`tangent_[1](x^2)` to obtain `y=2x-1`. If the whole contact point is given,
+enter `tangent_point_((1/2),(1/8))(x^3)` to obtain
+`y=(3/4)x-1/4`. You can also use the complete Japanese forms
+`曲線 y=x^2 の x=1 における接線の方程式を求めよ` or
+`曲線 y=x^2 上の点 (1,1) における接線の方程式を求めよ`. Coordinates
+may be signed integers, finite decimals, or explicit fractions. The curve must
+be a rational-coefficient polynomial in `x` of degree at most four. For a
+declared point `(a,b)`, the extension verifies `f(a)=b` exactly before it
+differentiates the coefficients and builds the line; it then rechecks both the
+contact point and the slope. A point not on the curve is invalid. Functions,
+variable denominators, degree five or above, geometric tangents, and any curve
+or contact point that must be read from a figure or graph are unsupported.
+
 For an area between two polynomial curves, use
 `area_[0,2](x^2;2x)` for an explicit interval or
 `area_intersections(x^2;2x)` for the region between exactly two distinct real
