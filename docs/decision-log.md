@@ -330,9 +330,10 @@ and punctured-domain ledger have been certified.
 Original denominator factors survive cancellation so removable holes and
 nested-division exclusions remain visible in the solution trace. The public
 core API rejects a zero domain factor because no punctured neighborhood then
-exists. Infinite and irrational approach points, expressions containing
-function calls, absolute values, piecewise expressions, sequences, and profile
-overflows remain unsupported or invalid. Floating-point samples, epsilon
+exists. Irrational finite approach points, expressions containing function
+calls, absolute values, piecewise expressions, sequences, and profile
+overflows remain unsupported or invalid. Signed infinity is governed by
+D-022. Floating-point samples, epsilon
 heuristics, CAS limits, and tolerance
 comparisons are forbidden as verification evidence.
 
@@ -399,3 +400,35 @@ engine rejects it rather than sampling, guessing an ordering, or using a
 decimal approximation. The public volume core revalidates dense canonical
 coefficient arrays and returns copied, deeply frozen curves, certificates,
 integral evidence, and exact values.
+
+## D-022: Certify rational-function limits at each signed infinity by leading terms
+
+**Status:** accepted
+**Date:** 2026-08-15
+
+The existing bounded rational-function profile is extended from finite
+rational approach points to separately requested `+∞` and `-∞`. The parser
+does not treat infinity as a finite point with a left/right suffix: it accepts
+one explicit signed destination, normalizes it to a distinct approach kind,
+and rejects combined `±∞`, composite infinity expressions, and attached
+one-sided directions. The public solver remains `finite-limit` for stored
+history compatibility even though its accepted approach set is broader.
+
+For a nonzero numerator `P` and denominator `Q`, the result is determined by
+their exact degrees and leading-coefficient ratio. If `deg P<deg Q` the limit
+is zero; equal degrees return the leading ratio; and `deg P>deg Q` returns
+signed infinity. At `-∞`, an odd degree difference reverses that sign. An
+identically zero numerator returns zero only after the complete original AST
+and domain ledger have passed the same profile validation used at finite
+points.
+
+The engine also supplies explicit tail-domain evidence. For every nonzero
+reduced denominator or original domain polynomial
+`p=a_n x^n+...+a_0`, the rational Cauchy bound
+`1+Σ_(i<n)|a_i/a_n|` encloses all of its roots. The maximum of those bounds
+therefore certifies that the function is defined on both sufficiently distant
+tails. Finite holes remain preserved without affecting the infinity result.
+No common-factor cancellation, numerical sampling, floating point, CAS limit,
+or heuristic asymptote detection is accepted as proof. Non-rational function
+limits and expressions above the existing degree/factor profile remain
+unsupported.

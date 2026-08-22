@@ -6,6 +6,7 @@ import { parseFiniteLimitInput } from "../js/solver/limit-input.js";
 function assertParsed(question, {
   expression,
   pointSource,
+  approachKind = "finite",
   direction = "both",
 }) {
   const result = parseFiniteLimitInput(question);
@@ -14,6 +15,7 @@ function assertParsed(question, {
   assert.equal(result.ok, true, `${question}: ${result.error}`);
   assert.equal(result.expression, expression, question);
   assert.equal(result.pointSource, pointSource, question);
+  assert.equal(result.approachKind, approachKind, question);
   assert.equal(result.direction, direction, question);
   assert.equal(result.error, "", question);
   assert.equal(result.errorCode, "", question);
@@ -26,6 +28,7 @@ function assertRejected(question, errorCode, { recognized = true } = {}) {
   assert.equal(result.ok, false, question);
   assert.equal(result.expression, "", question);
   assert.equal(result.pointSource, "", question);
+  assert.equal(result.approachKind, "finite", question);
   assert.equal(result.errorCode, errorCode, question);
   assert.ok(result.error, question);
 }
@@ -176,15 +179,76 @@ test("有限有理接近点を厳密分数へ正規化する", () => {
   }
 });
 
-test("無限遠と非有理・記号接近点を構文正常なunsupportedにする", () => {
+test("正負の無限遠を厳密な接近種別と正規形へ揃える", () => {
   for (const question of [
     "lim_(x->∞) 1/x",
-    "lim_(x->-infinity) 1/x",
+    "lim_(x->+∞) 1/x",
+    "lim_(x->infinity) 1/x",
+    "lim_(x->+infinity) 1/x",
     String.raw`\lim_{x\to \infty} 1/x`,
-    String.raw`\lim_{x\to -\infty} 1/x`,
+    String.raw`\lim_{x\to +\infty} 1/x`,
+    String.raw`\lim_{x\to + \infty} 1/x`,
+    "ｌｉｍ_{ｘ→＋∞} １／ｘ．",
+    "xを正の無限大に近づけるとき 1/x",
   ]) {
-    assertRejected(question, "UNSUPPORTED_INFINITE_LIMIT_POINT");
+    assertParsed(question, {
+      expression: "1/x",
+      pointSource: "+infinity",
+      approachKind: "positive-infinity",
+    });
   }
+
+  for (const question of [
+    "lim_(x->-∞) 1/x",
+    "lim_(x->-infinity) 1/x",
+    String.raw`\lim_{x\to -\infty} 1/x`,
+    String.raw`\lim_{x\to - \infty} 1/x`,
+    "xが負の無限大に近づくときの1/xの極限を求めよ",
+  ]) {
+    assertParsed(question, {
+      expression: "1/x",
+      pointSource: "-infinity",
+      approachKind: "negative-infinity",
+    });
+  }
+});
+
+test("無限遠を複合した接近点や符号不明の日本語を推測しない", () => {
+  for (const question of [
+    "lim_(x->±∞) 1/x",
+    "lim_(x->+/-infinity) 1/x",
+    "lim_(x->infinity2) 1/x",
+    "lim_(x->1+infinity) 1/x",
+    "lim_(x->--infinity) 1/x",
+    "lim_(x->∞+∞) 1/x",
+    "xを無限大に近づけるとき 1/x",
+    "xを正負の無限大に近づけるとき 1/x",
+  ]) {
+    assertRejected(question, "MALFORMED_INFINITE_LIMIT_POINT");
+  }
+});
+
+test("無限遠には左右方向を付けず、式のinvalidを先に返す", () => {
+  for (const question of [
+    "lim_(x->infinity+) 1/x",
+    "lim_(x->-∞-) 1/x",
+    "lim_(x->∞^(+)) 1/x",
+    "lim_(x->infinity) 1/xの右極限を求めよ",
+    "xを正の無限大に右から近づけるとき 1/x",
+  ]) {
+    assertRejected(question, "INFINITE_LIMIT_DIRECTION_ATTACHED");
+  }
+
+  for (const [question, errorCode] of [
+    ["lim_(x->infinity+) 1/x=0", "LIMIT_RELATION_ATTACHED"],
+    ["lim_(x->1+infinity) 1/x=0", "LIMIT_RELATION_ATTACHED"],
+    ["xを正の無限大に近づけるとき x/2x", "AMBIGUOUS_DIVISION_MULTIPLICATION"],
+  ]) {
+    assertRejected(question, errorCode);
+  }
+});
+
+test("非有理・記号接近点を構文正常なunsupportedにする", () => {
   for (const question of [
     "lim_(x->pi) x",
     "lim_(x->sqrt(2)) x",

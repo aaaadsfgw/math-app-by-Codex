@@ -540,3 +540,59 @@ The unpacked Chrome extension path still requires the release smoke test.
 `npm test` passes 369 tests including the 4,500-case generated corpus, and
 `npm run check` passes 155 files (10 HTML, 117 JS/MJS, and 11 CSS). The
 unpacked Chrome extension path still requires the release smoke test.
+
+## 2026-08-15: exact rational-function limits at signed infinity
+
+- Extended the existing full-input limit grammar from finite rational points
+  to separately typed positive and negative infinity. Unicode, ASCII, LaTeX,
+  full-width, and explicit Japanese forms normalize to one of two approach
+  kinds. Combined `±∞`, composite infinity expressions, and finite one-sided
+  suffixes attached to infinity are invalid rather than interpreted loosely;
+  invalid expression syntax still takes precedence over approach support.
+- Reused the finite-limit rational-function profile instead of creating a
+  competing parser or widening other algebra solvers. The new core branch
+  computes both signed tails from exact numerator/denominator degrees, leading
+  coefficients, and degree-difference parity. A zero numerator is used only
+  after the complete AST and original domain ledger have been certified.
+- Added exact tail-domain evidence for the reduced denominator and every
+  retained original denominator factor. Each nonzero polynomial stores the
+  rational Cauchy root bound `1+Σ|a_i/a_n|`; the maximum proves all factors are
+  nonzero sufficiently far along either signed tail. Finite holes therefore do
+  not change the infinity result, but remain visible in the trace.
+- Preserved the `finite-limit` solver ID for existing history records and added
+  infinity-specific metadata, five display modes, answer-safe hints, history
+  round trips, synchronous/asynchronous parity, exception containment, and
+  category non-stealing regressions.
+- Added 14 focused parser/core/router/presenter tests. A separate BigInt oracle
+  checks 300 core cases. Another 250 test-owned public-path cases cover every numerator
+  and denominator degree pair from zero through four, both signed infinities,
+  both leading-ratio signs, fractional ratios, and all degree differences,
+  increasing the generated evaluation corpus from 4,500 to 4,750 unique
+  problems.
+- A read-only adversarial parser/routing audit executed 662 cases: 32 hostile
+  Unicode cases, 68 malformed composites, 168 direction combinations, 80
+  invalid-precedence cases, 18 category non-stealing cases, 132 public routing
+  parity cases, and 164 additional control/whitespace placements. It found no
+  false verification, synchronous/asynchronous mismatch, or P0-P2 issue.
+- A separate BigInt-rational mathematical audit made 20,022 public core calls,
+  with 103,000 outcome comparisons, 100,000 degree/leading-ratio comparisons,
+  112,000 Cauchy-bound comparisons, 24,000 exact tail inequalities, and 2,500
+  known-root checks. Common-factor addition, lower-term replacement, `f(-x)`
+  symmetry, zero numerators, deep freezing, and 21 hostile boundary classes all
+  matched their independent expectations with no P0-P2 finding.
+- A final public-path audit executed 683 scenarios and 1,331 solver calls, plus
+  520 five-mode presentations over 52 problems. It exposed three P2 integration
+  defects: a caller-supplied wrong category could let the inequality fallback
+  intercept a recognized limit, and answer-string filtering could remove an
+  infinity input row from hint 2 when the requested destination matched the
+  answer. Final review also found that valid LaTeX whitespace between `+`/`-`
+  and `\infty` was rejected. The router now preflights recognized limits before
+  category solvers, the presenter always retains typed input rows while
+  continuing to remove conclusion/result rows, and signed LaTeX infinity
+  accepts separator whitespace without accepting mixed signs. Reaudits covered
+  120 wrong-category sync/async calls, eight signed-infinity hint variants, and
+  49 focused limit/presenter cases without a failure or answer leak.
+
+`npm test` passes 383 tests including the 4,750-case generated corpus, and
+`npm run check` passes 155 files (10 HTML, 117 JS/MJS, and 11 CSS). The
+unpacked Chrome extension path still requires the release smoke test.

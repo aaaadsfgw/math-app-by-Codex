@@ -16,6 +16,7 @@ function response({
   source = "",
   expression = "",
   pointSource = "",
+  approachKind = "finite",
   direction = "both",
   error = "",
   errorCode = "",
@@ -26,6 +27,7 @@ function response({
     source,
     expression,
     pointSource,
+    approachKind,
     direction,
     error,
     errorCode,
@@ -162,17 +164,41 @@ function unwrapTarget(value) {
   return source;
 }
 
+function exactInfinitePoint(value) {
+  if (/^\+?\s*(?:∞|infinity)$/iu.test(value) || value === "正の無限大") {
+    return {
+      ok: true,
+      source: "+infinity",
+      approachKind: "positive-infinity",
+      error: "",
+      errorCode: "",
+    };
+  }
+  if (/^-\s*(?:∞|infinity)$/iu.test(value) || value === "負の無限大") {
+    return {
+      ok: true,
+      source: "-infinity",
+      approachKind: "negative-infinity",
+      error: "",
+      errorCode: "",
+    };
+  }
+  return null;
+}
+
 function validatePoint(value) {
   const source = unwrapTarget(value);
   if (!source) {
     return { ok: false, source: "", error: "接近先の値を入力してください。", errorCode: "MISSING_LIMIT_POINT" };
   }
+  const infinitePoint = exactInfinitePoint(source);
+  if (infinitePoint) return infinitePoint;
   if (/∞|infinity|無限/iu.test(source)) {
     return {
       ok: false,
       source: "",
-      error: "この段階では有限点への極限だけに対応しています。",
-      errorCode: "UNSUPPORTED_INFINITE_LIMIT_POINT",
+      error: "無限遠の接近先は ∞、+∞、-∞、正の無限大、または負の無限大のどれかを1つだけ入力してください。",
+      errorCode: "MALFORMED_INFINITE_LIMIT_POINT",
     };
   }
   if (/(?:\d|\.)\s+(?:\d|\.)/u.test(source)) {
@@ -232,7 +258,13 @@ function validatePoint(value) {
   }
   try {
     const point = exactRationalConstantFromAst(parsed.ast);
-    return { ok: true, source: point.toString(), error: "", errorCode: "" };
+    return {
+      ok: true,
+      source: point.toString(),
+      approachKind: "finite",
+      error: "",
+      errorCode: "",
+    };
   } catch (error) {
     if (error instanceof ExactPolynomialIntegralError) {
       return {
@@ -319,7 +351,7 @@ export function parseFiniteLimitInput(question) {
   const source = normalizeLimitNotation(raw);
   const recognized = LIMIT_CUE.test(source);
   if (!recognized) {
-    return response({ recognized: false, error: "有限極限を検出できません。" });
+    return response({ recognized: false, error: "極限を検出できません。" });
   }
   const candidate = symbolicCandidate(source) ?? japaneseCandidate(source);
   if (!candidate || candidate.malformed) {
@@ -380,12 +412,21 @@ export function parseFiniteLimitInput(question) {
       errorCode: point.errorCode,
     });
   }
+  if (point.approachKind !== "finite" && direction !== "both") {
+    return response({
+      recognized: true,
+      source,
+      error: "無限遠への極限に右極限・左極限の指定を付けないでください。",
+      errorCode: "INFINITE_LIMIT_DIRECTION_ATTACHED",
+    });
+  }
   return response({
     recognized: true,
     ok: true,
     source,
     expression: expression.expression,
     pointSource: point.source,
+    approachKind: point.approachKind,
     direction,
   });
 }

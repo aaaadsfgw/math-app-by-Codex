@@ -7,7 +7,10 @@ import {
   solveIndefiniteIntegral,
 } from "./calculus.js";
 import { solveExponentialEquation } from "./exponential-equation.js";
-import { solveFiniteLimit } from "./finite-limit.js";
+import {
+  FINITE_LIMIT_SOLVER_ID,
+  solveFiniteLimit,
+} from "./finite-limit.js";
 import { solveLinearEquation } from "./linear-equation.js";
 import { solveLinearInequality } from "./linear-inequality.js";
 import { solveLinearSystem } from "./linear-system.js";
@@ -161,10 +164,16 @@ function runApplicationPreflights(input) {
     POLYNOMIAL_VOLUME_SOLVER_ID,
   );
   if (volume.supported || volume.recognized === true) return volume;
-  return runApplicationPreflight(
+  const area = runApplicationPreflight(
     input,
     solvePolynomialArea,
     POLYNOMIAL_AREA_SOLVER_ID,
+  );
+  if (area.supported || area.recognized === true) return area;
+  return runApplicationPreflight(
+    input,
+    solveFiniteLimit,
+    FINITE_LIMIT_SOLVER_ID,
   );
 }
 

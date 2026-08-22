@@ -7,9 +7,12 @@ import {
 } from "../js/math-core/exact-rational-function.js";
 import {
   ExactRationalLimitError,
+  INFINITY_APPROACHES,
   LIMIT_DIRECTIONS,
   evaluateExactRationalFunctionLimit,
+  evaluateExactRationalFunctionLimitAtInfinity,
   evaluateExactRationalLimit,
+  evaluateExactRationalLimitAtInfinity,
   formatExactLimitSide,
 } from "../js/math-core/exact-rational-limit.js";
 import { parseMathExpression } from "../js/math-core/expression-parser.js";
@@ -784,5 +787,494 @@ test("独立BigInt oracleの250ケースで零点次数0から4と全方向を�
     assert.equal(result.exact, expected.outcome.exact, expected.expression);
     assertSide(result.left, expected.outcome.left.kind, expected.outcome.left.exact);
     assertSide(result.right, expected.outcome.right.kind, expected.outcome.right.exact);
+  }
+});
+
+function infinity(expression, approach) {
+  return evaluateExactRationalLimitAtInfinity(ast(expression), approach);
+}
+
+test("無限遠では次数差・先頭係数比・奇偶から両方向を厳密に返す", () => {
+  const cases = [
+    ["(3*x+1)/(2*x^2+1)", "finite", "0", "finite", "0"],
+    ["(-3*x^2+x+1)/(2*x^2-7)", "finite", "-3/2", "finite", "-3/2"],
+    ["x", "positive-infinity", "+∞", "negative-infinity", "-∞"],
+    ["-x", "negative-infinity", "-∞", "positive-infinity", "+∞"],
+    ["x^2+1", "positive-infinity", "+∞", "positive-infinity", "+∞"],
+    ["-x^3+2", "negative-infinity", "-∞", "positive-infinity", "+∞"],
+    ["(2*x^4+1)/(-3*x)", "negative-infinity", "-∞", "positive-infinity", "+∞"],
+    ["0/(x^4+1)", "finite", "0", "finite", "0"],
+  ];
+
+  for (
+    const [
+      expression,
+      positiveKind,
+      positiveExact,
+      negativeKind,
+      negativeExact,
+    ] of cases
+  ) {
+    for (const approach of INFINITY_APPROACHES) {
+      const result = infinity(expression, approach);
+      assertSide(result.positiveInfinity, positiveKind, positiveExact);
+      assertSide(result.negativeInfinity, negativeKind, negativeExact);
+      assert.equal(
+        result.exact,
+        approach === "positive-infinity" ? positiveExact : negativeExact,
+        `${expression} @ ${approach}`,
+      );
+      assert.equal(
+        result.outcomeKind,
+        approach === "positive-infinity" ? positiveKind : negativeKind,
+        `${expression} @ ${approach}`,
+      );
+      assert.equal(result.tailDomainCertified, true);
+      assert.equal(result.positiveInfinityEvidence.exact, positiveExact);
+      assert.equal(result.negativeInfinityEvidence.exact, negativeExact);
+      assert.equal(
+        result.bothDirectionEvidence.positiveInfinity,
+        result.positiveInfinityEvidence,
+      );
+      assert.equal(
+        result.bothDirectionEvidence.negativeInfinity,
+        result.negativeInfinityEvidence,
+      );
+      assert.equal(Object.isFrozen(result.bothDirectionEvidence), true);
+    }
+  }
+
+  const zero = infinity("0/(x^4+1)", "positive-infinity");
+  assert.equal(zero.numeratorIdenticallyZero, true);
+  assert.equal(zero.numeratorDegree, null);
+  assert.equal(zero.degreeDifference, null);
+  assert.equal(zero.numeratorLeadingCoefficient, null);
+  assert.equal(zero.leadingRatio, null);
+  assert.equal(zero.numeratorTailCheck, null);
+
+  const equalDegree = infinity(
+    "(-3*x^2+x+1)/(2*x^2-7)",
+    "negative-infinity",
+  );
+  assert.equal(equalDegree.numeratorDegree, 2);
+  assert.equal(equalDegree.denominatorDegree, 2);
+  assert.equal(equalDegree.degreeDifference, 0);
+  assert.equal(equalDegree.numeratorLeadingCoefficient.toString(), "-3");
+  assert.equal(equalDegree.denominatorLeadingCoefficient.toString(), "2");
+  assert.equal(equalDegree.leadingRatio.toString(), "-3/2");
+});
+
+test("Cauchy境界1+sum|a_i/a_n|で元の定義域を両側のtailまで証明する", () => {
+  const q = (numerator, denominator = 1n) => (
+    new ExactRational(numerator, denominator)
+  );
+  const result = evaluateExactRationalFunctionLimitAtInfinity({
+    numerator: [q(1n), q(2n)],
+    denominator: [q(6n), q(-5n), q(1n)],
+    domainFactors: [
+      [q(-100n), q(1n)],
+      [q(3n, 2n), q(-1n, 2n)],
+    ],
+    hasVariableDenominator: true,
+  }, "positive-infinity");
+
+  assert.equal(result.numeratorTailCheck.sourceKind, "numerator");
+  assert.deepEqual(
+    result.numeratorTailCheck.lowerCoefficientAbsoluteRatios.map(String),
+    ["1/2"],
+  );
+  assert.equal(
+    result.numeratorTailCheck.lowerCoefficientAbsoluteRatioSum.toString(),
+    "1/2",
+  );
+  assert.equal(result.numeratorTailCheck.cauchyRootMagnitudeBound.toString(), "3/2");
+
+  assert.equal(result.denominatorTailCheck.sourceKind, "denominator");
+  assert.deepEqual(
+    result.denominatorTailCheck.lowerCoefficientAbsoluteRatios.map(String),
+    ["6", "5"],
+  );
+  assert.equal(
+    result.denominatorTailCheck.lowerCoefficientAbsoluteRatioSum.toString(),
+    "11",
+  );
+  assert.equal(result.denominatorTailCheck.cauchyRootMagnitudeBound.toString(), "12");
+  assert.equal(
+    result.denominatorTailCheck.certifiedNonzeroForAbsXGreaterThan.toString(),
+    "12",
+  );
+
+  assert.equal(result.domainFactorChecks.length, 2);
+  assert.equal(result.domainFactorChecks[0].sourceKind, "original-domain-factor");
+  assert.equal(result.domainFactorChecks[0].sourceIndex, 0);
+  assert.equal(result.domainFactorChecks[0].cauchyRootMagnitudeBound.toString(), "101");
+  assert.equal(result.domainFactorChecks[1].sourceIndex, 1);
+  assert.equal(result.domainFactorChecks[1].cauchyRootMagnitudeBound.toString(), "4");
+  assert.equal(result.originalDomainTailChecks, result.domainFactorChecks);
+  assert.equal(result.domainTailChecks.length, 3);
+  assert.equal(result.certifiedTailBound.toString(), "101");
+
+  for (const [certificate, approach, comparison] of [
+    [
+      result.positiveTailDomainCertificate,
+      "positive-infinity",
+      "x>certifiedTailBound",
+    ],
+    [
+      result.negativeTailDomainCertificate,
+      "negative-infinity",
+      "x<-certifiedTailBound",
+    ],
+  ]) {
+    assert.equal(certificate.approach, approach);
+    assert.equal(certificate.comparison, comparison);
+    assert.equal(certificate.absoluteValueMustBeStrictlyGreaterThan.toString(), "101");
+    assert.equal(certificate.checkedPolynomialCount, 3);
+    assert.equal(certificate.denominatorEventuallyNonzero, true);
+    assert.equal(certificate.originalDomainFactorsEventuallyNonzero, true);
+    assert.equal(certificate.certified, true);
+    assert.equal(certificate.checks, result.domainTailChecks);
+    assert.equal(Object.isFrozen(certificate), true);
+  }
+  assert.deepEqual(
+    result.tailDomainCertificates,
+    [result.positiveTailDomainCertificate, result.negativeTailDomainCertificate],
+  );
+
+  const originalHole = infinity("(x-100)^0", "negative-infinity");
+  assert.equal(originalHole.exact, "1");
+  assert.deepEqual(originalHole.rationalFunction.denominator.map(String), ["1"]);
+  assert.deepEqual(
+    originalHole.rationalFunction.domainFactors.map((factor) => factor.map(String)),
+    [["-100", "1"]],
+  );
+  assert.equal(originalHole.denominatorTailCheck.cauchyRootMagnitudeBound.toString(), "1");
+  assert.equal(originalHole.originalDomainTailChecks.length, 1);
+  assert.equal(
+    originalHole.originalDomainTailChecks[0].cauchyRootMagnitudeBound.toString(),
+    "101",
+  );
+  assert.equal(originalHole.certifiedTailBound.toString(), "101");
+});
+
+test("無限遠公開APIは入力snapshotと深い凍結を保ち、異常入力をfail closedにする", () => {
+  class LiarCoefficient extends ExactRational {
+    isZero() {
+      return true;
+    }
+
+    divide() {
+      throw new Error("派生型のdivideを呼び出してはいけない");
+    }
+
+    toString() {
+      return "偽装値";
+    }
+  }
+
+  const one = ExactRational.one();
+  const zero = ExactRational.zero();
+  const numerator = [new LiarCoefficient(1n), new LiarCoefficient(2n)];
+  const denominator = [new LiarCoefficient(-3n), new LiarCoefficient(1n)];
+  const originalFactor = [new LiarCoefficient(-10n), new LiarCoefficient(1n)];
+  const domainFactors = [originalFactor];
+  const result = evaluateExactRationalFunctionLimitAtInfinity({
+    numerator,
+    denominator,
+    domainFactors,
+    hasVariableDenominator: true,
+  }, "negative-infinity");
+
+  numerator[0] = zero;
+  denominator[1] = zero;
+  originalFactor[0] = one;
+  domainFactors.length = 0;
+  assert.equal(result.exact, "2");
+  assert.deepEqual(result.rationalFunction.numerator.map(String), ["1", "2"]);
+  assert.deepEqual(result.rationalFunction.denominator.map(String), ["-3", "1"]);
+  assert.deepEqual(
+    result.rationalFunction.domainFactors[0].map(String),
+    ["-10", "1"],
+  );
+  assert.equal(result.certifiedTailBound.toString(), "11");
+
+  for (const frozenValue of [
+    result,
+    result.rationalFunction,
+    result.rationalFunction.numerator,
+    result.rationalFunction.denominator,
+    result.rationalFunction.domainFactors,
+    result.rationalFunction.domainFactors[0],
+    result.numeratorTailCheck,
+    result.numeratorTailCheck.lowerCoefficientAbsoluteRatios,
+    result.denominatorTailCheck,
+    result.domainFactorChecks,
+    result.domainFactorChecks[0],
+    result.domainTailChecks,
+    result.tailDomainCertificates,
+    result.positiveInfinity,
+    result.negativeInfinity,
+    result.positiveInfinityEvidence,
+    result.negativeInfinityEvidence,
+    result.bothDirectionEvidence,
+  ]) {
+    assert.equal(Object.isFrozen(frozenValue), true);
+  }
+  assert.throws(() => result.domainTailChecks.push(result.denominatorTailCheck), TypeError);
+
+  assert.equal(Object.isFrozen(INFINITY_APPROACHES), true);
+  assert.deepEqual(INFINITY_APPROACHES, [
+    "positive-infinity",
+    "negative-infinity",
+  ]);
+  assert.throws(() => INFINITY_APPROACHES.push("both"), TypeError);
+  const stillValid = infinity("x", "positive-infinity");
+  assert.equal(stillValid.exact, "+∞");
+
+  const validFunction = {
+    numerator: [one],
+    denominator: [one],
+    domainFactors: [],
+    hasVariableDenominator: false,
+  };
+  for (const approach of [undefined, null, "both", "+infinity", {}, 1]) {
+    assert.throws(
+      () => evaluateExactRationalFunctionLimitAtInfinity(validFunction, approach),
+      TypeError,
+    );
+  }
+  assert.throws(
+    () => evaluateExactRationalFunctionLimitAtInfinity(null, "positive-infinity"),
+    TypeError,
+  );
+  assert.throws(
+    () => evaluateExactRationalFunctionLimitAtInfinity({
+      numerator: [one],
+      denominator: [zero],
+      domainFactors: [],
+    }, "positive-infinity"),
+    (error) => error instanceof ExactRationalLimitError
+      && error.code === "ZERO_DENOMINATOR",
+  );
+  assert.throws(
+    () => evaluateExactRationalFunctionLimitAtInfinity({
+      numerator: [one],
+      denominator: [one, zero],
+      domainFactors: [],
+    }, "positive-infinity"),
+    (error) => error instanceof ExactRationalLimitError
+      && error.code === "NONCANONICAL_POLYNOMIAL",
+  );
+  assert.throws(
+    () => evaluateExactRationalFunctionLimitAtInfinity({
+      numerator: [one],
+      denominator: new Array(2),
+      domainFactors: [],
+    }, "positive-infinity"),
+    TypeError,
+  );
+  assert.throws(
+    () => evaluateExactRationalFunctionLimitAtInfinity({
+      numerator: [one],
+      denominator: [one],
+      domainFactors: [[zero]],
+    }, "negative-infinity"),
+    (error) => error instanceof ExactRationalLimitError
+      && error.code === "NO_PUNCTURED_DOMAIN",
+  );
+  assert.throws(
+    () => infinity("x^5", "positive-infinity"),
+    (error) => error instanceof ExactRationalFunctionError
+      && error.unsupported === true,
+  );
+});
+
+function oracleAdd(left, right) {
+  return oracleRational(
+    left.numerator * right.denominator + right.numerator * left.denominator,
+    left.denominator * right.denominator,
+  );
+}
+
+function oracleAbsoluteRational(value) {
+  return oracleRational(oracleAbsolute(value.numerator), value.denominator);
+}
+
+function oracleCompare(left, right) {
+  const difference = left.numerator * right.denominator
+    - right.numerator * left.denominator;
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
+function oraclePolynomialTailBound(polynomial) {
+  const leadingCoefficient = polynomial.at(-1);
+  let ratioSum = oracleRational(0n);
+  const ratios = polynomial.slice(0, -1).map((coefficient) => {
+    const ratio = oracleAbsoluteRational(oracleDivide(coefficient, leadingCoefficient));
+    ratioSum = oracleAdd(ratioSum, ratio);
+    return ratio;
+  });
+  return Object.freeze({
+    ratios: Object.freeze(ratios),
+    ratioSum,
+    bound: oracleAdd(oracleRational(1n), ratioSum),
+  });
+}
+
+function generatedInfinityPolynomial(seed, degree) {
+  return Object.freeze(Array.from({ length: degree + 1 }, (_, coefficientIndex) => {
+    let numerator = BigInt(
+      ((seed * 37 + coefficientIndex * 23 + degree * 11) % 47) - 23,
+    );
+    const denominator = BigInt(
+      ((seed * 13 + coefficientIndex * 7 + degree) % 9) + 1,
+    );
+    if (coefficientIndex === degree && numerator === 0n) {
+      numerator = seed % 2 === 0 ? 29n : -31n;
+    }
+    return oracleRational(numerator, denominator);
+  }));
+}
+
+function infinityOracleSide(numerator, denominator, approach) {
+  const numeratorIsZero = numerator.length === 1 && numerator[0].numerator === 0n;
+  if (numeratorIsZero) return oracleFiniteSide(oracleRational(0n));
+  const degreeDifference = numerator.length - denominator.length;
+  if (degreeDifference < 0) return oracleFiniteSide(oracleRational(0n));
+  const leadingRatio = oracleDivide(numerator.at(-1), denominator.at(-1));
+  if (degreeDifference === 0) return oracleFiniteSide(leadingRatio);
+  let sign = oracleSign(leadingRatio);
+  if (approach === "negative-infinity" && degreeDifference % 2 !== 0) {
+    sign = -sign;
+  }
+  return oracleInfiniteSide(sign);
+}
+
+function generatedInfinityOracleCase(index) {
+  const numeratorIsZero = index % 19 === 0;
+  const numeratorDegree = index % 5;
+  const denominatorDegree = Math.floor(index / 5) % 5;
+  const domainFactorDegree = (Math.floor(index / 25) % 4) + 1;
+  const numerator = numeratorIsZero
+    ? Object.freeze([oracleRational(0n)])
+    : generatedInfinityPolynomial(index + 101, numeratorDegree);
+  const denominator = generatedInfinityPolynomial(index + 307, denominatorDegree);
+  const domainFactors = Object.freeze([
+    generatedInfinityPolynomial(index + 509, domainFactorDegree),
+  ]);
+  const approach = INFINITY_APPROACHES[index % INFINITY_APPROACHES.length];
+  const positiveInfinity = infinityOracleSide(
+    numerator,
+    denominator,
+    "positive-infinity",
+  );
+  const negativeInfinity = infinityOracleSide(
+    numerator,
+    denominator,
+    "negative-infinity",
+  );
+  const denominatorTail = oraclePolynomialTailBound(denominator);
+  const domainFactorTails = domainFactors.map(oraclePolynomialTailBound);
+  const certifiedTailBound = [denominatorTail, ...domainFactorTails]
+    .reduce((bound, check) => (
+      oracleCompare(check.bound, bound) > 0 ? check.bound : bound
+    ), oracleRational(0n));
+  return Object.freeze({
+    numerator,
+    denominator,
+    domainFactors,
+    approach,
+    numeratorIsZero,
+    numeratorDegree: numeratorIsZero ? null : numeratorDegree,
+    denominatorDegree,
+    degreeDifference: numeratorIsZero
+      ? null
+      : numeratorDegree - denominatorDegree,
+    leadingRatio: numeratorIsZero
+      ? null
+      : oracleDivide(numerator.at(-1), denominator.at(-1)),
+    positiveInfinity,
+    negativeInfinity,
+    denominatorTail,
+    domainFactorTails,
+    certifiedTailBound,
+  });
+}
+
+function exactPolynomialFromOracle(polynomial) {
+  return polynomial.map(({ numerator, denominator }) => (
+    new ExactRational(numerator, denominator)
+  ));
+}
+
+test("独立BigInt oracleの300ケースで無限遠の次数分類・符号・tail境界を照合する", () => {
+  const cases = Array.from(
+    { length: 300 },
+    (_, index) => generatedInfinityOracleCase(index),
+  );
+  assert.deepEqual(
+    new Set(cases.map(({ approach }) => approach)),
+    new Set(INFINITY_APPROACHES),
+  );
+  assert.deepEqual(
+    new Set(cases.filter(({ numeratorIsZero }) => !numeratorIsZero).map((entry) => (
+      `${entry.numeratorDegree}/${entry.denominatorDegree}`
+    ))),
+    new Set(Array.from(
+      { length: 25 },
+      (_, index) => `${index % 5}/${Math.floor(index / 5)}`,
+    )),
+  );
+
+  for (const expected of cases) {
+    const result = evaluateExactRationalFunctionLimitAtInfinity({
+      numerator: exactPolynomialFromOracle(expected.numerator),
+      denominator: exactPolynomialFromOracle(expected.denominator),
+      domainFactors: expected.domainFactors.map(exactPolynomialFromOracle),
+      hasVariableDenominator: true,
+    }, expected.approach);
+    const selected = expected.approach === "positive-infinity"
+      ? expected.positiveInfinity
+      : expected.negativeInfinity;
+    assert.equal(result.numeratorIdenticallyZero, expected.numeratorIsZero);
+    assert.equal(result.numeratorDegree, expected.numeratorDegree);
+    assert.equal(result.denominatorDegree, expected.denominatorDegree);
+    assert.equal(result.degreeDifference, expected.degreeDifference);
+    assert.equal(
+      result.leadingRatio?.toString() ?? null,
+      expected.leadingRatio ? oracleFormat(expected.leadingRatio) : null,
+    );
+    assert.equal(result.positiveInfinity.kind, expected.positiveInfinity.kind);
+    assert.equal(
+      formatExactLimitSide(result.positiveInfinity),
+      expected.positiveInfinity.exact,
+    );
+    assert.equal(result.negativeInfinity.kind, expected.negativeInfinity.kind);
+    assert.equal(
+      formatExactLimitSide(result.negativeInfinity),
+      expected.negativeInfinity.exact,
+    );
+    assert.equal(result.outcomeKind, selected.kind);
+    assert.equal(result.exact, selected.exact);
+    assert.equal(
+      result.denominatorTailCheck.lowerCoefficientAbsoluteRatioSum.toString(),
+      oracleFormat(expected.denominatorTail.ratioSum),
+    );
+    assert.equal(
+      result.denominatorTailCheck.cauchyRootMagnitudeBound.toString(),
+      oracleFormat(expected.denominatorTail.bound),
+    );
+    assert.deepEqual(
+      result.denominatorTailCheck.lowerCoefficientAbsoluteRatios.map(String),
+      expected.denominatorTail.ratios.map(oracleFormat),
+    );
+    assert.equal(
+      result.domainFactorChecks[0].cauchyRootMagnitudeBound.toString(),
+      oracleFormat(expected.domainFactorTails[0].bound),
+    );
+    assert.equal(
+      result.certifiedTailBound.toString(),
+      oracleFormat(expected.certifiedTailBound),
+    );
   }
 });

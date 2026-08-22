@@ -22,20 +22,25 @@ every denominator, for example `1/(x-1)>0`, `1/(x(x+1))>=0`, or
 or `1/2x<1`. Values that made an original denominator zero remain excluded
 even when algebraic cancellation removes that factor from the visible formula.
 
-For a finite limit, use `lim_(x->2) (x^2-4)/(x-2)`,
-`lim_(x->1+) 1/(x-1)`, `lim x→1 1/(x-1)^2 を求めよ`, or a Japanese form such
+For a rational-function limit, use `lim_(x->2) (x^2-4)/(x-2)`,
+`lim_(x->1+) 1/(x-1)`, `lim_(x->+∞) (2x^2+1)/(x^2-3)`,
+`lim x→1 1/(x-1)^2 を求めよ`, or a Japanese form such
 as `xを1に左から近づけるとき 1/(x-1) の極限を求めよ`. The approach point
-may be a signed integer, finite decimal, or explicit fraction. A trailing `+`
-or `-` selects the right- or left-hand limit. The current exact path accepts
+may be a signed integer, finite decimal, explicit fraction, `+∞`, or `-∞`.
+A trailing `+` or `-` selects the right- or left-hand limit only for a finite
+point. The current exact path accepts
 integer exponents from -4 through 4 and requires every intermediate
 one-variable polynomial, rational numerator/denominator, and original domain
 factor to stay at degree four or below. At most ten distinct nonconstant
 original domain factors are accepted. It retains holes from every original
 denominator and returns an exact finite
 fraction, signed infinity, or a verified statement that the two-sided limit
-does not exist. Infinite approach points, roots, absolute values, piecewise
-expressions, limits containing trigonometric/exponential/logarithmic or other
-non-rational functions, and sequence limits are currently unsupported.
+does not exist. At `+∞` or `-∞`, it compares exact degrees and leading
+coefficients and certifies that every original denominator is nonzero on a
+sufficiently distant tail. Combined `±∞` or malformed infinity expressions
+are invalid. Roots, absolute values, piecewise expressions, limits containing
+trigonometric/exponential/logarithmic or other non-rational functions, and
+sequence limits are currently unsupported.
 Do not write scientific notation or ambiguous forms such as `1/2x`; the
 extension rejects them instead of guessing.
 

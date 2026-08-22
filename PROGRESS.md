@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-08-15
+Last updated: 2026-08-23
 
 ## Repository checkpoint
 
@@ -395,6 +395,44 @@ Last updated: 2026-08-15
   The final 36-case parser/routing audit had zero false verifications or
   synchronous/asynchronous differences, and all read-only reviews found no
   remaining P0-P2 issue.
+- Extended the existing full-input limit parser to separately normalized
+  positive and negative infinity while preserving every finite-point form.
+  Exact `∞`, `+∞`, `-∞`, `infinity`, LaTeX, full-width, and explicitly
+  signed Japanese forms are accepted; combined/composite infinity and attached
+  finite one-sided directions are rejected without guessing.
+- Added an exact infinity branch to the bounded rational-function limit core.
+  It compares degrees and leading coefficients for both signed tails, preserves
+  all original domain factors, and records a rational Cauchy root bound
+  `1+Σ|a_i/a_n|` for each nonzero denominator polynomial. Their maximum
+  certifies the function is defined on the requested sufficiently distant tail.
+- Kept the existing `finite-limit` solver ID for history compatibility while
+  adding infinity-specific teaching traces, hints, five-mode presentation,
+  synchronous/asynchronous parity, exception containment, and non-stealing
+  regressions.
+- Added 14 limit parser/core/router/presenter tests, including an independent
+  300-case BigInt infinity oracle. Added 250 public-path infinity problems
+  covering all 25 numerator/denominator degree pairs, both tails, fractional
+  leading ratios, and every degree difference from -4 through 4, bringing the
+  generated evaluation corpus to 4,750 unique problems.
+- The read-only infinity parser/routing audit executed 662 adversarial cases
+  across hostile Unicode, malformed/composite destinations, direction suffixes,
+  invalid-expression precedence, category non-stealing, and synchronous versus
+  asynchronous routing without a failure or remaining P0-P2 issue.
+- An independent BigInt-rational core audit made 20,022 public API calls and
+  compared 103,000 outcomes, 100,000 degree/leading-ratio facts, 112,000 Cauchy
+  bounds, and 24,000 exact tail inequalities. It also checked 2,500 known roots,
+  common-factor/lower-term invariants, `f(-x)` tail symmetry, zero numerators,
+  deep freezing, and hostile boundaries without a mismatch or P0-P2 finding.
+- A final integration audit executed 683 scenarios and 1,331 public solver
+  calls plus 520 five-mode presentations. It found and closed three P2 issues:
+  an explicitly wrong category could intercept a recognized limit, and a hint
+  could drop its input line when the destination infinity matched the answer;
+  final review also found that valid LaTeX whitespace between a sign and
+  `\infty` was rejected. Limit preflight now precedes category solvers, typed
+  input rows remain visible without admitting result rows, and signed LaTeX
+  infinity accepts separator whitespace without accepting mixed signs.
+  Reaudits of 120 category/routing calls, eight signed-infinity hint cases, and
+  49 focused limit/presenter cases passed with no answer leakage.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -423,18 +461,18 @@ Last updated: 2026-08-15
 
 ## Next
 
-1. Add exact rational-function limits at positive and negative infinity only
-   after direction, degree, leading-sign, and original-domain rules are
-   explicit.
+1. Add exact tangent-line problems for an explicitly given rational point on a
+   rational-coefficient polynomial, with project-owned differentiation,
+   point-membership verification, and no graph inference.
 2. Verify module-worker and offscreen loading in unpacked Chrome before
    changing D-004 from provisional to accepted.
 
 ## Last verified commands
 
-- `npm test` - 369 passed, 0 failed on 2026-08-15, including 4,500 generated
+- `npm test` - 383 passed, 0 failed on 2026-08-23, including 4,750 generated
   evaluation cases.
 - `npm run check` - passed for 155 files, 10 HTML, 117 JS/MJS, and 11 CSS files
-  on 2026-08-15.
+  on 2026-08-23.
 
 ## Restart procedure
 

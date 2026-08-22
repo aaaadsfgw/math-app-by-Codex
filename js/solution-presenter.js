@@ -23,7 +23,7 @@ const METHOD_HINTS = Object.freeze({
   derivative: "各項に微分公式を適用し、合成関数では内側の導関数を掛けます。",
   "definite-integral": "原始関数 F(x) を作り、指定された向きのまま F(上端)-F(下端) を厳密に計算します。",
   "indefinite-integral": "基本積分公式を適用し、最後に積分定数 C を付けます。",
-  "finite-limit": "接近点での分子・分母の零点次数を比較し、必要なら左側と右側を分けて調べます。",
+  "finite-limit": "有限点では分子・分母の零点次数を、無限遠では次数と最高次係数を比較します。",
   "polynomial-area": "2曲線の差の全交点で区間を分け、各区間の上下関係を確かめて絶対値積分を足します。",
   "polynomial-volume": "区間全体で外半径と内半径の非負性・順序を確かめ、pi(R²-r²)を積分します。",
 });
@@ -71,6 +71,7 @@ function stepsWithoutFinalAnswer(result) {
   ].map(comparable).filter(Boolean);
   return usableTrace(result).filter((step) => {
     if (["answer", "conclusion", "result"].includes(step.type)) return false;
+    if (step.type === "input") return true;
     const content = comparable(step.content);
     return !answers.some((answer) => content === answer || content.includes(answer));
   });

@@ -37,9 +37,10 @@ The current migration checkpoint supports:
   32 plus finite sums of affine `exp`, `sin`, and `cos` terms over finite
   rational bounds, evaluated as BigInt fractions and typed formal endpoint
   values;
-- exact finite-point limits of one-variable rational functions through degree
-  four, including removable holes, left/right limits, signed infinity, and
-  exact nonexistence when the two one-sided limits differ;
+- exact limits of one-variable rational functions through degree four at
+  finite rational points or positive/negative infinity, including removable
+  holes, left/right finite-point limits, signed infinity, and exact
+  nonexistence when the two finite-point one-sided limits differ;
 - exact areas between two explicitly stated rational-coefficient polynomial
   curves through degree four when their difference is quadratic or lower,
   over rational bounds or between exactly two distinct real intersections;
@@ -89,18 +90,22 @@ For rational inequalities, make every denominator boundary explicit. Write
 `1/(x(x+1))>0` or `(1/x)*(x+1)>0`; ambiguous forms such as `1/x(x+1)>0` and
 `1/2x<1` are rejected instead of guessed.
 
-For a finite rational-function limit, write `lim_(x->1) (x^2-1)/(x-1)`,
-`lim_(x->1+) 1/(x-1)`, or
+For a rational-function limit, write `lim_(x->1) (x^2-1)/(x-1)`,
+`lim_(x->1+) 1/(x-1)`, `lim_(x->+∞) (2x^2+1)/(x^2-3)`, or
 `xを1に左から近づけるとき 1/(x-1) の極限を求めよ`. The approach point
-may be a signed integer, finite decimal, or explicit fraction. The current
-exact path accepts integer exponents from -4 through 4 and requires every
-intermediate numerator, denominator, and original domain factor to stay at
-degree four or below, with at most ten distinct nonconstant original domain
+may be a signed integer, finite decimal, explicit fraction, `+∞`, or `-∞`.
+The current exact path accepts integer exponents from -4 through 4 and requires
+every intermediate numerator, denominator, and original domain factor to stay
+at degree four or below, with at most ten distinct nonconstant original domain
 factors. It keeps every original hole after cancellation, compares exact zero
-multiplicities, and reports finite values, `+∞`, `-∞`, or a verified mismatch
-of the two one-sided limits. Infinite approach points, roots, absolute values,
-piecewise expressions, trigonometric/exponential/logarithmic limit laws, and
-sequence limits remain unsupported rather than being sampled numerically.
+multiplicities at a finite point, and reports finite values, `+∞`, `-∞`, or a
+verified mismatch of the two one-sided limits. At positive or negative
+infinity it compares exact polynomial degrees and leading coefficients, while
+an exact coefficient bound certifies that every retained denominator/domain
+factor is nonzero on the relevant tail. A combined `±∞` target or malformed
+infinity expression is invalid. Roots, absolute values, piecewise expressions,
+trigonometric/exponential/logarithmic limit laws, and sequence limits remain
+unsupported rather than being sampled numerically.
 
 For an area between two curves, write `area_[0,2](x^2;2x)` for an explicit
 interval or `area_intersections(x^2;2x)` for the interval between exactly two

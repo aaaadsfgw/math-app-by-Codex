@@ -16,7 +16,7 @@ Classification alone never means a problem can be solved.
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
-| Finite rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->1+) 1/(x-1)` | exact zero multiplicities, original-domain ledger, and separate left/right sign checks |
+| Rational-function limit | `lim_(x->1) (x²-1)/(x-1)`, `lim_(x->+∞) (2x²+1)/(x²-3)` | exact zero multiplicities at finite points or degree/leading-coefficient comparison at signed infinity, with the original-domain ledger retained |
 | Polynomial area between curves | `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)` | exact intersections, sign partition, and piecewise `∫|f-g|dx` |
 | Polynomial x-axis volume of revolution | `volume_x_axis_[0,1](x)`, `volume_x_axis_[0,1](x+2;x+1)` | exact interval-wide radius/order certificate and `pi*∫(R²-r²)dx` |
 | Quadratic equation | `x^2-5x+6=0`, `0.5x²-1=0` | exact BigInt discriminant and algebraic substitution of every root |
@@ -34,8 +34,8 @@ Classification alone never means a problem can be solved.
 - sequences and common finite/infinite sums;
 - counting, probability, statistics, and data summaries;
 - textual coordinate formulas and vector algebra;
-- infinite-point limits and limits containing trigonometric, exponential,
-  logarithmic, or other non-rational functions; broader definite integrals;
+- limits containing trigonometric, exponential, logarithmic, piecewise, or
+  other non-rational functions; broader definite integrals;
   broader volumes of revolution and other calculus applications through
   Mathematics III;
 - broader derivative/integral forms after their real-domain case splits are
@@ -61,11 +61,16 @@ are retained as conditional results. Indefinite integrals are accepted only
 when the returned candidate parses safely, has no unresolved domain split, and
 differentiates back to the original integrand.
 
-Finite limits currently accept one variable `x`, a finite rational approach
-point, and a complete polynomial or rational expression. Accepted forms are
+Rational-function limits currently accept one variable `x`, a finite rational
+approach point or separately signed positive/negative infinity, and a complete
+polynomial or rational expression. Accepted forms are
 `lim_(x->a) f(x)`, `lim_{x→a} f(x)`, `lim x→a f(x)`, and the documented
 Japanese approach form. A trailing `+` or `-`, or a matching Japanese
-right/left suffix, selects a one-sided limit. The finite-limit profile allows
+right/left suffix, selects a one-sided limit only at a finite point. Infinity
+may be written as `∞`, `+∞`, `-∞`, `infinity`, `+infinity`, `-infinity`, or a
+documented explicitly signed Japanese form. A combined `±∞` target and a
+right/left suffix attached to infinity are rejected rather than guessed. The
+limit profile allows
 integer powers from -4 through 4 and keeps every intermediate numerator,
 denominator, and original domain factor at degree four or below, with at most
 ten distinct nonconstant original domain factors. Every source subtree and
@@ -78,12 +83,21 @@ multiplicities give the exact residual ratio, a larger numerator multiplicity
 gives zero, and a remaining denominator multiplicity gives signed infinity
 according to its parity and residual sign. A two-sided mismatch is returned as
 an exact verified nonexistence result. Removable holes remain recorded in the
-trace but are not appended as conditions on the final limit value. Infinite
-approach points, irrational or variable points, `abs`, roots, piecewise forms,
-trigonometric/exponential/logarithmic limits, standard special limits,
-sequences, and expressions above the profile bounds remain unsupported. No
-floating-point sampling, epsilon heuristic, CAS limit, or numerical tolerance
-is verification evidence.
+trace but are not appended as conditions on the final limit value.
+
+At `+∞` or `-∞`, the solver compares the exact numerator and denominator
+degrees. A smaller numerator degree gives zero, equal degrees give the exact
+leading-coefficient ratio, and a larger numerator degree gives signed infinity;
+the sign at `-∞` also uses the parity of the degree difference. For the reduced
+denominator and every original domain factor `p=a_n x^n+...+a_0`, the core
+records the exact bound `1+Σ|a_i/a_n|`. Beyond the maximum of those rational
+bounds, every factor is certified nonzero and its sign is controlled by its
+leading term. Thus finite holes do not alter the infinity limit, but they are
+still retained in the evidence. Irrational or variable finite points, `abs`,
+roots, piecewise forms, trigonometric/exponential/logarithmic limits, standard
+special limits, sequences, and expressions above the profile bounds remain
+unsupported. No floating-point sampling, epsilon heuristic, CAS limit, or
+numerical tolerance is verification evidence.
 
 Polynomial area problems require both curves and the region description in
 text. Accepted full-input forms are `area_[a,b](f;g)`,

@@ -103,3 +103,22 @@ test("型付き解法履歴の結論行と回答を含む行をヒントへ漏�
   assert.match(explanation, /元の式を確認/);
   assert.match(explanation, /最終回答: x=4/);
 });
+
+test("与件と答えに同じ記号があってもinput行だけはヒントに保つ", () => {
+  const infinity = {
+    ...verifiedResult,
+    answer: "+∞",
+    exactAnswer: "+∞",
+    solutionTrace: [
+      { type: "input", content: "lim_(x→+∞) x" },
+      { type: "rule", content: "次数差=1", explanation: "次数と最高次係数を比較" },
+      { type: "result", content: "極限: +∞" },
+    ],
+    solverId: "finite-limit",
+  };
+
+  const hint2 = presentSolution(infinity, { mode: "hint2" }).content;
+  assert.match(hint2, /lim_\(x→\+∞\) x/u);
+  assert.match(hint2, /次数と最高次係数/u);
+  assert.doesNotMatch(hint2, /極限: \+∞/u);
+});

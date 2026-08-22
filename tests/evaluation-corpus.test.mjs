@@ -2282,6 +2282,98 @@ function generatedFiniteRationalLimits() {
   return cases;
 }
 
+function generatedInfinityPolynomial(degree, variant, salt) {
+  const coefficients = Array.from({ length: degree + 1 }, (_, power) => (
+    corpusRational(
+      BigInt(((variant + 1) * (power + salt + 2) + salt * 3) % 11) - 5n,
+      BigInt(((variant + power + salt) % 4) + 1),
+    )
+  ));
+  const leadingSign = variant % 2 === 0 ? 1n : -1n;
+  coefficients[degree] = corpusRational(
+    leadingSign * BigInt(((variant + salt * 2) % 7) + 1),
+    BigInt(((variant * 2 + salt) % 4) + 1),
+  );
+  return coefficients;
+}
+
+function corpusInfinityExpectedAnswer({
+  numeratorDegree,
+  denominatorDegree,
+  leadingRatio,
+  approach,
+}) {
+  if (numeratorDegree < denominatorDegree) {
+    return { answer: "0", outcomeKind: "finite" };
+  }
+  if (numeratorDegree === denominatorDegree) {
+    return {
+      answer: formatCorpusRational(leadingRatio),
+      outcomeKind: "finite",
+    };
+  }
+  let sign = leadingRatio.numerator < 0n ? -1 : 1;
+  if (
+    approach === "negative-infinity"
+    && (numeratorDegree - denominatorDegree) % 2 === 1
+  ) {
+    sign *= -1;
+  }
+  return {
+    answer: corpusLimitInfinity(sign),
+    outcomeKind: sign < 0 ? "negative-infinity" : "positive-infinity",
+  };
+}
+
+function generatedInfinityRationalLimits() {
+  const cases = [];
+  for (let numeratorDegree = 0; numeratorDegree <= 4; numeratorDegree += 1) {
+    for (let denominatorDegree = 0; denominatorDegree <= 4; denominatorDegree += 1) {
+      for (let variant = 0; variant < 10; variant += 1) {
+        const approach = variant % 2 === 0
+          ? "positive-infinity"
+          : "negative-infinity";
+        const numerator = generatedInfinityPolynomial(numeratorDegree, variant, 1);
+        const denominatorVariant = variant + (
+          Math.floor(variant / 2) % 2 === 0 ? 2 : 3
+        );
+        const denominator = generatedInfinityPolynomial(
+          denominatorDegree,
+          denominatorVariant,
+          2,
+        );
+        const leadingRatio = divideCorpusRationals(
+          numerator[numeratorDegree],
+          denominator[denominatorDegree],
+        );
+        const expected = corpusInfinityExpectedAnswer({
+          numeratorDegree,
+          denominatorDegree,
+          leadingRatio,
+          approach,
+        });
+        cases.push({
+          family: "infinity-rational-limit",
+          question: `lim_(x->${approach === "positive-infinity" ? "+∞" : "-∞"}) `
+            + `(${formatRationalPolynomial(numerator)})`
+            + `/(${formatRationalPolynomial(denominator)})`,
+          answer: expected.answer,
+          coverage: {
+            numeratorDegree,
+            denominatorDegree,
+            approach,
+            degreeDifference: numeratorDegree - denominatorDegree,
+            leadingRatioSign: leadingRatio.numerator < 0n ? "negative" : "positive",
+            fractionalLeadingRatio: leadingRatio.denominator !== 1n,
+            outcomeKind: expected.outcomeKind,
+          },
+        });
+      }
+    }
+  }
+  return cases;
+}
+
 function polynomialAreaExpectedValue(coefficients, lower, upper, roots) {
   const interiorRoots = roots
     .filter((root) => (
@@ -2540,6 +2632,7 @@ const trigonometricDefiniteIntegralCorpus = generatedTrigonometricDefiniteIntegr
 const piAngleDefiniteIntegralCorpus = generatedPiAngleDefiniteIntegrals();
 const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
+const infinityRationalLimitCorpus = generatedInfinityRationalLimits();
 const polynomialAreaCorpus = generatedPolynomialAreas();
 const polynomialVolumeCorpus = generatedPolynomialVolumes();
 const positiveCorpus = [
@@ -2559,14 +2652,15 @@ const positiveCorpus = [
   ...piAngleDefiniteIntegralCorpus,
   ...piSlopeDefiniteIntegralCorpus,
   ...finiteRationalLimitCorpus,
+  ...infinityRationalLimitCorpus,
   ...polynomialAreaCorpus,
   ...polynomialVolumeCorpus,
 ];
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("4,500問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 4_500);
+test("4,750問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 4_750);
   assert.equal(
     finiteRationalLimitCorpus.filter(({ question }) => (
       [...positiveCorpus, ...rejectedCorpus].some((item) => (
@@ -2837,6 +2931,45 @@ test("4,500問の生成評価コーパスで厳密解と安全な未対応を維
       "negative-infinity",
       "does-not-exist",
     ]),
+  );
+  assert.equal(infinityRationalLimitCorpus.length, 250);
+  assert.equal(
+    new Set(infinityRationalLimitCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.equal(
+    infinityRationalLimitCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "infinity-rational-limit" && item.question === question
+      ))
+    )).length,
+    0,
+  );
+  for (let numeratorDegree = 0; numeratorDegree <= 4; numeratorDegree += 1) {
+    for (let denominatorDegree = 0; denominatorDegree <= 4; denominatorDegree += 1) {
+      const degreeCases = infinityRationalLimitCorpus.filter(({ coverage }) => (
+        coverage.numeratorDegree === numeratorDegree
+        && coverage.denominatorDegree === denominatorDegree
+      ));
+      assert.equal(degreeCases.length, 10);
+      assert.deepEqual(
+        new Set(degreeCases.map(({ coverage }) => coverage.approach)),
+        new Set(["positive-infinity", "negative-infinity"]),
+      );
+      assert.deepEqual(
+        new Set(degreeCases.map(({ coverage }) => coverage.leadingRatioSign)),
+        new Set(["negative", "positive"]),
+      );
+      assert.ok(degreeCases.some(({ coverage }) => coverage.fractionalLeadingRatio));
+    }
+  }
+  assert.deepEqual(
+    new Set(infinityRationalLimitCorpus.map(({ coverage }) => coverage.degreeDifference)),
+    new Set([-4, -3, -2, -1, 0, 1, 2, 3, 4]),
+  );
+  assert.deepEqual(
+    new Set(infinityRationalLimitCorpus.map(({ coverage }) => coverage.outcomeKind)),
+    new Set(["finite", "positive-infinity", "negative-infinity"]),
   );
 
   for (const item of positiveCorpus) {

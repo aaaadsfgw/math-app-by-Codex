@@ -41,8 +41,12 @@ imported-verification downgrade.
 14. Solve `lim_(x->1) (x^2-1)/(x-1)`, `lim_(x->1+) 1/(x-1)`, and
     `lim_(x->1) 1/(x-1)`; confirm `2`, `+∞`, and the exact left/right mismatch.
     Confirm both hints hide those final results and history classifies them as
-    limits. Submit `lim_(x->∞) 1/x`, `lim_(x->0) sin(x)/x`, and
-    `lim_(x->1 2) x`; confirm none receives a verified answer.
+    limits. Solve `lim_(x->∞) 1/x`, `lim_(x->-∞) x^3`, and
+    `lim_(x->+∞) (2x^2+1)/(x^2-3)`; confirm `0`, `-∞`, and `2`, and
+    confirm the working records a certified tail-domain bound. Submit
+    `lim_(x->±∞) 1/x`, `lim_(x->0) sin(x)/x`, and `lim_(x->1 2) x`;
+    confirm the first and third are invalid, the second is unsupported, and
+    none receives a verified answer.
 15. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
     `area_[-2,2](x^2;2)`; confirm the exact answers are `4/3`, `4/3`, and
     `(-8+16√2)/3`. Confirm the working partitions at every intersection, both
@@ -51,17 +55,22 @@ imported-verification downgrade.
     confirm `x軸` is treated as `y=0` and the exact result is `4/3`.
     Submit `area_intersections(x^2;0)`, `area_[0,1](sin(x);0)`, and a
     diagram-dependent region; confirm none receives a verified answer.
-16. Submit an unsupported trigonometric equation, an improper integral such as
+16. Solve `volume_x_axis_[0,1](x)` and
+    `volume_x_axis_[0,1](x+2;x+1)`; confirm the exact answers are `pi/3` and
+    `4*pi`, the working certifies both radii over the whole interval, and both
+    hints hide the final volume. Submit a y-axis rotation, a crossing radius,
+    and a diagram-only region; confirm none receives a verified answer.
+17. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-17. Verify history filters, JSON import/export, analytics, review rerun, setting
+18. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-18. Reload the extension and repeat the shortcut to cover service-worker
+19. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation
 
-Before completion, run the current versioned 4,250-case corpus and report:
+Before completion, run the current versioned 4,750-case corpus and report:
 
 - exact-answer accuracy by domain;
 - unsupported/invalid classification accuracy;

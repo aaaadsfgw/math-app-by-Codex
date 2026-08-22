@@ -7,6 +7,11 @@ import {
 
 const LIMIT_DIRECTIONS = Object.freeze(["both", "left", "right"]);
 const LIMIT_DIRECTION_SET = new Set(LIMIT_DIRECTIONS);
+const INFINITY_APPROACHES = Object.freeze([
+  "positive-infinity",
+  "negative-infinity",
+]);
+const INFINITY_APPROACH_SET = new Set(INFINITY_APPROACHES);
 const MAX_LIMIT_POLYNOMIAL_DEGREE = 4;
 const MAX_LIMIT_DOMAIN_FACTORS = 10;
 
@@ -225,6 +230,203 @@ function outcomeFor(direction, left, right) {
   });
 }
 
+function absoluteExactRational(value) {
+  return value.numerator < 0n ? value.negate() : value;
+}
+
+function compareExactRationals(left, right) {
+  const difference = left.numerator * right.denominator
+    - right.numerator * left.denominator;
+  return difference < 0n ? -1 : difference > 0n ? 1 : 0;
+}
+
+function polynomialTailCheck(
+  polynomial,
+  { sourceKind, sourceIndex = null },
+) {
+  const degree = exactRationalPolynomialDegree(polynomial);
+  const leadingCoefficient = polynomial[degree];
+  const lowerCoefficientAbsoluteRatios = Object.freeze(
+    polynomial.slice(0, degree).map((coefficient) => (
+      absoluteExactRational(coefficient.divide(leadingCoefficient))
+    )),
+  );
+  const lowerCoefficientAbsoluteRatioSum = lowerCoefficientAbsoluteRatios
+    .reduce((sum, ratio) => sum.add(ratio), ExactRational.zero());
+  const cauchyRootMagnitudeBound = ExactRational.one()
+    .add(lowerCoefficientAbsoluteRatioSum);
+  return Object.freeze({
+    sourceKind,
+    sourceIndex,
+    polynomial,
+    degree,
+    leadingCoefficient,
+    lowerCoefficientAbsoluteRatios,
+    lowerCoefficientAbsoluteRatioSum,
+    cauchyRootMagnitudeBound,
+    certifiedNonzeroForAbsXGreaterThan: cauchyRootMagnitudeBound,
+    positiveTailCertified: true,
+    negativeTailCertified: true,
+    eventuallyNonzero: true,
+  });
+}
+
+function combinedTailBound(checks) {
+  return checks.reduce((bound, check) => (
+    compareExactRationals(check.cauchyRootMagnitudeBound, bound) > 0
+      ? check.cauchyRootMagnitudeBound
+      : bound
+  ), ExactRational.zero());
+}
+
+function tailDomainCertificate(approach, bound, checks) {
+  return Object.freeze({
+    approach,
+    absoluteValueMustBeStrictlyGreaterThan: bound,
+    comparison: approach === "positive-infinity"
+      ? "x>certifiedTailBound"
+      : "x<-certifiedTailBound",
+    checks,
+    checkedPolynomialCount: checks.length,
+    denominatorEventuallyNonzero: true,
+    originalDomainFactorsEventuallyNonzero: true,
+    certified: true,
+  });
+}
+
+function infinityOutcome(degreeDifference, leadingRatio, approach) {
+  if (degreeDifference < 0) return finiteSide(ExactRational.zero());
+  if (degreeDifference === 0) return finiteSide(leadingRatio);
+  let sign = leadingRatio.numerator < 0n ? -1 : 1;
+  if (approach === "negative-infinity" && degreeDifference % 2 !== 0) {
+    sign = -sign;
+  }
+  return infiniteSide(sign);
+}
+
+export function evaluateExactRationalFunctionLimitAtInfinity(
+  rationalFunction,
+  approach,
+) {
+  const value = requireRationalFunction(rationalFunction);
+  if (!INFINITY_APPROACH_SET.has(approach)) {
+    throw new TypeError(
+      "無限遠の接近先はpositive-infinityまたはnegative-infinityにしてください。",
+    );
+  }
+
+  const numeratorIdenticallyZero = isZeroExactRationalPolynomial(value.numerator);
+  const denominatorDegree = exactRationalPolynomialDegree(value.denominator);
+  const denominatorLeadingCoefficient = value.denominator[denominatorDegree];
+  const numeratorTailCheck = numeratorIdenticallyZero
+    ? null
+    : polynomialTailCheck(value.numerator, { sourceKind: "numerator" });
+  const denominatorTailCheck = polynomialTailCheck(value.denominator, {
+    sourceKind: "denominator",
+  });
+  const domainFactorChecks = Object.freeze(
+    value.domainFactors.map((factor, index) => polynomialTailCheck(factor, {
+      sourceKind: "original-domain-factor",
+      sourceIndex: index,
+    })),
+  );
+  const domainTailChecks = Object.freeze([
+    denominatorTailCheck,
+    ...domainFactorChecks,
+  ]);
+  const certifiedTailBound = combinedTailBound(domainTailChecks);
+  const positiveTailDomainCertificate = tailDomainCertificate(
+    "positive-infinity",
+    certifiedTailBound,
+    domainTailChecks,
+  );
+  const negativeTailDomainCertificate = tailDomainCertificate(
+    "negative-infinity",
+    certifiedTailBound,
+    domainTailChecks,
+  );
+  const tailDomainCertificates = Object.freeze([
+    positiveTailDomainCertificate,
+    negativeTailDomainCertificate,
+  ]);
+
+  let numeratorDegree = null;
+  let numeratorLeadingCoefficient = null;
+  let degreeDifference = null;
+  let leadingRatio = null;
+  let positiveInfinity;
+  let negativeInfinity;
+
+  if (numeratorIdenticallyZero) {
+    positiveInfinity = finiteSide(ExactRational.zero());
+    negativeInfinity = positiveInfinity;
+  } else {
+    numeratorDegree = exactRationalPolynomialDegree(value.numerator);
+    numeratorLeadingCoefficient = value.numerator[numeratorDegree];
+    degreeDifference = numeratorDegree - denominatorDegree;
+    leadingRatio = numeratorLeadingCoefficient.divide(denominatorLeadingCoefficient);
+    positiveInfinity = infinityOutcome(
+      degreeDifference,
+      leadingRatio,
+      "positive-infinity",
+    );
+    negativeInfinity = infinityOutcome(
+      degreeDifference,
+      leadingRatio,
+      "negative-infinity",
+    );
+  }
+
+  const outcome = approach === "positive-infinity"
+    ? positiveInfinity
+    : negativeInfinity;
+  const positiveInfinityEvidence = Object.freeze({
+    approach: "positive-infinity",
+    outcome: positiveInfinity,
+    outcomeKind: positiveInfinity.kind,
+    exact: formatExactLimitSide(positiveInfinity),
+  });
+  const negativeInfinityEvidence = Object.freeze({
+    approach: "negative-infinity",
+    outcome: negativeInfinity,
+    outcomeKind: negativeInfinity.kind,
+    exact: formatExactLimitSide(negativeInfinity),
+  });
+  const bothDirectionEvidence = Object.freeze({
+    positiveInfinity: positiveInfinityEvidence,
+    negativeInfinity: negativeInfinityEvidence,
+  });
+  return Object.freeze({
+    rationalFunction: value,
+    approach,
+    numeratorIdenticallyZero,
+    numeratorDegree,
+    denominatorDegree,
+    degreeDifference,
+    numeratorLeadingCoefficient,
+    denominatorLeadingCoefficient,
+    leadingRatio,
+    numeratorTailCheck,
+    denominatorTailCheck,
+    domainFactorChecks,
+    originalDomainTailChecks: domainFactorChecks,
+    domainTailChecks,
+    certifiedTailBound,
+    positiveTailDomainCertificate,
+    negativeTailDomainCertificate,
+    tailDomainCertificates,
+    tailDomainCertified: true,
+    positiveInfinity,
+    negativeInfinity,
+    positiveInfinityEvidence,
+    negativeInfinityEvidence,
+    bothDirectionEvidence,
+    outcome,
+    outcomeKind: outcome.kind,
+    exact: formatExactLimitSide(outcome),
+  });
+}
+
 export function evaluateExactRationalFunctionLimit(
   rationalFunction,
   point,
@@ -341,4 +543,11 @@ export function evaluateExactRationalLimit(node, point, direction = "both") {
   );
 }
 
-export { LIMIT_DIRECTIONS };
+export function evaluateExactRationalLimitAtInfinity(node, approach) {
+  return evaluateExactRationalFunctionLimitAtInfinity(
+    exactRationalFunctionForFiniteLimitFromAst(node),
+    approach,
+  );
+}
+
+export { INFINITY_APPROACHES, LIMIT_DIRECTIONS };

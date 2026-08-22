@@ -6,7 +6,7 @@
 typed or selected question
           |
           v
-polynomial-area full-input preflight
+volume -> area -> rational-limit full-input preflights
           |
           v
 category classifier
@@ -41,9 +41,9 @@ verified-history creation.
   only for stored-data compatibility. New runtime paths never create them.
 - No input string is executed as JavaScript.
 
-## Finite-limit verification
+## Rational-function limit verification
 
-Finite rational-point limits use a dedicated profile of the shared exact
+Rational-function limits use a dedicated profile of the shared exact
 rational-function converter. The default equation and inequality profiles
 retain their existing exponent and domain-factor bounds, while the limit
 profile permits integer exponents from -4 through 4 and degree-four
@@ -62,6 +62,16 @@ and the domain-factor count rather than trusting only parser-created values.
 It copies coefficients, the approach point, and the domain ledger into
 base-type snapshots, rejects sparse arrays and invalid flags, keeps its
 direction allowlist private, and deeply freezes the returned evidence.
+
+At separately requested `+∞` or `-∞`, the same certified rational function
+is classified by its exact numerator/denominator degrees, leading-coefficient
+ratio, and the parity of their degree difference. For the reduced denominator
+and every retained original domain factor `p=a_n x^n+...+a_0`, the core records
+the rational Cauchy root bound `1+Σ|a_i/a_n|`; their maximum certifies that the
+function is defined on both sufficiently distant tails. The core returns both
+signed-tail outcomes and the requested one as frozen typed evidence. Combined
+or composite infinity destinations are invalid, while non-rational function
+limits and profile overflows remain unsupported.
 
 ## Polynomial-area verification
 
