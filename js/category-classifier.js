@@ -157,6 +157,12 @@ export function classifyCategory(question) {
     addSignal(scores, reasons, "微分", 20, "式と接点が指定された接線の方程式を検出");
   }
   if (
+    /(?:^|[^a-z])normal_(?:x_\s*\[|point_\s*\(|\s*\[)/iu.test(text)
+    || /曲線[\s\S]*y\s*=[\s\S]*法線\s*の\s*方程式/u.test(text)
+  ) {
+    addSignal(scores, reasons, "微分", 20, "式と接点が指定された法線の方程式を検出");
+  }
+  if (
     /(?:^|[^a-z])(?:monotonicity_extrema|monotonicity|extrema)\s*\(/iu.test(text)
     || /関数\s*(?:y|f\s*\(\s*x\s*\))\s*=[\s\S]*(?:増減|極値)/u.test(text)
   ) {
@@ -188,7 +194,7 @@ export function classifyCategory(question) {
 
   if (/%|パーセント/u.test(text)) addSignal(scores, reasons, "パーセント", 8, "%またはパーセント表記を検出");
 
-  if (/三角形|四角形|多角形|円(?:周|の|と)|面積|周長|内角|外角|図形|三平方|ヘロン|平行線|接線/u.test(text)) {
+  if (/三角形|四角形|多角形|円(?:周|の|と)|面積|周長|内角|外角|図形|三平方|ヘロン|平行線|接線|法線/u.test(text)) {
     addSignal(scores, reasons, "図形", 6, "図形に関する語を検出");
   }
   if (/[A-Z]\s*\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*\)/u.test(String(question)) && /距離|中点|座標/u.test(text)) {

@@ -2502,6 +2502,106 @@ function generatedPolynomialTangents() {
   return cases;
 }
 
+function generatedNormalPolynomial(degree, variant, point) {
+  const coefficients = Array.from({ length: degree + 1 }, (_, power) => (
+    corpusRational(
+      BigInt(((variant + 5) * (power + 7) + degree * 3 + power * 11) % 19) - 9n,
+      BigInt(((variant + power * 2 + degree) % 5) + 1),
+    )
+  ));
+  if (coefficients[degree].numerator === 0n) {
+    coefficients[degree] = corpusRational(
+      variant % 2 === 0 ? 1n : -1n,
+      BigInt(((variant + degree) % 4) + 1),
+    );
+  }
+  if (degree >= 2 && variant % 10 === 0) {
+    let higherDerivative = corpusRational(0n);
+    for (let power = 2; power <= degree; power += 1) {
+      higherDerivative = addCorpusRationals(
+        higherDerivative,
+        multiplyCorpusRationals(
+          multiplyCorpusRationals(
+            coefficients[power],
+            corpusRational(BigInt(power)),
+          ),
+          powerCorpusRational(point, power - 1),
+        ),
+      );
+    }
+    coefficients[1] = negateCorpusRational(higherDerivative);
+  }
+  return coefficients;
+}
+
+function generatedPolynomialNormals() {
+  const forms = [
+    "x-coordinate",
+    "x-alias",
+    "point",
+    "japanese-x",
+    "japanese-point",
+  ];
+  const cases = [];
+  for (let degree = 0; degree <= 4; degree += 1) {
+    for (let variant = 0; variant < 50; variant += 1) {
+      const point = corpusRational(
+        BigInt(((variant * 11 + degree * 5) % 37) - 18),
+        BigInt(((variant * 2 + degree) % 5) + 1),
+      );
+      const coefficients = generatedNormalPolynomial(degree, variant, point);
+      const pointValue = evaluateCorpusPolynomial(coefficients, point);
+      const tangentSlope = evaluateCorpusPolynomialDerivative(coefficients, point);
+      const vertical = tangentSlope.numerator === 0n;
+      let answer;
+      if (vertical) {
+        answer = `x=${formatCorpusRational(point)}`;
+      } else {
+        const normalSlope = divideCorpusRationals(
+          corpusRational(-1n),
+          tangentSlope,
+        );
+        const intercept = subtractCorpusRationals(
+          pointValue,
+          multiplyCorpusRationals(normalSlope, point),
+        );
+        answer = formatCorpusTangentLine(normalSlope, intercept);
+      }
+      const expression = formatRationalPolynomial(coefficients) || "0";
+      const form = forms[variant % forms.length];
+      let question;
+      if (form === "x-coordinate") {
+        question = `normal_x_[(${formatCorpusRational(point)})](${expression})`;
+      } else if (form === "x-alias") {
+        question = `normal_[(${formatCorpusRational(point)})](${expression})`;
+      } else if (form === "point") {
+        question = `normal_point_((${formatCorpusRational(point)}),`
+          + `(${formatCorpusRational(pointValue)}))(${expression})`;
+      } else if (form === "japanese-x") {
+        question = `曲線 y=${expression} の x=${formatCorpusRational(point)} `
+          + `における法線の方程式を求めよ`;
+      } else {
+        question = `曲線 y=${expression} 上の点 (`
+          + `${formatCorpusRational(point)},${formatCorpusRational(pointValue)}) `
+          + `における法線の方程式を求めよ`;
+      }
+      cases.push({
+        family: "polynomial-normal",
+        question,
+        answer,
+        coverage: {
+          degree,
+          form,
+          fractionalPoint: point.denominator !== 1n,
+          fractionalCoefficient: coefficients.some(({ denominator }) => denominator !== 1n),
+          vertical,
+        },
+      });
+    }
+  }
+  return cases;
+}
+
 function formatCorpusVariationPoint(x, y) {
   return `(${x},${y})`;
 }
@@ -3031,6 +3131,7 @@ const piSlopeDefiniteIntegralCorpus = generatedPiSlopeDefiniteIntegrals();
 const finiteRationalLimitCorpus = generatedFiniteRationalLimits();
 const infinityRationalLimitCorpus = generatedInfinityRationalLimits();
 const polynomialTangentCorpus = generatedPolynomialTangents();
+const polynomialNormalCorpus = generatedPolynomialNormals();
 const polynomialVariationCorpus = generatedPolynomialVariations();
 const polynomialAreaCorpus = generatedPolynomialAreas();
 const polynomialVolumeCorpus = generatedPolynomialVolumes();
@@ -3053,6 +3154,7 @@ const positiveCorpus = [
   ...finiteRationalLimitCorpus,
   ...infinityRationalLimitCorpus,
   ...polynomialTangentCorpus,
+  ...polynomialNormalCorpus,
   ...polynomialVariationCorpus,
   ...polynomialAreaCorpus,
   ...polynomialVolumeCorpus,
@@ -3060,8 +3162,8 @@ const positiveCorpus = [
 const rejectedCorpus = generatedRejectedInputs();
 export const EVALUATION_CORPUS_SIZE = positiveCorpus.length + rejectedCorpus.length;
 
-test("5,250問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
-  assert.equal(EVALUATION_CORPUS_SIZE, 5_250);
+test("5,500問の生成評価コーパスで厳密解と安全な未対応を維持する", async () => {
+  assert.equal(EVALUATION_CORPUS_SIZE, 5_500);
   assert.equal(
     finiteRationalLimitCorpus.filter(({ question }) => (
       [...positiveCorpus, ...rejectedCorpus].some((item) => (
@@ -3429,6 +3531,43 @@ test("5,250問の生成評価コーパスで厳密解と安全な未対応を維
   assert.ok(polynomialTangentCorpus.some(({ coverage }) => coverage.fractionalCoefficient));
   assert.ok(polynomialTangentCorpus.some(({ coverage }) => coverage.horizontal));
   assert.ok(polynomialTangentCorpus.some(({ coverage }) => !coverage.horizontal));
+  assert.equal(polynomialNormalCorpus.length, 250);
+  assert.equal(
+    new Set(polynomialNormalCorpus.map(({ question }) => question)).size,
+    250,
+  );
+  assert.equal(
+    polynomialNormalCorpus.filter(({ question }) => (
+      [...positiveCorpus, ...rejectedCorpus].some((item) => (
+        item.family !== "polynomial-normal" && item.question === question
+      ))
+    )).length,
+    0,
+  );
+  assert.deepEqual(
+    new Set(polynomialNormalCorpus.map(({ coverage }) => coverage.degree)),
+    new Set([0, 1, 2, 3, 4]),
+  );
+  for (let degree = 0; degree <= 4; degree += 1) {
+    assert.equal(
+      polynomialNormalCorpus.filter(({ coverage }) => coverage.degree === degree).length,
+      50,
+    );
+  }
+  assert.deepEqual(
+    new Set(polynomialNormalCorpus.map(({ coverage }) => coverage.form)),
+    new Set(["x-coordinate", "x-alias", "point", "japanese-x", "japanese-point"]),
+  );
+  for (const form of ["x-coordinate", "x-alias", "point", "japanese-x", "japanese-point"]) {
+    assert.equal(
+      polynomialNormalCorpus.filter(({ coverage }) => coverage.form === form).length,
+      50,
+    );
+  }
+  assert.ok(polynomialNormalCorpus.some(({ coverage }) => coverage.fractionalPoint));
+  assert.ok(polynomialNormalCorpus.some(({ coverage }) => coverage.fractionalCoefficient));
+  assert.ok(polynomialNormalCorpus.some(({ coverage }) => coverage.vertical));
+  assert.ok(polynomialNormalCorpus.some(({ coverage }) => !coverage.vertical));
 
   for (const item of positiveCorpus) {
     const result = item.family.endsWith("definite-integral")

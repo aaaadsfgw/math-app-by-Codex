@@ -26,6 +26,10 @@ import {
   solvePolynomialTangent,
 } from "./polynomial-tangent.js";
 import {
+  POLYNOMIAL_NORMAL_SOLVER_ID,
+  solvePolynomialNormal,
+} from "./polynomial-normal.js";
+import {
   POLYNOMIAL_VARIATION_SOLVER_ID,
   solvePolynomialVariation,
 } from "./polynomial-variation.js";
@@ -53,6 +57,7 @@ export {
   solveLogarithmicEquation,
   solvePercentage,
   solvePolynomialArea,
+  solvePolynomialNormal,
   solvePolynomialTangent,
   solvePolynomialVariation,
   solvePolynomialVolume,
@@ -186,6 +191,12 @@ function runApplicationPreflights(input) {
     POLYNOMIAL_TANGENT_SOLVER_ID,
   );
   if (tangent.supported || tangent.recognized === true) return tangent;
+  const normal = runApplicationPreflight(
+    input,
+    solvePolynomialNormal,
+    POLYNOMIAL_NORMAL_SOLVER_ID,
+  );
+  if (normal.supported || normal.recognized === true) return normal;
   const variation = runApplicationPreflight(
     input,
     solvePolynomialVariation,
