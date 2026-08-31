@@ -6,7 +6,7 @@
 typed or selected question
           |
           v
-volume -> area -> tangent -> variation -> rational-limit full-input preflights
+volume -> area -> tangent -> normal -> variation -> rational-limit preflights
           |
           v
 category classifier
@@ -44,8 +44,8 @@ verified-history creation.
 ## Polynomial-tangent verification
 
 Tangent requests use a strict full-input preflight after volume and area, and
-before rational-function limits and category routing. It accepts only the
-documented canonical forms or complete fixed Japanese forms with an explicit
+before normal, variation, rational-function limits, and category routing. It
+accepts only the documented canonical forms or complete fixed Japanese forms with an explicit
 rational x-coordinate or explicit rational point. This prevents a displayed
 curve equation or point from being stolen by a general equation solver while
 leaving ordinary differentiation untouched and classifying geometric tangent
@@ -69,10 +69,58 @@ must be exact zero differences. Numerical differentiation, graph sampling, and
 CAS proposals do not participate in verification. Verified results use solver
 ID `polynomial-tangent` and history category `微分`.
 
+## Polynomial-normal verification
+
+Normal-line requests use a strict full-input preflight after tangent and before
+variation, rational-function limits, and category routing. The accepted
+canonical forms are `normal_x_[a](f)`, its alias `normal_[a](f)`, and
+`normal_point_(a,b)(f)`. The two complete fixed Japanese forms are
+`曲線 y=f の x=a における法線の方程式を求めよ` and
+`曲線 y=f 上の点 (a,b) における法線の方程式を求めよ`, including only
+the parser's documented safe terminal variants. This recognized path prevents
+the explicit curve equation or contact point from reaching a general equation
+solver while leaving ordinary differentiation and unrelated geometry alone.
+English recognition is limited to the documented canonical stems and the
+explicit unsupported geometry names `normal_vector`, `normal_plane`, and
+`surface_normal`; arbitrary identifiers beginning with `normal_` do not enter
+this preflight. CR/LF, vertical tab, form feed, NEL, line separator, and
+paragraph separator normalize to whitespace, after which numeric-token
+separation is still rejected as ambiguous.
+
+Every supplied coordinate must be a finite exact rational. The complete curve
+AST and every source subtree must be a rational-coefficient polynomial in `x`
+with structural degree at most four, so cancellation, multiplication by zero,
+or a zero power cannot hide a degree-five term or an unsupported operation.
+The public core snapshots base `ExactRational` values, rejects sparse or
+noncanonical coefficient arrays, revalidates the bound, and deeply freezes the
+returned line and evidence. If `(a,b)` is declared, `f(a)=b` must hold exactly;
+a mismatch is invalid rather than a different normal problem.
+
+The exact core evaluates the contact value, forms the coefficient derivative,
+and sets `m=f'(a)`. Its universal construction is the division-free implicit
+equation `x-a+m(y-b)=0`, with coefficient triple
+`[1,m,-a-mb]`. The tangent direction `[1,m]` and normal direction `[-m,1]`
+must have exact dot product zero, and independent substitution must show that
+the line passes through `(a,b)`. When `m=0`, the line is a true vertical tagged
+union with canonical answer `x=a`; no infinite, `NaN`, divided-by-zero, or
+fabricated finite slope exists. Only when `m!=0` does the core compute the
+normal slope `-1/m`, its exact intercept, and the equivalent `y=nx+c` form.
+
+Verified results use solver ID `polynomial-normal` and history category `微分`.
+Typed traces retain curve membership, differentiation, implicit-line, contact,
+and orthogonality evidence. Both hint modes withhold the finished equation,
+normal slope, and intercept. Malformed or answer-attached input is invalid;
+functions, variable denominators or negative powers, degree five or above,
+non-rational coordinates, other variables, circles and other implicit curves,
+parametric or polar curves, planes/surfaces, geometric or diagram-dependent
+normals, and figure/graph-derived data remain recognized but unsupported. No
+numerical derivative, graph sample, floating-point slope, or CAS proposal is
+verification evidence.
+
 ## Polynomial-variation verification
 
 Polynomial monotonicity and local-extrema requests use a strict full-input
-preflight after tangent and before rational-function limits. The accepted
+preflight after normal and before rational-function limits. The accepted
 canonical forms are `monotonicity(f)`, `extrema(f)`, and
 `monotonicity_extrema(f)`. Complete Japanese input may use `関数 y=f` or
 `関数 f(x)=f`, optionally preceded by `次の`, followed by exactly one of

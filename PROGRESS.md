@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-08-23
+Last updated: 2026-08-29
 
 ## Repository checkpoint
 
@@ -443,10 +443,11 @@ Last updated: 2026-08-23
   revalidates inputs, computes `f(a)`, the formal coefficient derivative,
   `m=f'(a)`, and `c=f(a)-ma`, then deeply freezes evidence that independently
   rechecks both point passage and slope agreement.
-- Routed tangent preflight in the application order
-  `volume -> area -> tangent -> variation -> rational-limit`, before category
-  solvers, in
-  both synchronous and asynchronous paths. Added tangent-specific teaching
+- Routed tangent preflight before normal, variation, rational-function limits,
+  and category solvers in both synchronous and asynchronous paths. The current
+  application order is
+  `volume -> area -> tangent -> normal -> variation -> rational-limit`. Added
+  tangent-specific teaching
   traces and answer-safe hints, solver ID `polynomial-tangent`, `微分` history
   classification, storage round trips, exception containment, wrong-category
   priority, and non-stealing regressions.
@@ -477,9 +478,9 @@ Last updated: 2026-08-23
   non-extremum, so `x^3` is increasing on all real numbers while `(0,0)` is not
   reported as an extremum. A constant polynomial is constant on all real
   numbers and has no isolated local extrema.
-- Added variation preflight after tangent and before rational-function limits
-  in both synchronous and asynchronous paths, completing the current order
-  `volume -> area -> tangent -> variation -> rational-limit`. Verified results
+- Added variation preflight after normal and before rational-function limits
+  in both synchronous and asynchronous paths. The current order is
+  `volume -> area -> tangent -> normal -> variation -> rational-limit`. Verified results
   use solver ID `polynomial-variation` and history category `微分`; the typed
   presentation and both hints omit critical-point coordinates, completed
   intervals, and extrema until the answer-bearing modes.
@@ -494,6 +495,41 @@ Last updated: 2026-08-23
   inflection points, graph outlines, other variables, and figure/graph/table-
   derived information unsupported. No graph sampling, floating-point root,
   or CAS proposal is accepted as variation verification.
+- Added strict full-input parsing for `normal_x_[a](f)`, its
+  `normal_[a](f)` alias, `normal_point_(a,b)(f)`, and two complete fixed
+  Japanese sentence forms. Every coordinate is a finite exact rational. A
+  declared point must satisfy `f(a)=b` exactly; a false point or malformed or
+  answer-attached input is invalid, while recognized out-of-profile normal
+  requests remain unsupported.
+- Added a project-owned exact normal-line core for canonical dense
+  rational-coefficient polynomials whose complete source structure has degree
+  at most four. It snapshots and revalidates inputs, evaluates `f(a)`, forms
+  the exact derivative and `m=f'(a)`, then constructs the division-free
+  implicit equation `x-a+m(y-b)=0`. Independent evidence verifies point
+  membership, line passage, and that the tangent and normal directions have
+  exact dot product zero.
+- Represented the `m=0` case as a true vertical tagged-union line `x=a`, with
+  no `Infinity`, `NaN`, divided-by-zero slope, or fabricated finite slope. Only
+  the `m!=0` branch computes the normal slope `-1/m` and its exact intercept.
+- Routed recognized normal requests before variation and rational-function
+  limits in both synchronous and asynchronous paths, making the full preflight
+  order `volume -> area -> tangent -> normal -> variation -> rational-limit`.
+  Verified results use solver ID `polynomial-normal` and history category
+  `微分`; typed teaching traces and both hint modes withhold the finished line,
+  normal slope, and intercept.
+- Added 34 normal parser/core/solver/public tests (8 exact-core, 10 parser,
+  and 16 solver/public), including an independent
+  500-case BigInt fraction core oracle, vertical and nonvertical cases, hostile
+  public boundaries, wrong-category priority, presentation, storage, and
+  non-stealing regressions. Added 250 generated public-path normal problems,
+  50 at each degree zero through four and spanning all five canonical/Japanese
+  forms, bringing the versioned evaluation corpus to 5,500 unique problems.
+- Kept functions, variable denominators and negative powers, degree five or
+  above even when hidden by cancellation, non-rational coordinates, other
+  variables, circles and other implicit curves, parametric and polar curves,
+  high-dimensional/geometric normals, and figure/graph-dependent requests
+  unsupported. No numerical differentiation, sampled slope, graph inference,
+  floating-point approximation, or CAS proposal is accepted as verification.
 - Added the `offscreen`/`WORKERS` bridge so keyboard-shortcut requests from the
   extension service worker retain the same fresh-worker deadline.
 - Switched popup and shortcut routing to the shared asynchronous solver entry
@@ -527,10 +563,10 @@ Last updated: 2026-08-23
 
 ## Last verified commands
 
-- `npm test` - 448 passed, 0 failed on 2026-08-23, including 5,250 generated
+- `npm test` - 484 passed, 0 failed on 2026-08-29, including 5,500 generated
   evaluation cases.
-- `npm run check` - passed for 167 files, 10 HTML, 129 JS/MJS, and 11 CSS files
-  on 2026-08-23.
+- `npm run check` - passed for 173 files, 10 HTML, 135 JS/MJS, and 11 CSS files
+  on 2026-08-29.
 
 ## Restart procedure
 

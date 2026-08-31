@@ -15,6 +15,7 @@ Classification alone never means a problem can be solved.
 | One-variable rational inequality | `1/(x-1)>0`, `(x^2-2)/(x^2-3)>=0` | exact critical-point ordering, interval substitution, and original-pole exclusion |
 | Derivative | `f(x)=x^3-2x を微分せよ`, `sin(x^2)を微分せよ` | project-owned rules plus symbolic equivalence |
 | Polynomial tangent line | `tangent_x_[1](x^2)`, `tangent_point_(1,1)(x^2)` | exact coefficient differentiation, declared-point membership, and point/slope re-verification |
+| Polynomial normal line | `normal_x_[1](x^2)`, `normal_point_(1,1)(x^2)` | exact coefficient differentiation, declared-point membership, division-free line construction, and point/orthogonality re-verification |
 | Polynomial monotonicity and local extrema | `monotonicity(x^3-3x)`, `extrema(x^3)`, `monotonicity_extrema(x^3+x^2-2x)` | exact derivative roots, sign-cell certificates, maximal intervals, and exact critical-point values |
 | Indefinite integral | `∫x^2 dx`, `sin(x)を積分せよ` | differentiate the candidate back to the input |
 | Definite polynomial/elementary integral | `∫_0^1 x^2 dx`, `∫_0^1 2exp(2x+1) dx`, `∫_0^1 sin(x) dx`, `∫_0^pi sin(x) dx` | exact antiderivative coefficients and endpoint substitution with BigInt fractions and typed `exp`/`sin`/`cos`/`pi` atoms |
@@ -89,6 +90,41 @@ contact point or curve that must be inferred from a figure or graph remain
 unsupported. Malformed notation, attached answers, and a declared point that
 is not on the curve receive no verified answer. No numerical derivative,
 graph sampling, or CAS proposal is verification evidence.
+
+Polynomial normal-line problems accept the full-input forms
+`normal_x_[a](f)`, `normal_[a](f)`, and `normal_point_(a,b)(f)`, plus the
+fixed Japanese forms `曲線 y=f の x=a における法線の方程式を求めよ` and
+`曲線 y=f 上の点 (a,b) における法線の方程式を求めよ`. Every supplied
+coordinate must be a finite exact rational written as a signed integer, finite
+decimal, or explicit fraction. The complete curve and every source subtree
+must reduce to a rational-coefficient polynomial in `x` with structural degree
+at most four.
+
+At `x=a`, the project-owned core evaluates `f(a)`, formally differentiates the
+dense coefficient array, and sets `m=f'(a)`. If `(a,b)` is declared, `f(a)=b`
+is checked exactly first; a mismatch is an invalid point, not a request for a
+different line. The universal normal equation is the division-free implicit
+form `x-a+m(y-b)=0`, with exact coefficient triple `[1,m,-a-mb]`.
+Verification independently substitutes the contact point and proves that the
+tangent direction `[1,m]` is orthogonal to the normal direction `[-m,1]`.
+
+When `m=0`, the exact answer is the true vertical line `x=a`. It is represented
+as a vertical tagged union, so the solver never creates `Infinity`, `NaN`, a
+zero denominator, or a fabricated finite slope. Only when `m!=0` does it use
+normal slope `-1/m` and return the equivalent slope-intercept equation, such as
+`y=-(1/2)x+3/2` or `y=-(4/3)x+19/24`. The verified solver ID is
+`polynomial-normal`, history uses category `微分`, and both hint modes withhold
+the completed equation, normal slope, and intercept.
+
+Function calls, variable denominators or negative variable powers, degree five
+or above (including a high-degree source subtree hidden by cancellation),
+non-rational coordinates, other variables, circles and other implicit curves,
+parametric or polar curves, planes and surfaces, geometric/diagram normals,
+and any contact point or curve that must be inferred from a figure or graph
+remain unsupported. Malformed, incomplete, ambiguous-Unicode, relation-valued,
+answer-attached, and false declared-point inputs are invalid. No numerical
+derivative, graph sampling, floating-point slope, or CAS proposal is
+verification evidence.
 
 Polynomial monotonicity and local-extrema problems accept the strict full-input
 forms `monotonicity(f)`, `extrema(f)`, and

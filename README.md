@@ -34,6 +34,9 @@ The current migration checkpoint supports:
 - exact tangent lines to rational-coefficient polynomials through degree four
   at an explicitly stated rational x-coordinate or point, with exact
   curve-membership, point, and slope verification;
+- exact normal lines to rational-coefficient polynomials through degree four
+  at an explicitly stated rational x-coordinate or point, including true
+  vertical-line results and exact point/orthogonality verification;
 - exact monotonicity and local extrema of rational-coefficient polynomials
   through degree three over all real numbers, with exact derivative roots,
   sign partitions, critical-point values, and stationary non-extrema;
@@ -127,6 +130,30 @@ checks `f(a)=b` exactly. It then differentiates the coefficient array, computes
 contact point and that its slope is `m`. A false declared point is invalid;
 functions, variable denominators, degree five or above, and a contact point or
 curve that must be read from a figure or graph remain unsupported.
+
+For a polynomial normal line, write `normal_x_[1](x^2)` or its shorter alias
+`normal_[1](x^2)`; both return `y=-(1/2)x+3/2`. To state the whole contact
+point, use `normal_point_((1/2),(1/8))(x^3)`, which returns
+`y=-(4/3)x+19/24`. The fixed Japanese forms
+`曲線 y=x^2 の x=1 における法線の方程式を求めよ` and
+`曲線 y=x^2 上の点 (1,1) における法線の方程式を求めよ` are also
+accepted. The curve must be a rational-coefficient polynomial in `x` whose
+complete source structure has degree at most four, and every coordinate must
+be a finite exact rational. When `(a,b)` is supplied, the solver first checks
+`f(a)=b` exactly. It then sets `m=f'(a)` and constructs the division-free
+implicit line `x-a+m(y-b)=0`, verifying both contact-point passage and
+orthogonality to the tangent direction. If `m=0`, the exact result is the
+vertical line `x=a`; no infinite or fabricated slope is created. Only when
+`m!=0` is the normal slope computed as `-1/m`. A false declared point is
+invalid. Functions, variable denominators, degree five or above, non-rational
+coordinates, circles and other implicit curves, parametric or polar curves,
+geometric/diagram-dependent normals, and any curve or point that must be read
+from a figure or graph remain unsupported.
+Only the documented `normal_x_`, `normal_[]`, and `normal_point_` stems can
+reach the exact supported branch. Explicit geometry names such as
+`normal_vector`, `normal_plane`, and `surface_normal` are recognized and kept
+as unsupported, while unrelated identifiers such as `normal_distribution`
+stay outside the normal preflight.
 
 For polynomial monotonicity and local extrema over all real numbers, write
 `monotonicity(x^3-3x)`, `extrema(x^3-3x)`, or

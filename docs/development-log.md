@@ -681,3 +681,54 @@ unpacked Chrome extension path still requires the release smoke test.
 `npm test` passes 448 tests including the 5,250-case generated corpus, and
 `npm run check` passes 167 files (10 HTML, 129 JS/MJS, and 11 CSS). The
 unpacked Chrome extension path still requires the release smoke test.
+
+## 2026-08-29: exact normal lines to rational-coefficient polynomials
+
+- Added strict full-input parsing for `normal_x_[a](f)`, the `normal_[a](f)`
+  alias, `normal_point_(a,b)(f)`, and the two complete fixed Japanese forms.
+  Coordinates are finite exact rationals. Malformed, incomplete,
+  answer-attached, and false declared-point inputs are invalid; recognized
+  normal requests outside the supported curve profile remain unsupported.
+- Added a project-owned exact normal core for canonical dense
+  rational-coefficient polynomials whose complete source structure has degree
+  at most four. It snapshots and revalidates public inputs, evaluates `f(a)`,
+  formally differentiates coefficients, and sets `m=f'(a)`. The core constructs
+  the division-free implicit line `x-a+m(y-b)=0` with exact coefficients
+  `[1,m,-a-mb]`, then independently verifies declared-point membership, line
+  passage, and the zero dot product of tangent direction `[1,m]` and normal
+  direction `[-m,1]`.
+- Represented a zero tangent slope as the true vertical tagged-union line
+  `x=a`. No `Infinity`, `NaN`, zero denominator, or fabricated slope is
+  produced. Only a nonzero `m` takes the exact `-1/m` branch and constructs the
+  corresponding slope-intercept equation.
+- Inserted normal recognition in both synchronous and asynchronous public
+  routers, producing the preflight order
+  `volume -> area -> tangent -> normal -> variation -> rational-limit`. Added
+  solver ID `polynomial-normal`, `微分` classification and history storage,
+  typed teaching traces, wrong-category priority, exception containment,
+  presenter/storage round trips, and non-stealing regressions. Both hint modes
+  withhold the completed equation, normal slope, and intercept.
+- Added 34 focused normal tests: 8 exact-core, 10 parser, and 16 solver/public-
+  integration tests. The core suite includes an independent 500-case BigInt
+  fraction oracle as well as vertical, nonvertical, fractional, huge-value,
+  source-degree, sparse-array, derived-type, deep-freeze, and hostile-boundary
+  coverage. The parser boundary also keeps unrelated identifiers such as
+  `normal_distribution` outside the normal solver, preserves valid unsupported
+  implicit/surface/diagram forms as `unsupported`, and treats vertical tab,
+  form feed, NEL, line separator, and paragraph separator as ordinary copied
+  line breaks without accepting line-break-separated digits. Another 250
+  generated public-path
+  problems span degrees zero
+  through four, all five canonical/Japanese forms, fractional coordinates and
+  coefficients, and vertical/nonvertical lines. This increases the versioned
+  corpus from 5,250 to 5,500 unique problems.
+- Functions, variable denominators and negative powers, degree five or above
+  even when hidden by cancellation, non-rational coordinates, other variables,
+  circles and other implicit curves, parametric and polar curves, planes and
+  surfaces, geometric/diagram normals, and figure/graph-dependent data remain
+  unsupported. No numerical derivative, sampled slope, graph inference,
+  floating-point approximation, or CAS proposal is accepted as verification.
+
+`npm test` passes 484 tests including the 5,500-case generated corpus, and
+`npm run check` passes 173 files (10 HTML, 135 JS/MJS, and 11 CSS). The
+unpacked Chrome extension path still requires the release smoke test.

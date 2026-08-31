@@ -195,28 +195,97 @@ test("法線のcanonical・日本語形式は微分、一般の幾何法線は�
     "normal_x_[1](x^2)",
     "normal_point_(1,1)(x^2)",
     "曲線 y=x^2 の x=1 における法線の方程式を求めよ",
+    "曲線 y=x^2 の x=1 における法線方程式を求めよ",
     "曲線 y=x^2 上の点 (1,1) における法線の方程式を求めよ",
+    "曲線 y=x^2 上の点 (1,1) における法線方程式を求めよ",
+    "曲線 f(x)=x^2 の x=1 における法線の方程式を求めよ",
+    "関数 f(x)=x^2 の x=1 における法線の方程式を求めよ",
   ]) {
     assert.equal(classifyCategory(question).primary, "微分", question);
   }
   for (const question of [
     "円の法線を求めよ",
     "右図の円の法線について角度を求めよ",
+    "円 x^2+y^2=1 上の点 (1,0) における法線の方程式を求めよ",
+    "楕円 x^2/4+y^2/9=1 上の点における法線方程式を求めよ",
+    "放物線 y^2=4x 上の点 (1,2) における法線の方程式を求めよ",
+    "双曲線 x^2-y^2=1 上の点における法線方程式を求めよ",
+    "陰関数 F(x,y)=x^2+y^2-1 の法線の方程式を求めよ",
+    "媒介変数 x=t^2, y=t^3 で表される曲線の法線方程式を求めよ",
+    "極座標 r=1+cos(theta) で表される曲線の法線を求めよ",
+    "曲線 x^2+y^2=1 上の点 (1,0) における法線の方程式を求めよ",
   ]) {
     assert.equal(classifyCategory(question).primary, "図形", question);
   }
 });
 
-test("一般の幾何法線は公開ルーターでもinvalidにせず未対応として残す", () => {
+test("一般の幾何法線は公開同期・非同期ルーターと誤カテゴリでもinvalidにせず未対応として残す", async () => {
   for (const question of [
     "円の中心を通る法線を求めよ",
     "放物線 y^2=4x 上の点(1,2)における法線の方程式を求めよ",
     "双曲線 x^2-y^2=1 上の点における法線の方程式を求めよ",
     "関数 f(x)=x^2 の x=1 における法線の方程式を求めよ",
   ]) {
-    const result = solveQuestion(question);
-    assertRejected(result, "unsupported");
-    assert.notEqual(result.solverId, "polynomial-normal");
+    const direct = solveQuestion(question);
+    const wrongCategory = solveQuestion(question, { category: "二次方程式" });
+    const asynchronous = await solveQuestionAsync(question);
+    for (const result of [direct, wrongCategory, asynchronous]) {
+      assertRejected(result, "unsupported");
+      assert.notEqual(result.solverId, "polynomial-normal");
+    }
+  }
+});
+
+test("公開solver境界は未対応の法線形式をinvalidにせず、無関係なnormal_*入力を横取りしない", async () => {
+  for (const question of [
+    "x^2+y^2=1 上の点 (1,0) における法線の方程式を求めよ",
+    "surface z=x^2+y^2 の法線を求めよ",
+    "y=x^2 の x=1 における法線の方程式を求めよ",
+    "f(x)=x^2 の x=1 における法線の方程式を求めよ",
+    "図1の曲線の法線を求めよ",
+    "図Aの曲線の法線を求めよ",
+    "第A図に示す曲線の法線を求めよ",
+    "図αから曲線の法線を求めよ",
+    "Figure 1 の曲線の法線を求めよ",
+    "Fig.1の曲線の法線を求めよ",
+    "添付画像の曲線の法線を求めよ",
+    "写真の曲線の法線を求めよ",
+    "xy=1 の法線を求めよ",
+    "0=x^2+y^2-1 の法線を求めよ",
+    "x^2=1-y^2 の法線を求めよ",
+    "1=x+y の法線を求めよ",
+    "以下の f(x)=x^2 の x=1 における法線の方程式を求めよ",
+    "surface_normal(x^2+y^2-z)",
+  ]) {
+    const results = [
+      solveQuestion(question),
+      solveQuestion(question, { category: "二次方程式" }),
+      await solveQuestionAsync(question),
+      await solveQuestionAsync(question, { category: "二次方程式" }),
+    ];
+    for (const result of results) {
+      assertRejected(result, "unsupported");
+      assert.equal(result.recognized, true, question);
+      assert.notEqual(result.solverId, "polynomial-normal", question);
+    }
+  }
+
+  for (const unrelated of [
+    "normal_distribution(x;0,1)",
+    "normal_point_estimate の確率を求めよ",
+    "normal_x_axisについて調べよ",
+    "normal_y_distribution の確率を求めよ",
+    "normal_t_testを行え",
+  ]) {
+    for (const result of [
+      solveQuestion(unrelated),
+      solveQuestion(unrelated, { category: "微分" }),
+      await solveQuestionAsync(unrelated),
+      await solveQuestionAsync(unrelated, { category: "微分" }),
+    ]) {
+      assertRejected(result, "unsupported");
+      assert.notEqual(result.solverId, "polynomial-normal");
+    }
   }
 });
 
@@ -300,4 +369,34 @@ test("法線固有のヒントは最終方程式・数値傾き・切片を漏�
   const roundTrip = JSON.parse(JSON.stringify(record));
   assert.equal(roundTrip.solutionTrace.at(-1).content, "法線: y=-(1/2)x+3/2");
   assert.equal(roundTrip.verificationMessage, result.verification);
+});
+
+test("鉛直法線は公開経路と5表示モードを保ち、hint1・hint2へ最終答えを漏らさない", async () => {
+  for (const question of [
+    "normal_x_[0](x^2)",
+    "normal_point_(3,7)(7)",
+  ]) {
+    const direct = solveQuestion(question);
+    const wrongCategory = solveQuestion(question, { category: "図形" });
+    const asynchronous = await solveQuestionAsync(question);
+    for (const result of [direct, wrongCategory, asynchronous]) {
+      assertExact(result, question.includes("[0]") ? "x=0" : "x=3");
+    }
+
+    assert.match(direct.solutionTrace[0].content, /曲線 y=f\(x\)=/u);
+    assert.match(direct.solutionTrace[0].content, question.includes("[0]") ? /x=0/u : /指定点 \(3, 7\)/u);
+
+    const outputs = Object.fromEntries(
+      ["answer", "hint1", "hint2", "steps", "explain"].map((mode) => [
+        mode,
+        presentSolution(direct, { mode, category: "微分" }).content,
+      ]),
+    );
+    assert.equal(outputs.answer, direct.answer);
+    for (const hint of [outputs.hint1, outputs.hint2]) {
+      assert.doesNotMatch(hint, new RegExp(direct.answer.replace("=", "\\s*=\\s*"), "u"));
+    }
+    assert.match(outputs.steps, new RegExp(`法線: ${direct.answer}`, "u"));
+    assert.match(outputs.explain, new RegExp(`最終回答: ${direct.answer}`, "u"));
+  }
 });

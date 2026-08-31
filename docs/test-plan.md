@@ -59,7 +59,30 @@ imported-verification downgrade.
     `tangent_x_[1](1/x)`, `tangent_x_[1](x^5)`, and a graph-dependent
     tangent; confirm the false point is invalid, the others are unsupported,
     and none receives a verified answer.
-16. Solve `monotonicity(x^3-3x)`, `extrema(x^3)`,
+16. Solve `normal_x_[1](x^2)`, `normal_[0](x^2)`,
+    `normal_point_((1/2),(1/8))(x^3)`, and
+    `曲線 y=x^2 上の点 (1,1) における法線の方程式を求めよ`; confirm
+    the exact answers are `y=-(1/2)x+3/2`, `x=0`,
+    `y=-(4/3)x+19/24`, and `y=-(1/2)x+3/2`. Confirm working records exact
+    coefficient differentiation, declared-point membership where applicable,
+    the implicit equation `x-a+f'(a)(y-b)=0`, contact-point substitution, and
+    zero tangent/normal dot product. The horizontal-tangent case must remain a
+    true vertical line without `Infinity` or `NaN`. Both hints must hide the
+    finished equation, normal slope, and intercept; history must use solver ID
+    `polynomial-normal` and category `微分`. Submit
+    `normal_point_(1,2)(x^2)`, `normal_x_[0](sin(x))`,
+    `normal_x_[1](1/x)`, `normal_x_[1](x^5)`, a circle normal, a parametric or
+    polar normal, and a graph-dependent normal. Confirm the false point is
+    invalid, every valid out-of-profile request is unsupported, and none
+    receives a verified answer. Repeat valid canonical/Japanese requests with
+    an intentionally wrong category and confirm normal preflight still wins.
+    Confirm bare implicit curves, surfaces, `図1`, and attached-image requests
+    remain recognized `unsupported`, while unrelated identifiers such as
+    `normal_distribution` are not captured by the normal parser. Repeat a
+    valid Japanese form with CR/LF, vertical tab, form feed, NEL, line
+    separator, and paragraph separator; each must behave as whitespace, while
+    a separator between two digits remains invalid.
+17. Solve `monotonicity(x^3-3x)`, `extrema(x^3)`,
     `monotonicity_extrema(x^3+x^2-2x)`, and
     `関数 f(x)=x^3-3x の増減を調べ、極値を求めよ`. Confirm the first
     result is increasing on `(-∞,-1]` and `[1,+∞)` and decreasing on
@@ -75,7 +98,7 @@ imported-verification downgrade.
     all are unsupported. Submit `monotonicity(x^2=1)` and
     `関数 y=x^2 の極値は0`; confirm both are invalid and none of these
     rejection cases receives a verified answer.
-17. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
+18. Solve `area_[0,2](x^2;2x)`, `area_intersections(x^2;2x)`, and
     `area_[-2,2](x^2;2)`; confirm the exact answers are `4/3`, `4/3`, and
     `(-8+16√2)/3`. Confirm the working partitions at every intersection, both
     hints hide the final area, and history classifies the results as integrals.
@@ -83,22 +106,22 @@ imported-verification downgrade.
     confirm `x軸` is treated as `y=0` and the exact result is `4/3`.
     Submit `area_intersections(x^2;0)`, `area_[0,1](sin(x);0)`, and a
     diagram-dependent region; confirm none receives a verified answer.
-18. Solve `volume_x_axis_[0,1](x)` and
+19. Solve `volume_x_axis_[0,1](x)` and
     `volume_x_axis_[0,1](x+2;x+1)`; confirm the exact answers are `pi/3` and
     `4*pi`, the working certifies both radii over the whole interval, and both
     hints hide the final volume. Submit a y-axis rotation, a crossing radius,
     and a diagram-only region; confirm none receives a verified answer.
-19. Submit an unsupported trigonometric equation, an improper integral such as
+20. Submit an unsupported trigonometric equation, an improper integral such as
    `∫_0^1 1/x dx`, a proof, and a diagram-dependent problem; confirm none
    receives a guessed or verified answer.
-20. Verify history filters, JSON import/export, analytics, review rerun, setting
+21. Verify history filters, JSON import/export, analytics, review rerun, setting
     reset, and full data deletion.
-21. Reload the extension and repeat the shortcut to cover service-worker
+22. Reload the extension and repeat the shortcut to cover service-worker
     cold-start behavior.
 
 ## Release-scale evaluation
 
-Before completion, run the current versioned 5,250-case corpus and report:
+Before completion, run the current versioned 5,500-case corpus and report:
 
 - exact-answer accuracy by domain;
 - unsupported/invalid classification accuracy;

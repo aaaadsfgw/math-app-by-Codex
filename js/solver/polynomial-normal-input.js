@@ -15,14 +15,19 @@ const SUPERSCRIPT_SEQUENCE = /[\u2070\u00B9\u00B2\u00B3\u2074-\u207B]+/gu;
 const VALID_SUPERSCRIPT_SEQUENCE = /^[\u207A\u207B]?[\u2070\u00B9\u00B2\u00B3\u2074-\u2079]+$/u;
 const SEPARATED_SUPERSCRIPT_SEQUENCES = /[\u2070\u00B9\u00B2\u00B3\u2074-\u207B]+\s+[\u2070\u00B9\u00B2\u00B3\u2074-\u207B]+/u;
 const DESTRUCTIVE_LATEX_DELIMITER = /\\(?:left|right)/iu;
-const RAW_NORMAL_MARKER = /normal_|ｎｏｒｍａｌ＿|法線/iu;
-const NORMAL_CUE = /(?:^|[^a-z])normal_|法線/iu;
-const DOCUMENTED_NORMAL_SHAPE = /(?:^|[^a-z])normal_|(?:^|\s)(?:次の\s*)?曲線\s*y\s*=/iu;
+const SYMBOLIC_NORMAL_CUE = /^normal_(?:(?=$)|point(?=$)|point_(?=$|\s*[\[(])|[a-z](?=$)|[a-z]_(?=$|\s*[\[(])|(?=\s*[\[(]))/iu;
+const NAMED_NORMAL_GEOMETRY_CUE = /^(?:normal_(?:vector|plane)(?=$|[^a-z])|surface_normal(?=$|[^a-z]))/iu;
+const JAPANESE_NORMAL_CUE = /法線/u;
+const RAW_NORMAL_MARKER = /法線/u;
+const DOCUMENTED_NORMAL_SHAPE = /(?:^|\s)(?:次の\s*)?曲線\s*y\s*=/iu;
 const RELATION_PATTERN = /[=<>≤≥≠≦≧]/u;
-const DIAGRAM_CUE = /右図|左図|下図|上図|図の|図中|図示|グラフ|(?:図|グラフ)\s*(?:から|より|で|を\s*(?:見|用い|利用|使|描|か|書|作|読み|参照|参考)|に\s*(?:表|基づ)|を\s*もと|の(?:接点|法線|曲線|形|概形))|この図|その図|接点を読み取/u;
-const UNSUPPORTED_CURVE_CUE = /円|楕円|放物線|双曲線|陰関数|媒介変数|媒介曲線|パラメータ|パラメトリック|極座標|曲線\s*y\s*\^|曲線\s*x\s*(?:\^|\*)|曲線\s*(?=[^=。\n]*x)(?=[^=。\n]*y)[^=。\n]*=|曲線\s*[xy]\s*=\s*[^,、;；]+[,、;；]\s*[xy]\s*=/iu;
+const DIAGRAM_CUE = /右図|左図|下図|上図|図の|図中|図示|第\s*[0-9A-Za-zα-ωΑ-Ω]+\s*図|図\s*(?:[（(]\s*)?[0-9A-Za-zα-ωΑ-Ω]+(?:\s*[)）])?|(?:figure|fig\.?)\s*[0-9A-Za-z]+|添付\s*(?:された|の)?\s*(?:画像|図)|画像|写真|スクリーンショット|グラフ|(?:図|グラフ)\s*(?:から|より|で|を\s*(?:見|用い|利用|使|描|か|書|作|読み|参照|参考)|に\s*(?:表|基づ)|を\s*もと|の(?:接点|法線|曲線|形|概形))|この図|その図|接点を読み取/iu;
+const UNSUPPORTED_CURVE_CUE = /円|楕円|放物線|双曲線|陰関数|媒介変数|媒介曲線|パラメータ|パラメトリック|極座標|極方程式|\b[a-z]\s*\(\s*x\s*,\s*y\s*\)\s*=|\br\s*=\s*[^。.!！?？]*(?:theta|θ)|曲線\s*y\s*\^|曲線\s*x\s*(?:\^|\*)|曲線\s*(?=[^=。\n]*x)(?=[^=。\n]*y)[^=。\n]*=|(?:^|\s)[xy]\s*=\s*[^,、;；]+[,、;；]\s*[xy]\s*=/iu;
 const UNSUPPORTED_NORMAL_GEOMETRY_CUE = /normal_vector|normal_plane|surface_normal|法線ベクトル|単位法線|法平面|法線平面|接平面|平面|曲面|空間曲線|法線方向|法線\s*の\s*ベクトル/iu;
-const UNSUPPORTED_FUNCTION_LABEL_CUE = /(?:^|\s)(?:次の\s*)?関数\s*(?:[a-z]\s*\(\s*[a-z]\s*\)|[a-z])\s*=/iu;
+const UNSUPPORTED_BARE_Z_CUE = /^(?:(?:surface|曲面)\s+)?z\s*=[\s\S]*法線/iu;
+const UNSUPPORTED_FUNCTION_LABEL_CUE = /(?:^|\s)(?:(?:次の|以下の)\s*)?(?:関数\s*(?:[a-z]\s*\(\s*[a-z]\s*\)|[a-z])|曲線\s*[a-xz]\s*\(\s*[a-z]\s*\))\s*=/iu;
+const UNSUPPORTED_BARE_FUNCTION_CUE = /^(?:(?:次の|以下の)\s*)?(?:y\s*=|f\s*\(\s*x\s*\)\s*=)[\s\S]*法線/iu;
+const UNSUPPORTED_IMPLICIT_CURVE_CUE = /^(?=[^。.!！?？]*x)(?=[^。.!！?？]*y)[^。.!！?？]*=[\s\S]*法線/iu;
 const OTHER_CURVE_VARIABLE = /曲線\s*[a-xz]\s*=/iu;
 const OTHER_COORDINATE_VARIABLE = /\sの\s*[a-wyz]\s*=\s*.+?\s*における\s*法線/iu;
 const BARE_NORMAL_INSTRUCTION = /法線\s*(?:(?:の\s*)?方程式)?\s*(?:を\s*)?(?:求めよ|求めなさい|計算せよ|計算しなさい|求めてください)/u;
@@ -65,11 +70,18 @@ function response({
 
 function normalizeOuter(value) {
   return normalizeMathNotation(value)
+    .replace(/\r\n?|[\n\u000B\u000C\u0085\u2028\u2029]/gu, " ")
     .replace(/[−–—﹣－]/gu, "-")
     .replace(/[×·⋅∙]/gu, "*")
     .replace(/÷/gu, "/")
     .replace(/，/gu, ",")
     .trim();
+}
+
+function hasNormalCue(value) {
+  return SYMBOLIC_NORMAL_CUE.test(value)
+    || NAMED_NORMAL_GEOMETRY_CUE.test(value)
+    || JAPANESE_NORMAL_CUE.test(value);
 }
 
 function hasAmbiguousCompatibilityNormalization(value) {
@@ -445,7 +457,7 @@ export function parsePolynomialNormalInput(question) {
     ? raw
     : `${raw.slice(0, recognitionEdge)}\n${raw.slice(-recognitionEdge)}`;
   const recognitionSample = normalizeOuter(recognitionSource);
-  const rawRecognized = NORMAL_CUE.test(recognitionSample)
+  const rawRecognized = hasNormalCue(recognitionSample)
     || RAW_NORMAL_MARKER.test(raw);
   if (raw.length > MAX_INPUT_LENGTH) {
     return response({
@@ -456,7 +468,7 @@ export function parsePolynomialNormalInput(question) {
   }
 
   const text = normalizeOuter(raw);
-  const recognized = NORMAL_CUE.test(text);
+  const recognized = hasNormalCue(text);
   if (!recognized) {
     return response({
       recognized: false,
@@ -514,7 +526,10 @@ export function parsePolynomialNormalInput(question) {
       errorCode: "UNSUPPORTED_DIAGRAM_NORMAL",
     });
   }
-  if (UNSUPPORTED_NORMAL_GEOMETRY_CUE.test(text)) {
+  if (
+    UNSUPPORTED_NORMAL_GEOMETRY_CUE.test(text)
+    || UNSUPPORTED_BARE_Z_CUE.test(text)
+  ) {
     return response({
       recognized: true,
       error: "法線ベクトル、平面、曲面、空間曲線の問題には対応していません。",
@@ -544,10 +559,27 @@ export function parsePolynomialNormalInput(question) {
     });
   }
 
+  const documentedShape = SYMBOLIC_NORMAL_CUE.test(text)
+    || DOCUMENTED_NORMAL_SHAPE.test(text);
+  if (!candidate && !documentedShape && UNSUPPORTED_BARE_FUNCTION_CUE.test(text)) {
+    return response({
+      recognized: true,
+      error: "現在は曲線y=f(x)を明示する文書化された法線形式だけに対応しています。",
+      errorCode: "UNSUPPORTED_NORMAL_FORM",
+    });
+  }
+  if (!candidate && !documentedShape && UNSUPPORTED_IMPLICIT_CURVE_CUE.test(text)) {
+    return response({
+      recognized: true,
+      error: "円・陰関数・媒介曲線・極座標曲線の法線問題には対応していません。",
+      errorCode: "UNSUPPORTED_NORMAL_CURVE",
+    });
+  }
+
   const parsedCandidate = candidate ?? japaneseCandidate(text);
   if (
     !parsedCandidate
-    && !DOCUMENTED_NORMAL_SHAPE.test(text)
+    && !documentedShape
     && !BARE_NORMAL_INSTRUCTION.test(text)
   ) {
     return response({

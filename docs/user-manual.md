@@ -58,6 +58,31 @@ contact point and the slope. A point not on the curve is invalid. Functions,
 variable denominators, degree five or above, geometric tangents, and any curve
 or contact point that must be read from a figure or graph are unsupported.
 
+For a normal to a polynomial curve, enter `normal_x_[1](x^2)` or the alias
+`normal_[1](x^2)` to obtain `y=-(1/2)x+3/2`. If the whole contact point is
+given, enter `normal_point_((1/2),(1/8))(x^3)` to obtain
+`y=-(4/3)x+19/24`. You can also use the complete Japanese forms
+`曲線 y=x^2 の x=1 における法線の方程式を求めよ` or
+`曲線 y=x^2 上の点 (1,1) における法線の方程式を求めよ`. Coordinates
+must be finite exact rationals written as signed integers, finite decimals, or
+explicit fractions. The curve must be a rational-coefficient polynomial in
+`x` whose complete source structure has degree at most four.
+
+For a declared point `(a,b)`, the extension checks `f(a)=b` exactly before
+differentiating and setting `m=f'(a)`. It constructs the normal as
+`x-a+m(y-b)=0`, verifies that the point lies on that line, and checks exact
+orthogonality to the tangent. If the tangent is horizontal (`m=0`), the normal
+is the true vertical line `x=a`; the extension does not display infinity or
+invent a slope. Only a nonzero `m` uses the normal slope `-1/m`. Both hint
+levels avoid revealing the finished line, its normal slope, or its intercept.
+
+A declared point not on the curve is invalid. Functions, variable
+denominators, degree five or above even when hidden by cancellation,
+non-rational coordinates, circles and other implicit curves, parametric or
+polar curves, planes and surfaces, geometric or diagram-dependent normals,
+and any curve or contact point that must be read from a figure or graph are
+unsupported. The extension does not estimate a normal numerically.
+
 For the monotonicity or local extrema of a polynomial over all real numbers,
 enter `monotonicity(f)`, `extrema(f)`, or
 `monotonicity_extrema(f)`. For example, `monotonicity(x^3-3x)` returns

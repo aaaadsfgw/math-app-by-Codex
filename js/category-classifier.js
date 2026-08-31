@@ -149,6 +149,30 @@ export function classifyCategory(question) {
     addSignal(scores, reasons, "三角関数", 8, "三角関数の語または記号を検出");
   }
 
+  const canonicalNormal = /(?:^|[^a-z])normal_(?:x_\s*\[|point_\s*\(|\s*\[)/iu.test(text);
+  const fixedCurveYNormal = (
+    /^(?:次の\s*)?曲線\s*y\s*=[\s\S]*法線/u.test(text)
+  );
+  const explicitFunctionNormal = (
+    /^(?:次の\s*)?(?:(?:関数\s*)?(?:y|f\s*\(\s*x\s*\))|曲線\s*f\s*\(\s*x\s*\))\s*=[\s\S]*法線/iu.test(text)
+  );
+  const explicitPolynomialNormal = fixedCurveYNormal || explicitFunctionNormal;
+  const namedGeometryNormal = (
+    /法線/u.test(text)
+    && (
+      /右図|左図|下図|上図|図の|図中|第\s*[0-9A-Za-zα-ωΑ-Ω]+\s*図|図\s*(?:[（(]\s*)?[0-9A-Za-zα-ωΑ-Ω]+(?:\s*[)）])?|(?:figure|fig\.?)\s*[0-9A-Za-z]+|画像|写真|スクリーンショット|グラフ/iu.test(text)
+      || /円|楕円|放物線|双曲線|陰関数|媒介変数|媒介曲線|パラメータ|パラメトリック|極座標|極方程式/u.test(text)
+      || /\b[a-z]\s*\(\s*x\s*,\s*y\s*\)\s*=/iu.test(text)
+      || /\br\s*=/iu.test(text)
+    )
+  );
+  const implicitCurveNormal = (
+    /法線/u.test(text)
+    && !explicitPolynomialNormal
+    && /(?=[^。.!！?？\n]*x)(?=[^。.!！?？\n]*y)[^。.!！?？\n]*=[^。.!！?？\n]*法線/iu.test(text)
+  );
+  const generalGeometryNormal = namedGeometryNormal || implicitCurveNormal;
+
   if (/微分|導関数|接線の傾き|d\s*\/\s*dx|[a-z]\s*['′]/i.test(text)) addSignal(scores, reasons, "微分", 10, "微分を示す語または記号を検出");
   if (
     /(?:^|[^a-z])tangent_(?:x_\s*\[|point_\s*\(|\s*\[)/iu.test(text)
@@ -157,10 +181,13 @@ export function classifyCategory(question) {
     addSignal(scores, reasons, "微分", 20, "式と接点が指定された接線の方程式を検出");
   }
   if (
-    /(?:^|[^a-z])normal_(?:x_\s*\[|point_\s*\(|\s*\[)/iu.test(text)
-    || /曲線[\s\S]*y\s*=[\s\S]*法線\s*の\s*方程式/u.test(text)
+    canonicalNormal
+    || explicitPolynomialNormal
   ) {
     addSignal(scores, reasons, "微分", 20, "式と接点が指定された法線の方程式を検出");
+  }
+  if (generalGeometryNormal) {
+    addSignal(scores, reasons, "図形", 30, "一般曲線または図に依存する法線を検出");
   }
   if (
     /(?:^|[^a-z])(?:monotonicity_extrema|monotonicity|extrema)\s*\(/iu.test(text)

@@ -155,6 +155,7 @@ export function solvePolynomialNormal(question) {
         {
           type: "input",
           content: `曲線 y=f(x)=${polynomialText}、${inputPointText}`,
+          explanation: "問題文に明示された曲線と接点条件を整理します。",
         },
         {
           type: "constraint",

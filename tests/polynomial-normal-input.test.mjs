@@ -103,6 +103,23 @@ test("完全な日本語のx座標指定と点指定だけを受理する", () =
       ySource: "1",
     },
   );
+  assertParsed(
+    "曲線 y=x^2+\r\n1 の x=\r\n2 における法線の方程式を求めよ",
+    {
+      form: "x-coordinate",
+      expression: "x^2+ 1",
+      xSource: "2",
+    },
+  );
+  assertParsed(
+    "曲線 y=x^3 上の点 (\n2,\r\n8) における法線方程式を求めなさい。",
+    {
+      form: "point",
+      expression: "x^3",
+      xSource: "2",
+      ySource: "8",
+    },
+  );
 });
 
 test("接線・微分・増減などを法線問題として横取りしない", () => {
@@ -114,6 +131,17 @@ test("接線・微分・増減などを法線問題として横取りしない",
     "関数 y=x^3 の増減を調べよ",
     "x^2=4",
     "tan(x)=1",
+    "normal_distribution の確率を求めよ",
+    "normal_cdfを求めよ",
+    "normal_pdfを求めよ",
+    "normal_matrixを求めよ",
+    "normal_basisを求めよ",
+    "normal_subgroupを求めよ",
+    "normal_point_estimate の確率を求めよ",
+    "normal_x_axisについて調べよ",
+    "normal_y_distribution の確率を求めよ",
+    "normal_t_testを行え",
+    "standard_normal_distribution の確率を求めよ",
   ]) {
     assertRejected(question, "", { recognized: false });
   }
@@ -121,6 +149,11 @@ test("接線・微分・増減などを法線問題として横取りしない",
 
 test("座標・式・括弧・完全な日本語要素が欠けた入力をinvalidにする", () => {
   for (const question of [
+    "normal_",
+    "normal_x",
+    "normal_point",
+    "normal_x_",
+    "normal_point_",
     "normal_x_[1](x",
     "normal_x_[1](x) trailing",
     "normal_point_(1)(x^2)",
@@ -140,6 +173,14 @@ test("座標・式・括弧・完全な日本語要素が欠けた入力をinval
   assertRejected("normal_x_[1]()", "MISSING_NORMAL_EXPRESSION");
   assertRejected("normal_point_(,2)(x)", "MISSING_NORMAL_COORDINATE");
   assertRejected("normal_point_(1,)(x)", "MISSING_NORMAL_COORDINATE");
+  assertRejected(
+    "曲線 y=1\r\n2*x の x=1 における法線の方程式を求めよ",
+    "AMBIGUOUS_NORMAL_NUMBER_SPACING",
+  );
+  assertRejected(
+    "曲線 y=x^2 の x=1 における法線の方程式を求めよ\r\n答え y=-x/2+3/2",
+    "NORMAL_ANSWER_ATTACHED",
+  );
 });
 
 test("接点座標は有限有理数だけを丸めず正規化する", () => {
@@ -220,6 +261,14 @@ test("答え付加をinvalidにし、図・曲線形式・高次元の法線をu
   }
   for (const question of [
     "右図の曲線 y=x^2 の x=1 における法線の方程式を求めよ",
+    "図1の曲線の法線を求めよ",
+    "図Aの曲線の法線を求めよ",
+    "第A図に示す曲線の法線を求めよ",
+    "図αから曲線の法線を求めよ",
+    "Figure 1 の曲線の法線を求めよ",
+    "Fig.1の曲線の法線を求めよ",
+    "添付画像の曲線の法線を求めよ",
+    "写真の曲線の法線を求めよ",
     "グラフから接点を読み取り、その法線の方程式を求めよ",
     "曲線 y=x^2 のグラフを用いて法線の方程式を求めよ",
   ]) {
@@ -230,7 +279,17 @@ test("答え付加をinvalidにし、図・曲線形式・高次元の法線をu
     "放物線 y^2=4x 上の点(1,2)における法線の方程式を求めよ",
     "曲線 y^2=4x 上の点(1,2)における法線の方程式を求めよ",
     "陰関数 F(x,y)=0 の法線の方程式を求めよ",
+    "F(x,y)=x^2+y^2-1 が表す曲線上の点 (1,0) における法線の方程式を求めよ",
+    "曲線 F(x,y)=x^2+y^2-1 上の点 (1,0) における法線の方程式を求めよ",
     "媒介変数 t で x=t^2,y=t^3 と表される曲線の法線を求めよ",
+    "r=1+cos(theta) で表される曲線の theta=0 における法線の方程式を求めよ",
+    "極方程式 r=2cosθ が表す曲線の法線の方程式を求めよ",
+    "x^2+y^2=1 上の点(1,0)における法線の方程式を求めよ",
+    "xy=1 の法線を求めよ",
+    "0=x^2+y^2-1 の法線を求めよ",
+    "x^2=1-y^2 の法線を求めよ",
+    "1=x+y の法線を求めよ",
+    "x=t^2, y=t^3 で表される曲線の法線を求めよ",
   ]) {
     assertRejected(question, "UNSUPPORTED_NORMAL_CURVE");
   }
@@ -238,11 +297,30 @@ test("答え付加をinvalidにし、図・曲線形式・高次元の法線をu
     "関数 f(x)=x^2 の x=1 における法線の方程式を求めよ",
     "UNSUPPORTED_NORMAL_FORM",
   );
+  assertRejected(
+    "曲線 f(x)=x^2 の x=1 における法線の方程式を求めよ",
+    "UNSUPPORTED_NORMAL_FORM",
+  );
+  assertRejected(
+    "y=x^2 の x=1 における法線の方程式を求めよ",
+    "UNSUPPORTED_NORMAL_FORM",
+  );
+  assertRejected(
+    "f(x)=x^2 の x=1 における法線の方程式を求めよ",
+    "UNSUPPORTED_NORMAL_FORM",
+  );
+  assertRejected(
+    "以下の f(x)=x^2 の x=1 における法線の方程式を求めよ",
+    "UNSUPPORTED_NORMAL_FORM",
+  );
   for (const question of [
     "曲線 y=x^2 の法線ベクトルを求めよ",
     "曲面 z=x^2+y^2 の法線の方程式を求めよ",
     "平面 x+y+z=1 の法線を求めよ",
     "normal_vector(x^2)",
+    "normal_plane(x+y+z=1)",
+    "surface_normal(z=x^2+y^2)",
+    "z=x^2+y^2 の点(1,1,2)における法線を求めよ",
   ]) {
     assertRejected(question, "UNSUPPORTED_NORMAL_GEOMETRY");
   }
@@ -283,6 +361,27 @@ test("全角と安全な上付き指数を保ち、危険なUnicode互換を拒�
     assertRejected(
       "normal_x_[1](" + character + ")",
       "AMBIGUOUS_NORMAL_COMPATIBILITY_CHARACTER",
+    );
+  }
+});
+
+test("Unicode改行を通常改行として扱い、数字の分断はinvalidにする", () => {
+  for (const separator of ["\u000B", "\u000C", "\u0085", "\u2028", "\u2029"]) {
+    assertParsed(
+      `曲線 y=x^2+${separator}1 の x=${separator}2 における法線の方程式を求めよ`,
+      {
+        form: "x-coordinate",
+        expression: "x^2+ 1",
+        xSource: "2",
+      },
+    );
+    assertRejected(
+      `曲線 y=1${separator}2*x の x=1 における法線の方程式を求めよ`,
+      "AMBIGUOUS_NORMAL_NUMBER_SPACING",
+    );
+    assertRejected(
+      `曲線 y=x^2 の x=1${separator}2 における法線の方程式を求めよ`,
+      "AMBIGUOUS_NORMAL_COORDINATE_NUMBER_SPACING",
     );
   }
 });

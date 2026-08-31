@@ -456,9 +456,11 @@ sparse arrays, and deeply freezes all returned evidence. Numerical
 differentiation, graph sampling, and CAS proposals are not proof.
 
 The verified solver ID is `polynomial-tangent`, with history category `微分`.
-Its full-input preflight runs after volume and area and before rational-function
-limits. D-024 inserts variation after tangent, making the current order
-`volume -> area -> tangent -> variation -> rational-limit`, so an
+Its full-input preflight runs after volume and area and before normal,
+variation, and rational-function limits. D-024 inserted variation after
+tangent, and D-025 subsequently inserted normal before variation, making the
+current order
+`volume -> area -> tangent -> normal -> variation -> rational-limit`, so an
 explicit curve or point cannot be intercepted by a general equation solver.
 Functions, variable denominators and negative powers, degree five or above,
 other variables, geometric tangents, and curve/contact information requiring a
@@ -503,8 +505,54 @@ denominators, concavity, inflection points, graph outlines, other variables,
 and figure/graph/table-derived requests also remain outside this decision.
 
 Verified results use solver ID `polynomial-variation` and history category
-`微分`. Their full-input preflight runs in both sync and async paths in the
-order `volume -> area -> tangent -> variation -> rational-limit`, before the
-general category solvers. Public inputs are independently revalidated and
+`微分`. D-025 subsequently inserts normal-line recognition between tangent and
+variation, so the full-input order in both sync and async paths is now
+`volume -> area -> tangent -> normal -> variation -> rational-limit`, before
+the general category solvers. Public inputs are independently revalidated and
 snapshotted, returned evidence is deeply frozen, and both hint modes omit
 critical-point coordinates, completed intervals, and extremum conclusions.
+
+## D-025: Construct polynomial normals from a division-free exact implicit line
+
+**Status:** accepted
+**Date:** 2026-08-29
+
+The first normal-line path accepts only a complete rational-coefficient
+polynomial in `x` whose source structure has degree at most four, together with
+an explicit finite rational x-coordinate or finite rational point. Its
+canonical forms are `normal_x_[a](f)`, the alias `normal_[a](f)`, and
+`normal_point_(a,b)(f)`; the two fixed Japanese forms
+`曲線 y=f の x=a における法線の方程式を求めよ` and
+`曲線 y=f 上の点 (a,b) における法線の方程式を求めよ` carry the same
+information. A declared y-coordinate must equal `f(a)` exactly or the request
+is invalid.
+
+The project-owned core evaluates the point, differentiates the canonical dense
+coefficient array, and sets `m=f'(a)`. The universal normal representation is
+the division-free implicit line `x-a+m(y-b)=0`, with coefficient triple
+`[1,m,-a-mb]`. Substitution independently proves that the line passes through
+the contact point, while the exact directions `[1,m]` and `[-m,1]` have dot
+product zero. This proof works without special numerical tolerances and without
+assuming that every normal has a finite slope.
+
+When `m=0`, the result is the true vertical tagged-union line `x=a`. The system
+does not construct `Infinity`, `NaN`, a divided-by-zero rational, or a fake
+finite slope. Only the `m!=0` branch computes normal slope `-1/m`, its exact
+intercept, and the equivalent slope-intercept equation. The public boundary
+revalidates and snapshots base rational values, enforces structural degree,
+rejects sparse/noncanonical arrays, and deeply freezes returned evidence.
+
+Verified results use solver ID `polynomial-normal` and history category `微分`.
+The full sync/async preflight order is now
+`volume -> area -> tangent -> normal -> variation -> rational-limit`, before
+general category solvers. Typed traces expose exact curve-membership,
+differentiation, point-passage, and orthogonality evidence, while both hints
+withhold the finished equation, normal slope, and intercept.
+
+Malformed, incomplete, answer-attached, or false-point requests are invalid.
+Functions, variable denominators or negative powers, degree five or above even
+when hidden by cancellation, non-rational coordinates, other variables,
+circles and other implicit curves, parametric or polar curves, planes/surfaces,
+geometric/diagram normals, and figure/graph-derived information are recognized
+as unsupported instead of being inferred. Numerical differentiation, graph
+sampling, floating-point approximation, and CAS proposals are not proof.
