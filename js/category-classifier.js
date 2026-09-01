@@ -195,6 +195,12 @@ export function classifyCategory(question) {
   ) {
     addSignal(scores, reasons, "微分", 20, "式が指定された多項式の増減または極値を検出");
   }
+  if (
+    /(?:^|[^a-z])(?:concavity_inflection|concavity|inflection)\s*\(/iu.test(text)
+    || /関数\s*(?:y|f\s*\(\s*x\s*\))\s*=[\s\S]*(?:凹凸|変曲点)/u.test(text)
+  ) {
+    addSignal(scores, reasons, "微分", 20, "式が指定された多項式の凹凸または変曲点を検出");
+  }
   if (/積分|不定積分|定積分|∫/u.test(text)) addSignal(scores, reasons, "積分", 10, "積分を示す語または記号を検出");
   if (/(?:^|[^a-z])area_(?:\s*\[|intersections\s*\()|面積[\s\S]*(?:y\s*=|x\s*軸)|(?:y\s*=|x\s*軸)[\s\S]*面積/u.test(text)) {
     addSignal(scores, reasons, "積分", 20, "式で指定された曲線間の面積を検出");

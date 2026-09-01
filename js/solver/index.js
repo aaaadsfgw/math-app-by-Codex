@@ -30,6 +30,10 @@ import {
   solvePolynomialNormal,
 } from "./polynomial-normal.js";
 import {
+  POLYNOMIAL_CONCAVITY_SOLVER_ID,
+  solvePolynomialConcavity,
+} from "./polynomial-concavity.js";
+import {
   POLYNOMIAL_VARIATION_SOLVER_ID,
   solvePolynomialVariation,
 } from "./polynomial-variation.js";
@@ -57,6 +61,7 @@ export {
   solveLogarithmicEquation,
   solvePercentage,
   solvePolynomialArea,
+  solvePolynomialConcavity,
   solvePolynomialNormal,
   solvePolynomialTangent,
   solvePolynomialVariation,
@@ -197,6 +202,12 @@ function runApplicationPreflights(input) {
     POLYNOMIAL_NORMAL_SOLVER_ID,
   );
   if (normal.supported || normal.recognized === true) return normal;
+  const concavity = runApplicationPreflight(
+    input,
+    solvePolynomialConcavity,
+    POLYNOMIAL_CONCAVITY_SOLVER_ID,
+  );
+  if (concavity.supported || concavity.recognized === true) return concavity;
   const variation = runApplicationPreflight(
     input,
     solvePolynomialVariation,
