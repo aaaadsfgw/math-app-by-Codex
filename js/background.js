@@ -1,67 +1,14 @@
-import { classifyCategory } from "./category-classifier.js";
 import { OFFSCREEN_SYMBOLIC_OPERATIONS } from "./math-core/offscreen-symbolic-client.js";
-import { presentSolution } from "./solution-presenter.js";
-import { solveQuestionAsync as solveLocally } from "./solver/index.js";
+import { runOffscreenRequest } from "./offscreen-client.js";
+import { runShortcutWorkflow } from "./shortcut-workflow.js";
 import { addHistory, getSettings } from "./storage.js";
 
 const SOLVE_SELECTION_COMMAND = "solve-selection-to-clipboard";
-const SHORTCUT_MODE = "answer";
 const MAX_TOAST_ANSWER_LENGTH = 72;
 const activeShortcutTabs = new Set();
 
 function isWebPage(url) {
   return /^https?:\/\//i.test(String(url || ""));
-}
-
-function normalizeQuestion(value) {
-  return String(value || "").trim();
-}
-
-function verificationForSolver(result) {
-  return {
-    verified: true,
-    verificationType: "solver",
-    verificationMessage: result.verification || "自作ソルバーで計算結果を検証しました。"
-  };
-}
-
-async function resolveAnswer(question, classification) {
-  const solverResult = await solveLocally(question, {
-    category: classification.primary,
-    symbolicOperations: OFFSCREEN_SYMBOLIC_OPERATIONS
-  });
-
-  if (solverResult?.supported && !solverResult.solved) {
-    throw new Error(solverResult.error || "この問題は条件を満たさないため解けませんでした。");
-  }
-
-  const hasVerifiedSolverAnswer = Boolean(
-    solverResult?.supported
-      && solverResult.solved
-      && solverResult.verified
-      && String(solverResult.answer || "").trim()
-  );
-
-  if (!hasVerifiedSolverAnswer) {
-    throw new Error(
-      solverResult?.error
-        || "この問題形式は、現在のオフライン数式エンジンではまだ解けません。"
-    );
-  }
-
-  return {
-    ...presentSolution(solverResult, {
-      mode: SHORTCUT_MODE,
-      category: classification.primary
-    }),
-    solverResult,
-    solverId: solverResult.solverId || null,
-    resultKind: solverResult.resultKind || "exact",
-    conditions: Array.isArray(solverResult.conditions) ? solverResult.conditions : [],
-    solutionTrace: Array.isArray(solverResult.solutionTrace) ? solverResult.solutionTrace : [],
-    solutionSet: solverResult.solutionSet || null,
-    ...verificationForSolver(solverResult)
-  };
 }
 
 async function getActiveTab() {
@@ -91,18 +38,17 @@ async function showToast(tabId, text, toastType) {
   await sendToTab(tabId, { type: "SHOW_TOAST", text, toastType });
 }
 
-async function getSelectedQuestion(tabId) {
+async function getSelectedText(tabId) {
   const response = await sendToTab(tabId, { type: "GET_SELECTION_TEXT" });
-  const question = normalizeQuestion(response?.text);
-  if (!question) throw new Error("問題文を選択してください。");
-  return question;
+  return String(response?.text || "").trim();
 }
 
-async function copyInContentScript(tabId, text) {
-  const response = await sendToTab(tabId, { type: "SET_CLIPBOARD_TEXT", text });
-  if (!response?.ok) {
-    throw new Error(response?.error || "回答をクリップボードへコピーできませんでした。");
-  }
+async function readClipboardInOffscreen() {
+  return runOffscreenRequest("READ_CLIPBOARD_TEXT", {}, { timeoutMs: 5_000 });
+}
+
+async function writeClipboardInOffscreen(text) {
+  return runOffscreenRequest("WRITE_CLIPBOARD_TEXT", { text }, { timeoutMs: 5_000 });
 }
 
 function shortenForToast(answer) {
@@ -111,27 +57,11 @@ function shortenForToast(answer) {
   return `${oneLine.slice(0, MAX_TOAST_ANSWER_LENGTH - 1)}…`;
 }
 
-async function saveShortcutHistory(question, classification, result) {
-  const settings = await getSettings();
-  if (!settings.saveHistory) return null;
-
-  return addHistory({
-    question,
-    mode: SHORTCUT_MODE,
-    output: result.content,
-    finalAnswer: result.finalAnswer,
-    category: classification,
-    solverId: result.solverId,
-    verified: result.verified,
-    verificationType: result.verificationType,
-    verificationMessage: result.verificationMessage,
-    resultKind: result.resultKind,
-    conditions: result.conditions,
-    solutionTrace: result.solutionTrace,
-    solutionSet: result.solutionSet,
-    selfAssessment: "answer_seen",
-    source: "shortcut"
-  });
+function actionLabel(action) {
+  if (action === "hint1") return "Hint 1";
+  if (action === "hint2") return "Hint 2";
+  if (action === "steps") return "途中式";
+  return "答え";
 }
 
 async function handleShortcut() {
@@ -144,15 +74,25 @@ async function handleShortcut() {
     }
 
     activeShortcutTabs.add(tab.id);
-    await showToast(tab.id, "解析中...", "loading");
+    await showToast(tab.id, "選択範囲またはクリップボードを解析中...", "loading");
 
-    const question = await getSelectedQuestion(tab.id);
-    const classification = classifyCategory(question);
-    const result = await resolveAnswer(question, classification);
+    const settings = await getSettings();
+    const result = await runShortcutWorkflow({
+      getSelectionText: () => getSelectedText(tab.id),
+      readClipboardText: readClipboardInOffscreen,
+      writeClipboardText: writeClipboardInOffscreen,
+      addHistory,
+      settings,
+      symbolicOperations: OFFSCREEN_SYMBOLIC_OPERATIONS,
+    });
 
-    await copyInContentScript(tab.id, result.finalAnswer);
-    await saveShortcutHistory(question, classification, result);
-    await showToast(tab.id, `コピー完了: ${shortenForToast(result.finalAnswer)}`, "success");
+    const sourceLabel = result.input.source === "selection" ? "選択範囲" : "クリップボード";
+    const historyNotice = result.historyError ? "（履歴保存のみ失敗）" : "";
+    await showToast(
+      tab.id,
+      `${sourceLabel}から${actionLabel(result.action)}をコピー${historyNotice}: ${shortenForToast(result.clipboardOutput)}`,
+      "success",
+    );
   } catch (error) {
     console.error("Shortcut solve failed", error);
     if (tab?.id) {

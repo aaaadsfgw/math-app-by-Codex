@@ -65,12 +65,11 @@ const manifestRefs = [
 for (const ref of manifestRefs) assert(relativeFiles.has(ref), `Manifest reference is missing: ${ref}`);
 
 const permissions = new Set(manifest.permissions ?? []);
-const allowedPermissions = new Set(['storage', 'activeTab', 'scripting', 'clipboardWrite', 'offscreen']);
+const allowedPermissions = new Set(['storage', 'activeTab', 'scripting', 'clipboardRead', 'clipboardWrite', 'offscreen']);
 for (const permission of allowedPermissions) {
   assert(permissions.has(permission), `Required permission is missing: ${permission}`);
 }
 assert(permissions.size === allowedPermissions.size, `Unexpected permission found: ${[...permissions].filter((permission) => !allowedPermissions.has(permission)).join(', ')}`);
-assert(!permissions.has('clipboardRead'), 'Forbidden permission found: clipboardRead');
 
 assert(
   !manifest.host_permissions?.length,
@@ -85,6 +84,7 @@ for (const file of jsFiles) {
   const source = await readFile(file, 'utf8');
   const relativeFile = relative(root, file).replaceAll('\\', '/');
   const isPinnedVendor = pinnedVendorHashes.has(relativeFile);
+  const mayReadClipboard = relativeFile === 'js/clipboard.js';
   for (const match of source.matchAll(/(?:from\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
     const target = resolve(dirname(file), match[1]);
     const candidates = [target, `${target}.js`, `${target}.mjs`, join(target, 'index.js')];
@@ -110,8 +110,10 @@ for (const file of jsFiles) {
           new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
         ]
       : [
-          new RegExp(['navigator', 'clipboard', 'readText'].join('\\s*\\.\\s*')),
-          new RegExp(['clipboard', 'read'].join('\\s*\\.\\s*') + '\\s*\\('),
+          ...(!mayReadClipboard ? [
+            new RegExp(['navigator', 'clipboard', 'readText'].join('\\s*\\.\\s*')),
+            new RegExp(['clipboard', 'read'].join('\\s*\\.\\s*') + '\\s*\\('),
+          ] : []),
           new RegExp('(?:^|[^A-Za-z])' + ['ev', 'al'].join('') + '\\s*\\('),
           new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
         ];

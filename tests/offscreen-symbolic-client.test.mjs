@@ -37,14 +37,14 @@ function fakeExtensionApi({
   return { api, calls };
 }
 
-test("既存文書がなければWORKERS理由でオフスクリーン文書を作る", async () => {
+test("既存文書がなければ共有理由でオフスクリーン文書を作る", async () => {
   const { api, calls } = fakeExtensionApi();
   await ensureSymbolicOffscreenDocument(api);
   assert.equal(calls.create.length, 1);
   assert.deepEqual(calls.create[0], {
     url: "offscreen.html",
-    reasons: ["WORKERS"],
-    justification: "Run bounded offline symbolic calculations in a disposable worker.",
+    reasons: ["WORKERS", "CLIPBOARD"],
+    justification: "Run bounded offline symbolic, clipboard, image, and OCR operations.",
   });
 });
 
@@ -64,7 +64,7 @@ test("サービスワーカーから隔離記号計算へ要求を中継する",
   });
   assert.equal(result, "x^2-1");
   assert.deepEqual(calls.messages[0], {
-    target: "symbolic-offscreen",
+    target: "math-study-log-offscreen",
     type: "RUN_SYMBOLIC_OPERATION",
     operation: "expand",
     args: ["(x+1)*(x-1)"],

@@ -8,6 +8,31 @@ export class ClipboardError extends Error {
   }
 }
 
+export async function readFromClipboard() {
+  if (!globalThis.navigator?.clipboard?.readText) {
+    throw new ClipboardError("クリップボードの読み取り機能を利用できません。", {
+      code: "READ_UNAVAILABLE",
+    });
+  }
+
+  let text;
+  try {
+    text = await globalThis.navigator.clipboard.readText();
+  } catch (error) {
+    throw new ClipboardError(
+      "クリップボードを読み取れません。Chromeの権限を確認してください。",
+      { code: "READ_FAILED", cause: error },
+    );
+  }
+
+  if (!normalizeWhitespace(text)) {
+    throw new ClipboardError("クリップボードに数学問題がありません。", {
+      code: "EMPTY_CLIPBOARD",
+    });
+  }
+  return String(text);
+}
+
 async function activeTabId() {
   if (!globalThis.chrome?.tabs?.query) return null;
   return new Promise((resolve, reject) => {
@@ -97,3 +122,4 @@ export async function writeToClipboard(value, { tabId = null } = {}) {
 }
 
 export const copyText = writeToClipboard;
+export const readClipboardText = readFromClipboard;
