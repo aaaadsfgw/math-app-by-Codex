@@ -16,6 +16,7 @@ import {
   getReviewItems,
   getSettings,
   importData,
+  recordOutputView,
   resetSettings,
   saveSettings,
   setPendingQuestion,
@@ -50,14 +51,21 @@ test("settings merge defaults, sanitize invalid values, and reset", async () => 
     defaultMode: "hint2",
     saveHistory: false,
     maxHistory: -10,
+    learningMode: "invalid",
+    shortcutAction: "explain",
     apiUrl: "legacy-url",
     modelName: "legacy-model",
   });
   assert.equal(saved.defaultMode, "hint2");
   assert.equal(saved.saveHistory, false);
   assert.equal(saved.maxHistory, DEFAULT_SETTINGS.maxHistory);
+  assert.equal(saved.learningMode, "study");
+  assert.equal(saved.shortcutAction, "answer");
   assert.equal(Object.hasOwn(saved, "apiUrl"), false);
   assert.equal(Object.hasOwn(saved, "modelName"), false);
+  const v2Settings = await saveSettings({ learningMode: "quick", shortcutAction: "hint2" });
+  assert.equal(v2Settings.learningMode, "quick");
+  assert.equal(v2Settings.shortcutAction, "hint2");
   assert.deepEqual(await resetSettings(), DEFAULT_SETTINGS);
 });
 
@@ -81,6 +89,35 @@ test("createHistoryRecord derives score, category details, verification, and rev
   assert.equal(record.verified, true);
   assert.equal(record.resultKind, "exact");
   assert.deepEqual(record.conditions, []);
+  assert.equal(record.recordSchemaVersion, 2);
+  assert.equal(record.learningMode, "study");
+  assert.equal(record.entryPoint, "popup");
+  assert.deepEqual(record.usage, {
+    viewedModes: ["hint1"],
+    firstViewedMode: "hint1",
+    lastViewedMode: "hint1",
+    hint1Viewed: true,
+    hint2Viewed: false,
+    stepsViewed: false,
+    explainViewed: false,
+    answerViewed: false,
+    directAnswerViewed: false,
+  });
+
+  const ocrRecord = createHistoryRecord(historyInput({
+    source: "ocr",
+    entryPoint: "popup",
+    mode: "hint1",
+    usage: { viewedModes: ["hint1", "bogus", "hint1", "steps", "answer"] },
+    ocrConfirmed: true,
+  }));
+  assert.deepEqual(ocrRecord.usage.viewedModes, ["hint1", "steps", "answer"]);
+  assert.equal(ocrRecord.usage.firstViewedMode, "hint1");
+  assert.equal(ocrRecord.usage.lastViewedMode, "answer");
+  assert.equal(ocrRecord.usage.answerViewed, true);
+  assert.equal(ocrRecord.usage.directAnswerViewed, false);
+  assert.equal(ocrRecord.ocrUsed, true);
+  assert.equal(ocrRecord.ocrConfirmed, true);
 
   const conditional = createHistoryRecord(
     historyInput({
@@ -121,6 +158,8 @@ test("createHistoryRecord derives score, category details, verification, and rev
   assert.equal(shortcut.selfAssessment, "unassessed");
   assert.equal(shortcut.score, null);
   assert.equal(shortcut.needsReview, true);
+  assert.equal(shortcut.source, "shortcut");
+  assert.equal(shortcut.entryPoint, "shortcut");
 
   const rational = createHistoryRecord(historyInput({
     category: {
@@ -194,12 +233,16 @@ test("unverified and malformed result metadata cannot retain solver conditions",
       conditions: ["x≠0"],
       solutionTrace: [{ type: "result", content: "forged" }],
       solutionSet: { kind: "all-real", intervals: [] },
+      source: "ocr",
+      ocrConfirmed: true,
     }),
   );
   assert.equal(unverified.resultKind, "unsupported");
   assert.deepEqual(unverified.conditions, []);
   assert.deepEqual(unverified.solutionTrace, []);
   assert.equal(unverified.solutionSet, null);
+  assert.equal(unverified.ocrConfirmed, true);
+  assert.equal(unverified.verified, false);
 
   assert.throws(
     () => createHistoryRecord(
@@ -238,6 +281,34 @@ test("history add enforces newest-first max count and supports update/delete", a
   assert.equal(await deleteHistory("second"), false);
 });
 
+test("recordOutputView appends unique output usage atomically without changing the first mode", async () => {
+  await addHistory(historyInput({
+    id: "session",
+    mode: "hint1",
+    selfAssessment: "hint1_solved",
+    usage: { viewedModes: ["hint1"] },
+  }));
+
+  await Promise.all([
+    recordOutputView("session", "hint2", { output: "hint 2" }),
+    recordOutputView("session", "steps", { output: "steps" }),
+    recordOutputView("session", "answer", { output: "answer" }),
+    recordOutputView("session", "answer", { output: "answer again" }),
+  ]);
+
+  const [record] = await getHistory();
+  assert.equal(record.mode, "hint1");
+  assert.deepEqual(record.usage.viewedModes, ["hint1", "hint2", "steps", "answer"]);
+  assert.equal(record.usage.firstViewedMode, "hint1");
+  assert.equal(record.usage.lastViewedMode, "answer");
+  assert.equal(record.usage.hint2Viewed, true);
+  assert.equal(record.usage.stepsViewed, true);
+  assert.equal(record.usage.answerViewed, true);
+  assert.equal(record.usage.directAnswerViewed, false);
+  assert.equal(await recordOutputView("missing", "answer"), null);
+  await assert.rejects(() => recordOutputView("session", "invalid"), /出力モード/);
+});
+
 test("concurrent history additions are serialized without losing records", async () => {
   const count = 25;
   await Promise.all(
@@ -257,6 +328,37 @@ test("concurrent history additions are serialized without losing records", async
     new Set(history.map(({ id }) => id)),
     new Set(Array.from({ length: count }, (_, index) => `concurrent-${index}`)),
   );
+});
+
+test("Quick Mode records are ephemeral and excluded defensively from analytics and review", async () => {
+  const quickInput = historyInput({
+    id: "quick",
+    learningMode: "quick",
+    source: "clipboard",
+    entryPoint: "shortcut",
+    usage: { viewedModes: ["answer"] },
+  });
+  assert.equal(await addHistory(quickInput), null);
+  assert.deepEqual(await getHistory(), []);
+
+  const analytics = await getAnalytics([
+    quickInput,
+    historyInput({
+      id: "study",
+      learningMode: "study",
+      source: "selection",
+      entryPoint: "shortcut",
+      mode: "hint1",
+      selfAssessment: "hint1_solved",
+    }),
+  ]);
+  assert.equal(analytics.totalCount, 1);
+  assert.equal(analytics.hint1UsageCount, 1);
+  assert.equal(analytics.directAnswerCount, 0);
+
+  await importData({ history: [quickInput] });
+  assert.equal((await getAnalytics()).totalCount, 0);
+  assert.deepEqual(await getReviewItems(), []);
 });
 
 test("score and repeated-category rules produce review items in priority order", async () => {
@@ -292,6 +394,15 @@ test("score and repeated-category rules produce review items in priority order",
   assert.equal(items.length, 3);
   assert.ok(items.every((item) => item.categoryRecentLowCount === 2));
   assert.equal(items[0].id, "low-2");
+  assert.equal(items[0].reviewPriority, 1_100);
+  assert.deepEqual(items[0].reviewPrioritySignals, {
+    repeatedCategoryDifficulty: 1_000,
+    scoreGap: 60,
+    directAnswer: 0,
+    steps: 40,
+    hint2: 0,
+    legacyUnverifiedAi: 0,
+  });
 
   const completed = await updateHistory("low-2", { needsReview: false });
   assert.equal(completed.needsReview, false);
@@ -309,12 +420,13 @@ test("export/import are JSON-safe, validate structure, and merge without duplica
   await addHistory(historyInput({ id: "saved" }));
   const exported = await exportData();
   const json = await exportDataAsJson();
-  assert.equal(JSON.parse(json).schemaVersion, 1);
+  assert.equal(JSON.parse(json).schemaVersion, 2);
   assert.equal(exported.history.length, 1);
   assert.equal(Object.hasOwn(exported, "geometryDrafts"), false);
 
   const result = await importData(
     {
+      schemaVersion: 1,
       history: [
         historyInput({ id: "saved" }),
         historyInput({ id: "imported", question: "5x=10" }),
@@ -425,6 +537,69 @@ test("analytics reports score, verification, review, category, and recent usage"
   assert.equal(analytics.unverifiedAiCount, 1);
   assert.equal(analytics.recent7Days, 2);
   assert.equal(analytics.byCategory.length, 2);
+});
+
+test("analytics separates staged output usage, direct answers, recent struggle, and priority", async () => {
+  const now = new Date().toISOString();
+  const analytics = await getAnalytics([
+    historyInput({
+      id: "derivative-guided",
+      category: "微分",
+      mode: "hint1",
+      usage: { viewedModes: ["hint1", "hint2", "answer"] },
+      selfAssessment: "hint2_solved",
+      createdAt: now,
+    }),
+    historyInput({
+      id: "derivative-direct",
+      category: "微分",
+      mode: "answer",
+      usage: { viewedModes: ["answer"] },
+      selfAssessment: "answer_seen",
+      createdAt: now,
+    }),
+    historyInput({
+      id: "integral-steps",
+      category: "積分",
+      mode: "steps",
+      usage: { viewedModes: ["steps"] },
+      selfAssessment: "steps_solved",
+      createdAt: now,
+    }),
+  ]);
+
+  assert.equal(analytics.totalCount, 3);
+  assert.equal(analytics.averageUnderstanding, 33.3);
+  assert.equal(analytics.hint1UsageRate, 33.3);
+  assert.equal(analytics.hint2UsageRate, 33.3);
+  assert.equal(analytics.stepsUsageRate, 33.3);
+  assert.equal(analytics.answerViewedRate, 100);
+  assert.equal(analytics.directAnswerRate, 33.3);
+  assert.equal(analytics.recentStruggleCount, 3);
+  assert.equal(analytics.recentStruggleRate, 100);
+  assert.equal(analytics.reviewPriorityScore, 55);
+  assert.equal(analytics.reviewPriorityLevel, "medium");
+
+  const derivative = analytics.byCategory.find(({ category }) => category === "微分");
+  assert.equal(derivative.count, 2);
+  assert.equal(derivative.averageUnderstanding, 30);
+  assert.equal(derivative.hint1UsageRate, 50);
+  assert.equal(derivative.hint2UsageRate, 50);
+  assert.equal(derivative.answerViewedRate, 100);
+  assert.equal(derivative.directAnswerRate, 50);
+  assert.equal(derivative.reviewPriorityScore, 60);
+  assert.equal(derivative.reviewPriorityLevel, "high");
+
+  const unassessed = await getAnalytics([
+    historyInput({
+      id: "unassessed",
+      mode: "hint1",
+      selfAssessment: "unassessed",
+      createdAt: now,
+    }),
+  ]);
+  assert.equal(unassessed.averageUnderstanding, null);
+  assert.equal(unassessed.byCategory[0].averageUnderstanding, null);
 });
 
 test("clearAllData removes every application key and settings fall back to defaults", async () => {

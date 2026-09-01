@@ -21,6 +21,8 @@ export const STORAGE_KEYS = Object.freeze({
 
 export const DEFAULT_SETTINGS = Object.freeze({
   defaultMode: "answer",
+  learningMode: "study",
+  shortcutAction: "answer",
   saveHistory: true,
   maxHistory: 500,
 });
@@ -37,7 +39,20 @@ export const ASSESSMENT_SCORES = Object.freeze({
 });
 
 const MODES = new Set(["answer", "hint1", "hint2", "steps", "explain"]);
-const SOURCES = new Set(["popup", "shortcut", "geometry", "review"]);
+const SHORTCUT_ACTIONS = new Set(["answer", "hint1", "hint2", "steps"]);
+const LEARNING_MODES = new Set(["quick", "study"]);
+const SOURCES = new Set([
+  "manual",
+  "selection",
+  "clipboard",
+  "ocr",
+  // Legacy values remain accepted so existing histories are not rewritten or lost.
+  "popup",
+  "shortcut",
+  "geometry",
+  "review",
+]);
+const ENTRY_POINTS = new Set(["popup", "shortcut", "review"]);
 const VERIFICATION_TYPES = new Set(["solver", "demo", "ai-only", "unsupported"]);
 const SOLVED_RESULT_KINDS = new Set(["exact", "approximate", "conditional"]);
 const TRACE_TYPES = new Set([
@@ -201,6 +216,12 @@ function normalizeSettings(value) {
     defaultMode: MODES.has(candidate.defaultMode)
       ? candidate.defaultMode
       : DEFAULT_SETTINGS.defaultMode,
+    learningMode: LEARNING_MODES.has(candidate.learningMode)
+      ? candidate.learningMode
+      : DEFAULT_SETTINGS.learningMode,
+    shortcutAction: SHORTCUT_ACTIONS.has(candidate.shortcutAction)
+      ? candidate.shortcutAction
+      : DEFAULT_SETTINGS.shortcutAction,
     saveHistory: asBoolean(candidate.saveHistory, DEFAULT_SETTINGS.saveHistory),
     maxHistory: positiveInteger(candidate.maxHistory, DEFAULT_SETTINGS.maxHistory, 5_000),
   };
@@ -318,11 +339,51 @@ function normalizeAssessment(value, mode, source) {
   return mode === "answer" && source !== "shortcut" ? "answer_seen" : "unassessed";
 }
 
-function calculateBaseReview({ score, mode, verificationType }) {
+function inferredEntryPoint(source) {
+  if (source === "shortcut") return "shortcut";
+  if (source === "review") return "review";
+  return "popup";
+}
+
+function normalizeOutputUsage(value, mode) {
+  const candidate = isPlainObject(value) ? value : {};
+  const suppliedModes = Array.isArray(candidate.viewedModes)
+    ? candidate.viewedModes
+    : [];
+  const viewedModes = [];
+  for (const suppliedMode of suppliedModes) {
+    if (!MODES.has(suppliedMode) || viewedModes.includes(suppliedMode)) continue;
+    viewedModes.push(suppliedMode);
+  }
+  if (!viewedModes.length) viewedModes.push(mode);
+
+  const firstViewedMode = viewedModes[0];
+  const lastViewedMode = viewedModes[viewedModes.length - 1];
+  const hasMode = (candidateMode) => viewedModes.includes(candidateMode);
+  return {
+    viewedModes,
+    firstViewedMode,
+    lastViewedMode,
+    hint1Viewed: hasMode("hint1"),
+    hint2Viewed: hasMode("hint2"),
+    stepsViewed: hasMode("steps"),
+    explainViewed: hasMode("explain"),
+    // Steps and explanation include the final result in the current presenter.
+    answerViewed: ["answer", "steps", "explain"].some(hasMode),
+    directAnswerViewed: firstViewedMode === "answer",
+  };
+}
+
+function isStudyRecord(record) {
+  return record.learningMode !== "quick";
+}
+
+function calculateBaseReview({ score, verificationType, learningMode, usage }) {
+  if (learningMode === "quick") return false;
   return (
     score === null ||
     score <= 60 ||
-    mode === "answer" ||
+    usage.directAnswerViewed ||
     verificationType === "ai-only" ||
     verificationType === "unsupported"
   );
@@ -400,6 +461,13 @@ export function createHistoryRecord(input = {}) {
   const now = toIsoString();
   const mode = MODES.has(input.mode) ? input.mode : "answer";
   const source = SOURCES.has(input.source) ? input.source : "popup";
+  const learningMode = LEARNING_MODES.has(input.learningMode) ? input.learningMode : "study";
+  const entryPoint = ENTRY_POINTS.has(input.entryPoint)
+    ? input.entryPoint
+    : inferredEntryPoint(source);
+  const usage = normalizeOutputUsage(input.usage, mode);
+  const ocrUsed = source === "ocr" || input.ocrUsed === true;
+  const ocrConfirmed = ocrUsed && input.ocrConfirmed === true;
   const selfAssessment = normalizeAssessment(input.selfAssessment, mode, source);
   const score = ASSESSMENT_SCORES[selfAssessment];
   const classification = normalizeClassification(input);
@@ -412,13 +480,21 @@ export function createHistoryRecord(input = {}) {
   const reviewCount = Math.max(0, Math.trunc(toFiniteNumber(input.reviewCount, 0)));
   const lastReviewedAt = validIso(input.lastReviewedAt);
   const reviewWasCompleted = input.needsReview === false && reviewCount > 0 && lastReviewedAt;
-  const computedReview = calculateBaseReview({ score, mode, verificationType });
+  const computedReview = calculateBaseReview({
+    score,
+    verificationType,
+    learningMode,
+    usage,
+  });
 
   const record = {
+    recordSchemaVersion: 2,
     id: normalizeWhitespace(input.id) || generateId(),
     question,
     normalizedQuestion: normalizeQuestion(input.normalizedQuestion || question),
     mode,
+    learningMode,
+    usage,
     output: String(input.output ?? "").trim(),
     finalAnswer: String(input.finalAnswer ?? "").trim(),
     category: classification.primary,
@@ -434,8 +510,12 @@ export function createHistoryRecord(input = {}) {
     solutionSet: normalizeSolutionSet(input, verificationType),
     selfAssessment,
     score,
-    needsReview: reviewWasCompleted ? false : input.needsReview === true || computedReview,
+    needsReview: learningMode === "study"
+      && (reviewWasCompleted ? false : input.needsReview === true || computedReview),
     source,
+    entryPoint,
+    ocrUsed,
+    ocrConfirmed,
     createdAt: validIso(input.createdAt, now),
     updatedAt: validIso(input.updatedAt, now),
     reviewCount,
@@ -498,7 +578,7 @@ function normalizeImportedHistory(value) {
 
 function categoryReviewSignals(history) {
   const grouped = new Map();
-  for (const record of history) {
+  for (const record of history.filter(isStudyRecord)) {
     const records = grouped.get(record.category) ?? [];
     records.push(record);
     grouped.set(record.category, records);
@@ -547,6 +627,8 @@ export async function getHistory() {
 export async function addHistory(input) {
   return withStorageMutation(async () => {
     const record = createHistoryRecord(input);
+    // Quick Mode is intentionally ephemeral even if a caller reaches this low-level API.
+    if (!isStudyRecord(record)) return null;
     const [history, settings] = await Promise.all([getHistory(), getSettings()]);
     const withoutDuplicate = history.filter((item) => item.id !== record.id);
     const updated = applyReviewContext(normalizeHistory([record, ...withoutDuplicate])).slice(
@@ -581,6 +663,11 @@ export async function updateHistory(id, patch) {
       ...current,
       ...patch,
       ...completionPatch,
+      usage: Object.hasOwn(patch, "usage")
+        ? patch.usage
+        : Object.hasOwn(patch, "mode")
+          ? undefined
+          : current.usage,
       needsReview: Object.hasOwn(patch, "selfAssessment")
         ? undefined
         : Object.hasOwn(patch, "needsReview")
@@ -589,6 +676,35 @@ export async function updateHistory(id, patch) {
       id: current.id,
       createdAt: current.createdAt,
       updatedAt: now,
+    });
+    history[index] = updatedRecord;
+    const updated = applyReviewContext(normalizeHistory(history));
+    await writeStorage({ [STORAGE_KEYS.history]: updated });
+    return deepClone(updated.find((record) => record.id === targetId) ?? null);
+  });
+}
+
+export async function recordOutputView(id, mode, patch = {}) {
+  return withStorageMutation(async () => {
+    const targetId = normalizeWhitespace(id);
+    if (!targetId) return null;
+    if (!MODES.has(mode)) throw new TypeError("記録する出力モードが正しくありません。");
+    if (!isPlainObject(patch)) throw new TypeError("出力記録の更新内容はオブジェクトで指定してください。");
+
+    const history = await getHistory();
+    const index = history.findIndex((record) => record.id === targetId);
+    if (index < 0) return null;
+
+    const current = history[index];
+    const viewedModes = [...current.usage.viewedModes];
+    if (!viewedModes.includes(mode)) viewedModes.push(mode);
+    const updatedRecord = createHistoryRecord({
+      ...current,
+      usage: { viewedModes },
+      output: Object.hasOwn(patch, "output") ? patch.output : current.output,
+      id: current.id,
+      createdAt: current.createdAt,
+      updatedAt: toIsoString(),
     });
     history[index] = updatedRecord;
     const updated = applyReviewContext(normalizeHistory(history));
@@ -676,7 +792,7 @@ export async function exportData() {
     getAppMeta(),
   ]);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: toIsoString(),
     settings,
     history,
@@ -800,16 +916,24 @@ export async function getReviewItems({ preferOlder = false, category = null } = 
   const categoryFilter = normalizeWhitespace(category);
   const history = await getHistory();
   const items = history
+    .filter(isStudyRecord)
     .filter((record) => record.needsReview)
     .filter((record) => !categoryFilter || record.category === categoryFilter)
-    .map((record) => ({
-      ...record,
-      reviewPriority:
-        (record.categoryRecentLowCount >= 2 ? 1_000 : 0) +
-        (record.score === null ? 200 : 100 - record.score) +
-        (record.mode === "answer" ? 80 : 0) +
-        (record.verificationType === "ai-only" ? 60 : 0),
-    }));
+    .map((record) => {
+      const prioritySignals = {
+        repeatedCategoryDifficulty: record.categoryRecentLowCount >= 2 ? 1_000 : 0,
+        scoreGap: record.score === null ? 200 : 100 - record.score,
+        directAnswer: record.usage.directAnswerViewed ? 80 : 0,
+        steps: record.usage.stepsViewed ? 40 : 0,
+        hint2: record.usage.hint2Viewed ? 30 : 0,
+        legacyUnverifiedAi: record.verificationType === "ai-only" ? 60 : 0,
+      };
+      return {
+        ...record,
+        reviewPriority: Object.values(prioritySignals).reduce((sum, value) => sum + value, 0),
+        reviewPrioritySignals: prioritySignals,
+      };
+    });
 
   return items.sort((left, right) => {
     if (right.categoryRecentLowCount !== left.categoryRecentLowCount) {
@@ -836,10 +960,109 @@ function average(numbers) {
   return Math.round((numbers.reduce((sum, value) => sum + value, 0) / numbers.length) * 10) / 10;
 }
 
+function averageOrNull(numbers) {
+  return numbers.length ? average(numbers) : null;
+}
+
+function countWhere(records, predicate) {
+  return records.reduce((count, record) => count + (predicate(record) ? 1 : 0), 0);
+}
+
+function isRecentStruggle(record) {
+  return (
+    (typeof record.score === "number" && record.score <= 60)
+    || record.usage.hint2Viewed
+    || record.usage.stepsViewed
+    || record.usage.explainViewed
+    || record.usage.directAnswerViewed
+  );
+}
+
+function weightedReviewPriority({
+  averageUnderstanding,
+  hint2UsageRate,
+  stepsUsageRate,
+  directAnswerRate,
+  recentAttemptCount,
+  recentStruggleRate,
+}) {
+  const components = [
+    { weight: 35, value: averageUnderstanding === null ? null : 100 - averageUnderstanding },
+    { weight: 15, value: hint2UsageRate },
+    { weight: 10, value: stepsUsageRate },
+    { weight: 25, value: directAnswerRate },
+    { weight: 15, value: recentAttemptCount ? recentStruggleRate : null },
+  ].filter(({ value }) => typeof value === "number" && Number.isFinite(value));
+  const weight = components.reduce((sum, component) => sum + component.weight, 0);
+  if (!weight) return 0;
+  const weighted = components.reduce(
+    (sum, component) => sum + component.value * component.weight,
+    0,
+  );
+  return Math.round(weighted / weight);
+}
+
+function priorityLevel(score) {
+  if (score >= 60) return "high";
+  if (score >= 30) return "medium";
+  return "low";
+}
+
+function analyticsGroup(records, thirtyDaysAgo) {
+  const scores = records
+    .map((record) => record.score)
+    .filter((score) => typeof score === "number");
+  const recentRecords = records.filter(
+    (record) => Date.parse(record.createdAt) >= thirtyDaysAgo,
+  );
+  const hint1UsageCount = countWhere(records, (record) => record.usage.hint1Viewed);
+  const hint2UsageCount = countWhere(records, (record) => record.usage.hint2Viewed);
+  const stepsUsageCount = countWhere(records, (record) => record.usage.stepsViewed);
+  const explainUsageCount = countWhere(records, (record) => record.usage.explainViewed);
+  const answerViewedCount = countWhere(records, (record) => record.usage.answerViewed);
+  const directAnswerCount = countWhere(records, (record) => record.usage.directAnswerViewed);
+  const hintUsageCount = countWhere(
+    records,
+    (record) => record.usage.hint1Viewed || record.usage.hint2Viewed,
+  );
+  const recentStruggleCount = countWhere(recentRecords, isRecentStruggle);
+  const averageUnderstanding = averageOrNull(scores);
+  const metrics = {
+    count: records.length,
+    evaluatedCount: scores.length,
+    averageScore: average(scores),
+    averageUnderstanding,
+    hint1UsageCount,
+    hint1UsageRate: percentage(hint1UsageCount, records.length),
+    hint2UsageCount,
+    hint2UsageRate: percentage(hint2UsageCount, records.length),
+    stepsUsageCount,
+    stepsUsageRate: percentage(stepsUsageCount, records.length),
+    explainUsageCount,
+    explainUsageRate: percentage(explainUsageCount, records.length),
+    answerViewedCount,
+    answerViewedRate: percentage(answerViewedCount, records.length),
+    directAnswerCount,
+    directAnswerRate: percentage(directAnswerCount, records.length),
+    hintUsageCount,
+    hintDependencyRate: percentage(hintUsageCount, records.length),
+    recentAttemptCount: recentRecords.length,
+    recentStruggleCount,
+    recentStruggleRate: percentage(recentStruggleCount, recentRecords.length),
+  };
+  const reviewPriorityScore = weightedReviewPriority(metrics);
+  return {
+    ...metrics,
+    reviewPriorityScore,
+    reviewPriorityLevel: priorityLevel(reviewPriorityScore),
+  };
+}
+
 export async function getAnalytics(history = undefined) {
-  const records = Array.isArray(history)
+  const records = (Array.isArray(history)
     ? applyReviewContext(normalizeHistory(history))
-    : await getHistory();
+    : await getHistory())
+    .filter(isStudyRecord);
   const evaluatedScores = records
     .map((record) => record.score)
     .filter((score) => typeof score === "number");
@@ -856,40 +1079,53 @@ export async function getAnalytics(history = undefined) {
 
   const byCategory = [...categoryGroups.entries()]
     .map(([category, group]) => {
-      const scores = group
-        .map((record) => record.score)
-        .filter((score) => typeof score === "number");
-      const answerCount = group.filter((record) => record.mode === "answer").length;
-      const hintCount = group.filter((record) => ["hint1", "hint2"].includes(record.mode)).length;
-      const averageScore = average(scores);
+      const metrics = analyticsGroup(group, thirtyDaysAgo);
       return {
         category,
-        count: group.length,
-        evaluatedCount: scores.length,
-        averageScore,
-        averageUnderstanding: averageScore,
-        answerDisplayRate: percentage(answerCount, group.length),
-        answerRate: percentage(answerCount, group.length),
-        hintDependencyRate: percentage(hintCount, group.length),
+        ...metrics,
+        // Retain legacy aliases while exposing the precise v2 metrics above.
+        answerDisplayRate: metrics.directAnswerRate,
+        answerRate: metrics.directAnswerRate,
       };
     })
     .sort((left, right) => right.count - left.count || left.category.localeCompare(right.category, "ja"));
 
+  const aggregate = analyticsGroup(records, thirtyDaysAgo);
   const averageScore = average(evaluatedScores);
   const totalCount = records.length;
-  const answerDisplayCount = records.filter((record) => record.mode === "answer").length;
+  const answerDisplayCount = aggregate.directAnswerCount;
   return {
     totalCount,
     totalProblems: totalCount,
     evaluatedCount: evaluatedScores.length,
     averageScore,
-    averageUnderstanding: averageScore,
+    averageUnderstanding: averageOrNull(evaluatedScores),
     selfSolvedCount: records.filter((record) => record.selfAssessment === "self_solved").length,
     answerDisplayCount,
-    answerSeenCount: records.filter(
-      (record) => record.selfAssessment === "answer_seen" || record.mode === "answer",
-    ).length,
-    hintUsageCount: records.filter((record) => ["hint1", "hint2"].includes(record.mode)).length,
+    answerSeenCount: countWhere(
+      records,
+      (record) => record.selfAssessment === "answer_seen" || record.usage.answerViewed,
+    ),
+    answerViewedCount: aggregate.answerViewedCount,
+    answerViewedRate: aggregate.answerViewedRate,
+    directAnswerCount: aggregate.directAnswerCount,
+    directAnswerRate: aggregate.directAnswerRate,
+    hintUsageCount: aggregate.hintUsageCount,
+    hintDependencyRate: aggregate.hintDependencyRate,
+    hint1UsageCount: aggregate.hint1UsageCount,
+    hint1UsageRate: aggregate.hint1UsageRate,
+    hint2UsageCount: aggregate.hint2UsageCount,
+    hint2UsageRate: aggregate.hint2UsageRate,
+    stepsUsageCount: aggregate.stepsUsageCount,
+    stepsUsageRate: aggregate.stepsUsageRate,
+    explainUsageCount: aggregate.explainUsageCount,
+    explainUsageRate: aggregate.explainUsageRate,
+    recentAttemptCount: aggregate.recentAttemptCount,
+    recentStruggleCount: aggregate.recentStruggleCount,
+    recentStruggleRate: aggregate.recentStruggleRate,
+    reviewPriorityScore: aggregate.reviewPriorityScore,
+    reviewPriorityLevel: aggregate.reviewPriorityLevel,
+    ocrUsageCount: countWhere(records, (record) => record.ocrUsed),
     unverifiedAiCount: records.filter((record) => record.verificationType === "ai-only").length,
     needsReviewCount: records.filter((record) => record.needsReview).length,
     recent7Days: records.filter((record) => Date.parse(record.createdAt) >= sevenDaysAgo).length,
