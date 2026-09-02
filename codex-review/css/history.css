@@ -1,0 +1,5 @@
+.history-output { max-height: 10rem; overflow: auto; white-space: pre-wrap; color: var(--muted); }
+.history-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.7rem; }
+.history-usage { display: grid; gap: 0.25rem; margin: 0.55rem 0; }
+.history-usage .record-meta { margin: 0; }
+

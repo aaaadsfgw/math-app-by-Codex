@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分析 - Math Study Log</title>
+  <link rel="stylesheet" href="css/base.css"><link rel="stylesheet" href="css/layout.css"><link rel="stylesheet" href="css/components.css"><link rel="stylesheet" href="css/analytics.css">
+</head>
+<body>
+  <header class="app-header"><div class="header-inner"><a class="brand" href="popup.html"><span class="brand-mark">∑</span>Math Study Log</a><nav class="top-nav" aria-label="主な画面"><a href="history.html">履歴</a><a aria-current="page" href="analytics.html">分析</a><a href="review.html">復習</a><a href="settings.html">設定</a><a href="help.html">ヘルプ</a></nav></div></header>
+  <main id="analyticsMain" class="page-shell stack" aria-busy="true">
+    <header class="page-heading"><h1>学習データの分析</h1><p class="muted">Study Modeで保存された操作と自己評価だけを集計します。</p></header>
+    <div id="analyticsLoading" class="notice loading-dot" role="status">学習データを集計しています</div>
+    <div id="analyticsEmpty" class="empty-state" hidden>Study Modeの履歴がまだありません。問題を解くと分析が表示されます。</div>
+    <section id="analyticsContent" class="stack" hidden>
+      <p class="notice analytics-note">表示する数値は学習履歴の集計です。理解度を断定するものではありません。</p>
+      <div id="metricsGrid" class="grid metrics-grid" aria-label="全体の集計指標"></div>
+      <section class="card stack" aria-labelledby="categoryHeading">
+        <div><h2 id="categoryHeading">分野別の傾向</h2><p class="field-help">復習優先度は、自己評価とHint 2・途中式・解説・答えの利用、直近30日の記録から機械的に計算します。</p></div>
+        <div id="categoryAnalytics" class="category-analytics" role="list"></div>
+      </section>
+      <section class="card" aria-labelledby="recentHeading">
+        <h2 id="recentHeading">最近の利用</h2>
+        <div class="grid two"><div class="metric"><span id="last7Days" class="metric-value">0</span><span class="metric-label">最近7日</span></div><div class="metric"><span id="last30Days" class="metric-value">0</span><span class="metric-label">最近30日</span></div></div>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="js/analytics.js"></script>
+</body>
+</html>

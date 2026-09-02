@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>選択範囲の確認 - Math Study Log</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/ocr-confirm.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <span class="brand"><span class="brand-mark" aria-hidden="true">∑</span>Math Study Log</span>
+    </div>
+  </header>
+
+  <main id="ocrConfirmMain" class="page-shell ocr-confirm-shell stack" aria-busy="true">
+    <header class="page-heading">
+      <p class="eyebrow">範囲選択プレビュー</p>
+      <h1>選択した画像を確認</h1>
+      <p class="muted">切り出した範囲だけを表示します。この画面から数式の解答処理は行いません。</p>
+    </header>
+
+    <section class="card preview-card stack" aria-labelledby="previewHeading">
+      <div class="preview-heading-row">
+        <div>
+          <h2 id="previewHeading">画像プレビュー</h2>
+          <p class="muted preview-description">意図した問題全体が収まっているか確認してください。</p>
+        </div>
+        <span id="captureStatus" class="badge info" role="status" aria-live="polite">読み込み中</span>
+      </div>
+
+      <div id="previewFrame" class="preview-frame" aria-busy="true">
+        <img id="previewImage" alt="選択した数式画像のプレビュー" decoding="async" referrerpolicy="no-referrer" hidden>
+        <p id="previewPlaceholder" class="preview-placeholder">プレビューを読み込んでいます…</p>
+      </div>
+
+      <dl class="capture-details" aria-label="画像情報">
+        <div>
+          <dt>切り出し画像</dt>
+          <dd id="cropInfo">確認中</dd>
+        </div>
+        <div>
+          <dt>元スクリーンショット</dt>
+          <dd id="sourceInfo">確認中</dd>
+        </div>
+        <div>
+          <dt>文字認識</dt>
+          <dd id="availabilityInfo">利用不可</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="notice ocr-unavailable-notice" role="note" aria-labelledby="ocrUnavailableHeading">
+      <h2 id="ocrUnavailableHeading">文字認識は現在利用できません</h2>
+      <p id="ocrUnavailableMessage"><strong>問題文は生成されていません。</strong> モデル資産の配布条件とブラウザ実行を確認できるまで、画像から文字列を作る機能は無効です。</p>
+      <p class="muted">この画像が解答、履歴、クリップボードへ送られることはありません。</p>
+    </section>
+
+    <div class="confirm-actions">
+      <button id="discardButton" class="button danger" type="button" aria-describedby="discardHelp">プレビューを破棄して閉じる</button>
+      <p id="discardHelp" class="field-help">切り出し画像を破棄し、この確認画面を閉じます。</p>
+    </div>
+    <div id="pageMessage" role="status" aria-live="polite"></div>
+  </main>
+
+  <script type="module" src="js/ocr/ocr-confirm.js"></script>
+</body>
+</html>

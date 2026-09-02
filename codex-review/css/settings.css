@@ -1,0 +1,17 @@
+.setting-row { display: grid; grid-template-columns: minmax(180px, 0.45fr) minmax(0, 1fr); gap: 1rem; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--line); }
+.setting-row:last-child { border-bottom: 0; }
+.setting-row > label:first-child { display: grid; gap: 0.25rem; }
+.setting-description { display: block; color: var(--muted); font-size: 0.82rem; font-weight: 400; }
+.toggle { display: flex; gap: 0.55rem; align-items: center; }
+.toggle input { width: auto; }
+.ocr-settings { display: grid; gap: 0.8rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.ocr-settings h2 { margin-bottom: 0.25rem; }
+.settings-definition-list { display: grid; gap: 0.55rem; margin: 0; }
+.settings-definition-list > div { display: grid; grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr); gap: 0.8rem; }
+.settings-definition-list dt { font-weight: 700; }
+.settings-definition-list dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+@media (max-width: 620px) {
+  .setting-row { grid-template-columns: 1fr; gap: 0.35rem; }
+  .settings-definition-list > div { grid-template-columns: 1fr; gap: 0.15rem; }
+}
+
