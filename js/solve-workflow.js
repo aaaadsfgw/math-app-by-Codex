@@ -42,10 +42,11 @@ function presentableSolverResult(result) {
   );
 }
 
-function workflowFailure(message) {
+function workflowFailure(message, { retryable = false } = {}) {
   return Object.freeze({
     ...failedResult("solve-workflow", message),
     solverId: "solve-workflow",
+    retryable: retryable === true,
   });
 }
 
@@ -109,6 +110,7 @@ export async function solveWorkflow(
       classification: null,
       solverResult: workflowFailure(
         `問題を分類できませんでした: ${safeErrorMessage(error)}`,
+        { retryable: true },
       ),
     });
   }
@@ -122,6 +124,7 @@ export async function solveWorkflow(
   } catch (error) {
     solverResult = workflowFailure(
       `ソルバー処理中にエラーが発生しました: ${safeErrorMessage(error)}`,
+      { retryable: true },
     );
   }
 
@@ -155,6 +158,7 @@ export async function solveWorkflow(
       classification,
       solverResult: workflowFailure(
         `解答表示を構成できませんでした: ${safeErrorMessage(error)}`,
+        { retryable: true },
       ),
     });
   }

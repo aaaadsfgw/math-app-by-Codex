@@ -13,6 +13,42 @@ The test suite must cover successful solving, verification, malformed input,
 unsupported input, hint answer-leak prevention, storage migration, and
 imported-verification downgrade.
 
+The Digicon learning workflow additionally requires automated coverage for:
+
+- one solver run while Hint 1, Hint 2, Steps, Answer, and explanation are
+  revealed for unchanged input;
+- one Study history record with unique staged-output usage;
+- zero history API calls in Quick Mode and when Study history saving is off;
+- new attempts after question, source, or review-parent changes, while a
+  Quick/Study round trip resumes the same Study record without Quick stages;
+- selection, clipboard, manual, review, and confirmed-OCR source metadata;
+- unsupported/invalid results never reaching presentation, history, or the
+  clipboard;
+- history failures preserving a verified displayed or copied result;
+- v2 UI selector, label, source, OCR-status, and staged-metric contracts;
+- OCR crop geometry including reverse drags, viewport clipping, minimum size,
+  actual screenshot scaling, malformed dimensions, and empty crops.
+
+## Digicon workflow smoke test
+
+1. In the popup, switch to Quick Mode, solve `2x+3=11` as Hint 1 and then
+   Answer, and confirm no history record is created.
+2. Switch to Study Mode, use Hint 1, Hint 2, Steps, then Answer for the same
+   problem, and confirm one history item contains all four viewed stages.
+3. Confirm changing the problem creates an attempt boundary. Confirm a
+   Quick/Study round trip resumes the same Study record, excludes stages viewed
+   in Quick, and does not rerun the solver.
+4. Select `2x+3=11` on a normal page and press the shortcut; confirm the
+   selection is used before the clipboard. Repeat with no selection and
+   confirm the clipboard input is used. For unsupported input, confirm the
+   original clipboard is unchanged.
+5. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
+   Steps, direct Answer rate, understanding, and review priority agree with the
+   Study attempt. Confirm Quick interactions are absent.
+6. Confirm the popup OCR action is disabled and its license/model limitation
+   is visible. Until the OCR gate closes, no working-recognition pass may be
+   recorded.
+
 ## Unpacked Chrome smoke test
 
 1. Load the repository as an unpacked extension.

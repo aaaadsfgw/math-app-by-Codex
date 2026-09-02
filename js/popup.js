@@ -1,22 +1,34 @@
 import { classifyCategory } from "./category-classifier.js";
 import { copyText } from "./clipboard.js";
-import { presentSolution } from "./solution-presenter.js";
-import { solveQuestionAsync as solveLocally } from "./solver/index.js";
+import { createLearningSession } from "./learning-session.js";
 import {
-  addHistory,
-  clearPendingQuestion,
-  getPendingQuestion,
   getSettings,
-  updateHistory
+  saveSettings,
+  takePendingQuestion,
+  updateHistory,
 } from "./storage.js";
+
+const OUTPUT_MODES = new Set(["hint1", "hint2", "steps", "answer", "explain"]);
+const SOURCE_LABELS = Object.freeze({
+  manual: "手入力",
+  selection: "選択範囲",
+  clipboard: "クリップボード",
+  ocr: "画像読み取り",
+  review: "復習",
+});
 
 const elements = {
   appStateBadge: document.querySelector("#appStateBadge"),
+  learningModeStatus: document.querySelector("#learningModeStatus"),
+  learningModeInputs: [...document.querySelectorAll('input[name="learningMode"]')],
   questionInput: document.querySelector("#questionInput"),
   charCount: document.querySelector("#charCount"),
   selectionButton: document.querySelector("#selectionButton"),
+  ocrButton: document.querySelector("#ocrButton"),
+  ocrStatus: document.querySelector("#ocrStatus"),
   categoryStatus: document.querySelector("#categoryStatus"),
-  runButton: document.querySelector("#runButton"),
+  inputSourceStatus: document.querySelector("#inputSourceStatus"),
+  outputActionButtons: [...document.querySelectorAll("[data-output-mode]")],
   processStatus: document.querySelector("#processStatus"),
   errorMessage: document.querySelector("#errorMessage"),
   resultPanel: document.querySelector("#resultPanel"),
@@ -27,30 +39,40 @@ const elements = {
   assessmentPanel: document.querySelector("#assessmentPanel"),
   assessmentSelect: document.querySelector("#assessmentSelect"),
   assessmentSaveButton: document.querySelector("#assessmentSaveButton"),
-  saveStatus: document.querySelector("#saveStatus")
+  saveStatus: document.querySelector("#saveStatus"),
 };
 
-const VERIFICATION_LABELS = {
-  solver: "自作ソルバーで検証済み",
-  unsupported: "自動検証不能",
-  error: "エラー"
-};
+const learningSession = createLearningSession();
 
-let settings;
-let currentClassification = null;
-let currentHistoryId = null;
+let settings = null;
+let activeOutputMode = "answer";
+let currentInputSource = "manual";
 let pendingParentHistoryId = null;
-let pendingSource = "popup";
-let pendingQuestionText = null;
+let currentOcrConfirmed = false;
+let currentWorkflow = null;
+let currentViewLearningMode = null;
 let latestCopyText = "";
 let analysisRunning = false;
+let selectionLoading = false;
+let learningModeSaving = false;
+let questionRevision = 0;
 
-function selectedMode() {
-  return document.querySelector('input[name="mode"]:checked')?.value || "answer";
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
-function normalizeQuestion(value) {
-  return String(value || "").trim();
+function errorMessage(error, fallback = "不明なエラーが発生しました。") {
+  if (error instanceof Error && cleanText(error.message)) return cleanText(error.message);
+  if (typeof error === "string" && cleanText(error)) return cleanText(error);
+  return fallback;
+}
+
+function normalizeOutputMode(value) {
+  return OUTPUT_MODES.has(value) ? value : "answer";
+}
+
+function currentLearningMode() {
+  return settings?.learningMode === "quick" ? "quick" : "study";
 }
 
 function setAppState(text, state = "") {
@@ -59,7 +81,7 @@ function setAppState(text, state = "") {
 }
 
 function showError(message) {
-  elements.errorMessage.textContent = String(message || "不明なエラーが発生しました。");
+  elements.errorMessage.textContent = cleanText(message) || "不明なエラーが発生しました。";
   elements.errorMessage.hidden = false;
   setAppState("エラー", "error");
 }
@@ -69,12 +91,32 @@ function clearError() {
   elements.errorMessage.hidden = true;
 }
 
-function setBusy(isBusy) {
-  elements.runButton.disabled = isBusy;
-  elements.selectionButton.disabled = isBusy;
-  elements.processStatus.hidden = !isBusy;
-  elements.runButton.textContent = isBusy ? "解析中..." : "解析する";
-  if (isBusy) setAppState("解析中", "loading");
+function canSaveAssessment() {
+  return Boolean(
+    settings?.learningMode === "study"
+      && settings.saveHistory
+      && currentViewLearningMode === "study"
+      && learningSession.snapshot.historyId,
+  );
+}
+
+function syncControlStates() {
+  const controlsLocked = analysisRunning || selectionLoading || learningModeSaving;
+  elements.questionInput.disabled = analysisRunning || selectionLoading;
+  elements.selectionButton.disabled = controlsLocked;
+  elements.outputActionButtons.forEach((button) => {
+    button.disabled = controlsLocked;
+  });
+  elements.learningModeInputs.forEach((input) => {
+    input.disabled = controlsLocked;
+  });
+
+  // OCR remains deliberately gated until the model redistribution terms and
+  // capture backend are both ready. A visible reason is rendered beside it.
+  elements.ocrButton.disabled = true;
+  elements.copyButton.disabled = controlsLocked || !latestCopyText;
+  elements.assessmentSaveButton.disabled = controlsLocked || !canSaveAssessment();
+  elements.processStatus.hidden = !analysisRunning;
 }
 
 function updateCharacterCount() {
@@ -82,171 +124,255 @@ function updateCharacterCount() {
 }
 
 function updateClassification() {
-  const question = normalizeQuestion(elements.questionInput.value);
+  const question = cleanText(elements.questionInput.value);
   if (!question) {
-    currentClassification = null;
     elements.categoryStatus.textContent = "未分類";
     elements.categoryStatus.removeAttribute("title");
     return null;
   }
 
-  currentClassification = classifyCategory(question);
-  elements.categoryStatus.textContent = currentClassification?.primary || "その他";
-  const details = [currentClassification?.reason]
-    .concat(currentClassification?.candidates?.length ? `候補: ${currentClassification.candidates.join("、")}` : [])
-    .filter(Boolean)
-    .join(" / ");
-  if (details) elements.categoryStatus.title = details;
-  else elements.categoryStatus.removeAttribute("title");
-  return currentClassification;
-}
-
-function renderResult(result) {
-  const verificationType = result.verificationType || "unsupported";
-  elements.verificationBadge.textContent = result.verificationLabel
-    || VERIFICATION_LABELS[verificationType]
-    || VERIFICATION_LABELS.unsupported;
-  elements.verificationBadge.dataset.verification = verificationType;
-  elements.verificationMessage.textContent = result.verificationMessage || "自動検証できませんでした。";
-  elements.resultOutput.textContent = result.content;
-  elements.resultPanel.hidden = false;
-  elements.assessmentPanel.hidden = false;
-  latestCopyText = result.content;
-  elements.copyButton.disabled = !latestCopyText;
-}
-
-function defaultAssessment(mode) {
-  return mode === "answer" ? "answer_seen" : "unassessed";
-}
-
-function verificationForSolver(result) {
-  return {
-    verified: true,
-    verificationType: "solver",
-    verificationLabel: "自作ソルバーで検証済み",
-    verificationMessage: result.verification || "自作ソルバーで計算結果を検証しました。"
-  };
-}
-
-async function resolveQuestion(question, mode, classification) {
-  const solverResult = await solveLocally(question, { category: classification.primary });
-
-  if (solverResult?.supported && !solverResult.solved) {
-    throw new Error(solverResult.error || "この問題は条件を満たさないため解けませんでした。");
+  try {
+    const classification = classifyCategory(question);
+    elements.categoryStatus.textContent = classification?.primary || "その他";
+    const details = [
+      classification?.reason,
+      classification?.candidates?.length
+        ? `候補: ${classification.candidates.join("、")}`
+        : "",
+    ].filter(Boolean).join(" / ");
+    if (details) elements.categoryStatus.title = details;
+    else elements.categoryStatus.removeAttribute("title");
+    return classification;
+  } catch {
+    elements.categoryStatus.textContent = "分類不能";
+    elements.categoryStatus.removeAttribute("title");
+    return null;
   }
+}
 
-  const hasVerifiedSolverAnswer = Boolean(
-    solverResult?.supported
-      && solverResult.solved
-      && solverResult.verified
-      && String(solverResult.answer || "").trim()
-  );
+function setInputSource(source, { ocrConfirmed = false } = {}) {
+  currentInputSource = Object.hasOwn(SOURCE_LABELS, source) ? source : "manual";
+  currentOcrConfirmed = currentInputSource === "ocr" && ocrConfirmed === true;
+  elements.inputSourceStatus.textContent = SOURCE_LABELS[currentInputSource];
+  elements.inputSourceStatus.dataset.source = currentInputSource;
+  if (currentInputSource === "ocr") {
+    elements.ocrStatus.textContent = currentOcrConfirmed
+      ? "読み取り結果を確認済みです。"
+      : "読み取り結果を確認してから解析してください。";
+  } else {
+    elements.ocrStatus.textContent = "画像読み取りは準備中です（OCRモデルの利用条件を確認中）。";
+  }
+}
 
-  if (!hasVerifiedSolverAnswer) {
-    throw new Error(
-      solverResult?.error
-        || "この問題形式は、現在のオフライン数式エンジンではまだ解けません。"
+function setActiveOutputMode(mode) {
+  activeOutputMode = normalizeOutputMode(mode);
+  elements.outputActionButtons.forEach((button) => {
+    button.setAttribute(
+      "aria-pressed",
+      String(button.dataset.outputMode === activeOutputMode),
+    );
+  });
+}
+
+function hideAttemptOutput() {
+  currentWorkflow = null;
+  currentViewLearningMode = null;
+  latestCopyText = "";
+  elements.resultPanel.hidden = true;
+  elements.assessmentPanel.hidden = true;
+  elements.resultOutput.textContent = "";
+  elements.saveStatus.textContent = "";
+  syncControlStates();
+}
+
+function resetAttempt() {
+  questionRevision += 1;
+  learningSession.clear();
+  hideAttemptOutput();
+}
+
+function setQuestion(
+  value,
+  {
+    source = "manual",
+    parentHistoryId = null,
+    ocrConfirmed = false,
+  } = {},
+) {
+  elements.questionInput.value = String(value ?? "");
+  pendingParentHistoryId = cleanText(parentHistoryId) || null;
+  setInputSource(source, { ocrConfirmed });
+  resetAttempt();
+  updateCharacterCount();
+  updateClassification();
+}
+
+function updateLearningModeUi() {
+  const mode = currentLearningMode();
+  elements.learningModeInputs.forEach((input) => {
+    input.checked = input.value === mode;
+  });
+
+  if (mode === "quick") {
+    elements.learningModeStatus.textContent = "履歴を残さず表示します";
+    elements.assessmentPanel.hidden = true;
+  } else if (!settings?.saveHistory) {
+    elements.learningModeStatus.textContent = "設定で履歴保存がオフです";
+    elements.assessmentPanel.hidden = true;
+  } else {
+    elements.learningModeStatus.textContent = "1問題を1件の履歴にまとめます";
+    elements.assessmentPanel.hidden = !(
+      currentWorkflow?.presentable
+        && currentViewLearningMode === "study"
+        && learningSession.snapshot.historyId
     );
   }
-
-  return {
-    ...presentSolution(solverResult, { mode, category: classification.primary }),
-    solverId: solverResult.solverId || null,
-    resultKind: solverResult.resultKind || "exact",
-    conditions: Array.isArray(solverResult.conditions) ? solverResult.conditions : [],
-    solutionTrace: Array.isArray(solverResult.solutionTrace) ? solverResult.solutionTrace : [],
-    solutionSet: solverResult.solutionSet || null,
-    solverResult,
-    ...verificationForSolver(solverResult)
-  };
+  syncControlStates();
 }
 
-async function persistResult(question, mode, classification, result) {
-  const assessment = defaultAssessment(mode);
-  elements.assessmentSelect.value = assessment;
-  currentHistoryId = null;
-  elements.assessmentSaveButton.disabled = true;
+function workflowFailureMessage(workflow) {
+  const solverResult = workflow?.solverResult;
+  if (cleanText(solverResult?.error)) return cleanText(solverResult.error);
+  if (workflow?.resultKind === "unsupported") {
+    return "この問題形式は、現在のオフライン数式エンジンではまだ解けません。";
+  }
+  if (workflow?.resultKind === "invalid") {
+    return "問題文または条件を正しく解釈できませんでした。";
+  }
+  return "検証済みの解答を作成できませんでした。";
+}
 
+function renderResult(workflow) {
+  const solverResult = workflow.solverResult;
+  currentWorkflow = workflow;
+  currentViewLearningMode = currentLearningMode();
+  latestCopyText = cleanText(workflow.presentation?.content);
+  elements.verificationBadge.textContent = "自作ソルバーで検証済み";
+  elements.verificationBadge.dataset.verification = "solver";
+  elements.verificationMessage.textContent = cleanText(solverResult?.verification)
+    || "自作ソルバーで計算結果を検証しました。";
+  elements.resultOutput.textContent = latestCopyText;
+  elements.resultPanel.hidden = false;
+  setActiveOutputMode(workflow.outputMode);
+}
+
+function updateStudyStatus({
+  outcome,
+  mode,
+  hadHistoryBefore,
+  viewedBefore,
+}) {
+  if (currentLearningMode() === "quick") {
+    elements.saveStatus.textContent = "Quick Modeのため、履歴には保存していません。";
+    elements.assessmentPanel.hidden = true;
+    return;
+  }
   if (!settings.saveHistory) {
     elements.saveStatus.textContent = "履歴保存は設定でオフになっています。";
+    elements.assessmentPanel.hidden = true;
     return;
   }
 
-  try {
-    const record = await addHistory({
-      question,
-      mode,
-      output: result.content,
-      finalAnswer: result.finalAnswer,
-      category: classification,
-      solverId: result.solverId,
-      verified: result.verified,
-      verificationType: result.verificationType,
-      verificationMessage: result.verificationMessage,
-      resultKind: result.resultKind,
-      conditions: result.conditions,
-      solutionTrace: result.solutionTrace,
-      solutionSet: result.solutionSet,
-      selfAssessment: assessment,
-      source: pendingSource,
-      parentHistoryId: pendingParentHistoryId
-    });
-    currentHistoryId = record?.id || null;
-    elements.assessmentSaveButton.disabled = !currentHistoryId;
-    elements.saveStatus.textContent = currentHistoryId
-      ? "履歴に保存しました。"
-      : "結果は表示しましたが、履歴IDを確認できませんでした。";
-  } catch (error) {
-    elements.saveStatus.textContent = `結果は表示しましたが、履歴を保存できませんでした: ${error.message}`;
+  const historyId = learningSession.snapshot.historyId;
+  if (outcome.historyRecord?.selfAssessment) {
+    elements.assessmentSelect.value = outcome.historyRecord.selfAssessment;
   }
+  if (outcome.historyError) {
+    elements.saveStatus.textContent =
+      `結果は表示しましたが、履歴を保存できませんでした: ${errorMessage(outcome.historyError)}`;
+  } else if (!historyId) {
+    elements.saveStatus.textContent =
+      "結果は表示しましたが、保存した履歴を確認できませんでした。";
+  } else if (!hadHistoryBefore) {
+    elements.assessmentSelect.value = outcome.historyRecord?.selfAssessment
+      || (mode === "answer" ? "answer_seen" : "unassessed");
+    elements.saveStatus.textContent = "新しい学習履歴に保存しました。";
+  } else if (viewedBefore) {
+    elements.saveStatus.textContent = "同じ学習履歴を維持しています。";
+  } else {
+    elements.saveStatus.textContent = "同じ学習履歴に表示段階を追加しました。";
+  }
+
+  elements.assessmentPanel.hidden = !(currentWorkflow?.presentable && historyId);
 }
 
-async function runAnalysis() {
-  if (analysisRunning) return;
+async function runOutputMode(requestedMode) {
+  if (analysisRunning || selectionLoading || learningModeSaving) return;
 
-  const question = normalizeQuestion(elements.questionInput.value);
+  const question = cleanText(elements.questionInput.value);
   if (!question) {
     showError("問題文を入力してください。");
     elements.questionInput.focus();
     return;
   }
-
-  const mode = selectedMode();
-  if (pendingQuestionText && question !== pendingQuestionText) {
-    pendingQuestionText = null;
-    pendingParentHistoryId = null;
-    pendingSource = "popup";
+  if (currentInputSource === "ocr" && !currentOcrConfirmed) {
+    showError("画像から読み取った問題文を確認してから解析してください。");
+    return;
   }
-  const classification = updateClassification();
+
+  const mode = normalizeOutputMode(requestedMode);
+  const inputChanged = learningSession.setInput({
+    question,
+    source: currentInputSource,
+    parentHistoryId: pendingParentHistoryId,
+    ocrUsed: currentInputSource === "ocr",
+    ocrConfirmed: currentOcrConfirmed,
+  });
+  if (inputChanged) {
+    currentWorkflow = null;
+    latestCopyText = "";
+  }
+
+  const before = learningSession.snapshot;
+  const hadCachedResult = before.hasCachedResult;
+  const hadHistoryBefore = Boolean(before.historyId);
+  const viewedBefore = before.viewedModes.includes(mode);
+  const revisionAtStart = questionRevision;
+
   analysisRunning = true;
   clearError();
-  setBusy(true);
-  elements.resultPanel.hidden = true;
-  elements.assessmentPanel.hidden = true;
-  elements.saveStatus.textContent = "";
-  latestCopyText = "";
-  currentHistoryId = null;
+  setActiveOutputMode(mode);
+  elements.processStatus.textContent = hadCachedResult
+    ? "表示を切り替えています"
+    : "解析中です";
+  if (!hadCachedResult) {
+    hideAttemptOutput();
+    elements.saveStatus.textContent = "";
+  }
+  setAppState(hadCachedResult ? "表示切替中" : "解析中", "loading");
+  syncControlStates();
 
   try {
-    const result = await resolveQuestion(question, mode, classification);
-    renderResult(result);
-    await persistResult(question, mode, classification, result);
-    if (currentHistoryId && pendingSource === "review") {
-      pendingQuestionText = null;
-      pendingParentHistoryId = null;
-      pendingSource = "popup";
+    const outcome = await learningSession.view(mode, {
+      learningMode: currentLearningMode(),
+      saveHistory: settings.saveHistory,
+    });
+    if (revisionAtStart !== questionRevision) return;
+
+    if (!outcome.workflow?.presentable) {
+      hideAttemptOutput();
+      showError(workflowFailureMessage(outcome.workflow));
+      return;
     }
+
+    renderResult(outcome.workflow);
+    updateStudyStatus({
+      outcome,
+      mode: outcome.workflow.outputMode,
+      hadHistoryBefore,
+      viewedBefore,
+    });
     setAppState("完了", "success");
   } catch (error) {
-    showError(error.message);
+    showError(errorMessage(error, "解析中にエラーが発生しました。"));
   } finally {
     analysisRunning = false;
-    setBusy(false);
+    updateLearningModeUi();
   }
 }
 
 function isWebPage(url) {
-  return /^https?:\/\//i.test(String(url || ""));
+  return /^https?:\/\//iu.test(String(url || ""));
 }
 
 async function sendToTab(tab, message) {
@@ -256,18 +382,24 @@ async function sendToTab(tab, message) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        files: ["js/content-script.js"]
+        files: ["js/content-script.js"],
       });
       return await chrome.tabs.sendMessage(tab.id, message);
-    } catch {
-      throw firstError;
+    } catch (error) {
+      throw new Error("このページから選択範囲を取得できませんでした。", {
+        cause: error ?? firstError,
+      });
     }
   }
 }
 
 async function loadSelection() {
+  if (analysisRunning || selectionLoading || learningModeSaving) return;
+  selectionLoading = true;
   clearError();
-  elements.selectionButton.disabled = true;
+  setAppState("選択取得中", "loading");
+  syncControlStates();
+
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !isWebPage(tab.url)) {
@@ -275,40 +407,43 @@ async function loadSelection() {
     }
 
     const response = await sendToTab(tab, { type: "GET_SELECTION_TEXT" });
-    const text = String(response?.text || "").trim();
+    const text = cleanText(response?.text);
     if (!text) throw new Error("ページ上で問題文を選択してください。");
 
-    elements.questionInput.value = text;
-    updateCharacterCount();
-    updateClassification();
+    setQuestion(text, { source: "selection" });
     setAppState("選択を取得", "success");
   } catch (error) {
-    showError(error.message);
+    showError(errorMessage(error, "選択中の文章を取得できませんでした。"));
   } finally {
-    elements.selectionButton.disabled = false;
+    selectionLoading = false;
+    syncControlStates();
   }
 }
 
 async function saveAssessment() {
-  if (!currentHistoryId) {
-    elements.saveStatus.textContent = settings.saveHistory
-      ? "更新対象の履歴がありません。もう一度解析してください。"
+  const historyId = learningSession.snapshot.historyId;
+  if (!historyId || !canSaveAssessment()) {
+    elements.saveStatus.textContent = settings?.saveHistory
+      ? "更新対象の学習履歴がありません。"
       : "履歴保存は設定でオフになっています。";
     return;
   }
 
   elements.assessmentSaveButton.disabled = true;
+  clearError();
   try {
-    const updated = await updateHistory(currentHistoryId, {
-      selfAssessment: elements.assessmentSelect.value
+    const updated = await updateHistory(historyId, {
+      selfAssessment: elements.assessmentSelect.value,
     });
     if (!updated) throw new Error("履歴が見つかりませんでした。");
-    elements.saveStatus.textContent = `評価を保存しました（${updated.score ?? "未評価"}点）。`;
+    elements.saveStatus.textContent =
+      `評価を保存しました（${updated.score ?? "未評価"}点）。`;
     setAppState("評価を保存", "success");
   } catch (error) {
-    elements.saveStatus.textContent = `評価を保存できませんでした: ${error.message}`;
+    elements.saveStatus.textContent =
+      `評価を保存できませんでした: ${errorMessage(error)}`;
   } finally {
-    elements.assessmentSaveButton.disabled = false;
+    syncControlStates();
   }
 }
 
@@ -320,57 +455,99 @@ async function copyResult() {
     await copyText(latestCopyText);
     setAppState("コピー完了", "success");
   } catch (error) {
-    showError(error.message);
+    showError(errorMessage(error, "結果をコピーできませんでした。"));
   } finally {
-    elements.copyButton.disabled = false;
+    syncControlStates();
+  }
+}
+
+async function changeLearningMode(nextValue) {
+  if (analysisRunning || selectionLoading || learningModeSaving) return;
+  const nextMode = nextValue === "quick" ? "quick" : "study";
+  const previousMode = currentLearningMode();
+  if (nextMode === previousMode) {
+    updateLearningModeUi();
+    return;
+  }
+
+  learningModeSaving = true;
+  clearError();
+  syncControlStates();
+  try {
+    settings = await saveSettings({ learningMode: nextMode });
+    learningSession.changeLearningMode(nextMode);
+    currentViewLearningMode = null;
+    elements.saveStatus.textContent = nextMode === "quick"
+      ? "Quick Modeに切り替えました。この先の表示は記録しません。"
+      : "Study Modeに切り替えました。次に表示した段階から学習記録を再開します。";
+    setAppState(nextMode === "quick" ? "Quick Mode" : "Study Mode", "success");
+  } catch (error) {
+    settings = { ...settings, learningMode: previousMode };
+    showError(errorMessage(error, "利用モードを保存できませんでした。"));
+  } finally {
+    learningModeSaving = false;
+    updateLearningModeUi();
   }
 }
 
 async function loadPendingQuestion() {
-  const pending = await getPendingQuestion();
+  const pending = await takePendingQuestion();
   if (!pending) return;
 
   const question = typeof pending === "string" ? pending : pending.question;
-  if (question) {
-    elements.questionInput.value = question;
-    pendingQuestionText = normalizeQuestion(question);
-    pendingParentHistoryId = typeof pending === "object" ? pending.parentHistoryId : null;
-    pendingSource = "review";
-    updateCharacterCount();
-    updateClassification();
+  if (cleanText(question)) {
+    setQuestion(question, {
+      source: "review",
+      parentHistoryId: typeof pending === "object" ? pending.parentHistoryId : null,
+    });
     setAppState("復習問題を読込", "success");
   }
-  await clearPendingQuestion();
+}
+
+function handleManualInput() {
+  pendingParentHistoryId = null;
+  setInputSource("manual");
+  resetAttempt();
+  updateCharacterCount();
+  updateClassification();
+  clearError();
+  setAppState("入力中");
 }
 
 async function initialize() {
   settings = await getSettings();
-  const defaultMode = ["answer", "hint1", "hint2", "steps", "explain"].includes(settings.defaultMode)
-    ? settings.defaultMode
-    : "answer";
-  const defaultModeInput = document.querySelector(`input[name="mode"][value="${defaultMode}"]`);
-  if (defaultModeInput) defaultModeInput.checked = true;
-
-  setAppState("オフライン数式エンジン");
+  settings.learningMode = settings.learningMode === "quick" ? "quick" : "study";
+  setActiveOutputMode(normalizeOutputMode(settings.defaultMode));
+  setInputSource("manual");
+  updateLearningModeUi();
   updateCharacterCount();
   updateClassification();
-  await loadPendingQuestion();
+  setAppState("オフライン数式エンジン");
 
-  elements.questionInput.addEventListener("input", () => {
-    updateCharacterCount();
-    updateClassification();
-    clearError();
-  });
+  elements.questionInput.addEventListener("input", handleManualInput);
   elements.selectionButton.addEventListener("click", () => void loadSelection());
-  elements.runButton.addEventListener("click", () => void runAnalysis());
+  elements.outputActionButtons.forEach((button) => {
+    button.addEventListener("click", () => void runOutputMode(button.dataset.outputMode));
+  });
+  elements.learningModeInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) void changeLearningMode(input.value);
+    });
+  });
   elements.copyButton.addEventListener("click", () => void copyResult());
   elements.assessmentSaveButton.addEventListener("click", () => void saveAssessment());
   elements.questionInput.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
       event.preventDefault();
-      void runAnalysis();
+      void runOutputMode(activeOutputMode);
     }
   });
+
+  await loadPendingQuestion();
+  syncControlStates();
 }
 
-void initialize().catch((error) => showError(`初期化できませんでした: ${error.message}`));
+void initialize().catch((error) => {
+  showError(`初期化できませんでした: ${errorMessage(error)}`);
+  elements.ocrButton.disabled = true;
+});

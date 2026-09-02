@@ -116,6 +116,7 @@ test("solver例外とhostile問題文をinvalidへ封じ込める", async () => 
   });
   assert.equal(thrown.resultKind, "invalid");
   assert.equal(thrown.presentable, false);
+  assert.equal(thrown.solverResult.retryable, true);
   assert.match(thrown.solverResult.error, /worker failure/u);
 
   let solverCalled = false;
@@ -131,6 +132,7 @@ test("solver例外とhostile問題文をinvalidへ封じ込める", async () => 
   });
   assert.equal(hostile.resultKind, "invalid");
   assert.equal(hostile.presentable, false);
+  assert.equal(hostile.solverResult.retryable, false);
   assert.equal(solverCalled, false);
   assert.match(hostile.solverResult.error, /coercion blocked/u);
 });

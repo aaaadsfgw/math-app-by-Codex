@@ -8,20 +8,32 @@
 <body>
   <main class="popup-shell">
     <header class="popup-header"><div><p class="muted">検証と学習記録をひとつに</p><h1 class="popup-title">Math Study Log</h1></div><span id="appStateBadge" class="badge">準備完了</span></header>
+    <section class="learning-mode-panel" aria-labelledby="learningModeHeading">
+      <div class="spread"><h2 id="learningModeHeading">利用モード</h2><span id="learningModeStatus" class="muted" aria-live="polite"></span></div>
+      <fieldset class="segmented-control"><legend class="sr-only">Quick ModeまたはStudy Modeを選択</legend>
+        <label><input type="radio" name="learningMode" value="quick"><span><strong>Quick</strong><small>記録しない</small></span></label>
+        <label><input type="radio" name="learningMode" value="study" checked><span><strong>Study</strong><small>学習を記録</small></span></label>
+      </fieldset>
+    </section>
     <nav class="popup-nav" aria-label="画面ナビゲーション">
       <a href="history.html" target="_blank" rel="noopener">履歴</a><a href="analytics.html" target="_blank" rel="noopener">分析</a><a href="review.html" target="_blank" rel="noopener">復習</a><a href="examples.html" target="_blank" rel="noopener">例題</a><a href="settings.html" target="_blank" rel="noopener">設定</a><a href="help.html" target="_blank" rel="noopener">ヘルプ</a><a href="about.html" target="_blank" rel="noopener">情報</a>
     </nav>
     <section class="card compact-card stack" aria-labelledby="questionHeading">
       <div class="spread"><h2 id="questionHeading">問題文</h2><span id="charCount" class="muted" aria-live="polite">0文字</span></div>
       <textarea id="questionInput" aria-label="数学の問題文" placeholder="例: 2x + 3 = 11"></textarea>
-      <div class="button-row"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><span id="categoryStatus" class="badge">未分類</span></div>
+      <div class="input-actions"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><button id="ocrButton" class="button ghost" type="button" aria-describedby="ocrStatus" disabled>画像から読み取る</button></div>
+      <div class="input-meta"><span id="categoryStatus" class="badge">未分類</span><span id="inputSourceStatus" class="badge">手入力</span></div>
+      <div id="ocrStatus" class="muted" role="status" aria-live="polite">画像読み取りは準備中です（OCRモデルの利用条件を確認中）。</div>
     </section>
-    <section class="card compact-card stack" aria-labelledby="modeHeading">
-      <h2 id="modeHeading">出力モード</h2>
-      <fieldset class="choice-grid mode-grid"><legend class="sr-only">出力モードを選択</legend>
-        <label><input type="radio" name="mode" value="answer" checked>答え</label><label><input type="radio" name="mode" value="hint1">ヒント1</label><label><input type="radio" name="mode" value="hint2">ヒント2</label><label><input type="radio" name="mode" value="steps">途中式</label><label><input type="radio" name="mode" value="explain">解説</label>
-      </fieldset>
-      <button id="runButton" class="button primary" type="button">解析する</button>
+    <section class="card compact-card stack" aria-labelledby="actionHeading">
+      <div><h2 id="actionHeading">必要なところだけ見る</h2><p class="muted action-help">同じ問題では再計算せず、段階を切り替えます。</p></div>
+      <div id="outputActions" class="output-action-grid" role="group" aria-label="表示内容を選択">
+        <button class="button output-action" type="button" data-output-mode="hint1">Hint 1</button>
+        <button class="button output-action" type="button" data-output-mode="hint2">Hint 2</button>
+        <button class="button output-action" type="button" data-output-mode="steps">Steps</button>
+        <button id="runButton" class="button primary output-action" type="button" data-output-mode="answer">Answer</button>
+        <button class="button ghost output-action explain-action" type="button" data-output-mode="explain">解説</button>
+      </div>
       <div id="processStatus" class="notice loading-dot" role="status" aria-live="polite" hidden>解析中です</div>
       <div id="errorMessage" class="notice error" role="alert" hidden></div>
     </section>

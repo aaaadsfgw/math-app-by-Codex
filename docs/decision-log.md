@@ -556,3 +556,52 @@ circles and other implicit curves, parametric or polar curves, planes/surfaces,
 geometric/diagram normals, and figure/graph-derived information are recognized
 as unsupported instead of being inferred. Numerical differentiation, graph
 sampling, floating-point approximation, and CAS proposals are not proof.
+
+## D-026: Separate ephemeral Quick use from one-record Study attempts
+
+**Status:** accepted
+**Date:** 2026-09-02
+
+Quick Mode and Study Mode share the same deterministic solve and presentation
+pipeline but have different persistence boundaries. Quick is deliberately
+ephemeral: popup and shortcut coordinators do not call history APIs, storage
+defensively refuses non-Study records, and analytics and review consume Study
+records only.
+
+For unchanged question and input metadata, a popup session runs the solver once
+and derives Hint 1, Hint 2, Steps, Answer, and explanation from the same
+verified result. In Study Mode the first displayed stage creates one attempt;
+later stages append unique usage flags to that record. Changing the question,
+input source, or review parent starts a new persistence attempt. Switching to
+Quick pauses the existing Study attempt, excludes every Quick-only stage, and
+resumes the same Study record when the unchanged input returns to Study. This
+prevents both history inflation and repeated calculation while keeping a Quick
+interaction from becoming part of a Study record retroactively.
+
+History schema version 2 keeps old records readable while adding learning mode,
+entry point, staged usage, OCR metadata, result kind, conditions, solution
+trace, and structured solution-set evidence. Imported verification claims are
+still downgraded. A history write failure never invalidates or hides a locally
+verified solver result.
+
+## D-027: Gate printed-math OCR until assets and browser execution are qualified
+
+**Status:** accepted
+**Date:** 2026-09-02
+
+Printed-math OCR is allowed only as an untrusted acquisition path from a user-
+selected crop to editable candidate text. It cannot solve, explain, validate,
+or mark mathematics as verified. A candidate must be shown with its crop, be
+editable, and be explicitly confirmed before it enters the deterministic
+solver. History may record OCR use and confirmation separately from solver
+verification.
+
+RapidLaTeXOCR ONNX remains the provisional technical candidate, with WebGPU
+first and WASM fallback, lazy-loaded only on OCR use. Its published project
+license and package metadata do not yet provide sufficiently clear model-weight
+redistribution terms for release approval. No model graph, tokenizer, or
+runtime bundle is therefore included, and the OCR action remains visibly
+disabled. Capture geometry and other provider-independent infrastructure may
+be implemented and tested behind this gate, but a demo or README must not
+claim working recognition until the gate closes and real Chrome measurements
+pass.

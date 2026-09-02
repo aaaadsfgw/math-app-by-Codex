@@ -1,13 +1,14 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-08-29
+Last updated: 2026-09-02
 
 ## Repository checkpoint
 
-- Physical path: `C:\Users\kukuk\OneDrive\ドキュメント\GitHub\math-study-log-ai`
-- Branch: `feat/non-ai-math-engine`
+- Physical path: `C:\Users\kukuk\OneDrive\ドキュメント\工藤\math-study-log-ai-Codex`
+- Branch: `feat/digicon-learning-workflow`
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
-- Working milestone: 6 - Mathematics III
+- Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
+- Working milestone: problem acquisition, staged learning records, and analytics
 
 ## Completed
 
@@ -551,22 +552,55 @@ Last updated: 2026-08-29
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
     12 CSS files.
 
+- Added the shared deterministic solve workflow and backward-compatible history
+  schema version 2. Study records now retain learning mode, entry point, input
+  source, staged output usage, OCR confirmation metadata, result kind,
+  conditions, typed solution traces, and solution sets.
+- Added a selection-first keyboard workflow with clipboard fallback through the
+  offscreen document. Clipboard contents are replaced only after a verified
+  presentation succeeds; unsupported, invalid, and failed requests preserve the
+  original clipboard. Quick Mode never writes history.
+- Added a gated local OCR foundation and candidate evaluation. RapidLaTeXOCR
+  ONNX is the provisional technical candidate, but no runtime or model assets
+  are bundled and the visible OCR action is disabled because model-weight
+  redistribution terms and the browser adapter are not qualified.
+- Connected the popup to one learning session: the deterministic solver runs
+  once for unchanged input, while Hint 1, Hint 2, Steps, Answer, and explanation
+  reuse that result. Study Mode stores one attempt and appends viewed stages;
+  Quick Mode remains ephemeral. Manual, selection, review, clipboard, and future
+  confirmed-OCR sources stay distinct.
+- Reworked History and Analytics around the v2 data: source and OCR confirmation
+  are visible, staged use is retained, and category metrics show Hint 1/2,
+  Steps, direct Answer, recent struggle, understanding, and review priority
+  without making claims beyond stored events.
+- Updated Settings with Quick/Study and shortcut-action persistence plus an
+  explicit OCR availability, candidate backend/model, model-not-bundled, and
+  WebGPU-to-WASM status. Added page contract checks for unique IDs, labels,
+  selectors, staged controls, and safe text rendering.
+
 ## In progress
 
-- Continue Mathematics III coverage while keeping unpacked-Chrome verification
-  as a release blocker.
+- Build provider-independent OCR range selection, screenshot crop, and
+  confirmation infrastructure behind the disabled model/license gate.
+- Keep unpacked-Chrome integration verification as a release blocker.
 
 ## Next
 
-1. Verify module-worker and offscreen loading in unpacked Chrome before
-   changing D-004 from provisional to accepted.
+1. Add a background-owned OCR capture session that survives popup closure and
+   validates the sender, tab, document, phase, and expiry.
+2. Add Esc-cancellable overlay selection, exact screenshot-to-crop mapping, and
+   an editable confirmation page without enabling recognition.
+3. Resolve a redistributable model/runtime combination, then qualify WebGPU and
+   WASM in real Chrome before enabling the OCR button.
+4. Run the complete unpacked-Chrome Quick/Study, shortcut, history, analytics,
+   worker, offscreen, and OCR-gate smoke test.
 
 ## Last verified commands
 
-- `npm test` - 484 passed, 0 failed on 2026-08-29, including 5,500 generated
-  evaluation cases.
-- `npm run check` - passed for 173 files, 10 HTML, 135 JS/MJS, and 11 CSS files
-  on 2026-08-29.
+- `npm.cmd test` - 577 passed, 0 failed on 2026-09-02, including 5,500
+  generated evaluation cases.
+- `npm.cmd run check` - passed for 197 files, 10 HTML, 158 JS/MJS, and 11 CSS
+  files on 2026-09-02.
 
 ## Restart procedure
 

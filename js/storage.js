@@ -702,6 +702,11 @@ export async function recordOutputView(id, mode, patch = {}) {
       ...current,
       usage: { viewedModes },
       output: Object.hasOwn(patch, "output") ? patch.output : current.output,
+      selfAssessment: Object.hasOwn(patch, "selfAssessment")
+        ? patch.selfAssessment
+        : mode === "answer" && current.selfAssessment === "unassessed"
+          ? "answer_seen"
+          : current.selfAssessment,
       id: current.id,
       createdAt: current.createdAt,
       updatedAt: toIsoString(),
@@ -750,13 +755,27 @@ export async function setPendingQuestion(questionOrObject, parentHistoryId = nul
 
 export async function getPendingQuestion() {
   const stored = await readStorage(STORAGE_KEYS.pendingQuestion);
-  const value = stored[STORAGE_KEYS.pendingQuestion];
+  return normalizePendingQuestion(stored[STORAGE_KEYS.pendingQuestion]);
+}
+
+function normalizePendingQuestion(value) {
   if (!isPlainObject(value) || !normalizeWhitespace(value.question)) return null;
   return {
     question: normalizeWhitespace(value.question),
     parentHistoryId: normalizeWhitespace(value.parentHistoryId) || null,
     createdAt: validIso(value.createdAt, toIsoString()),
   };
+}
+
+export async function takePendingQuestion() {
+  return withStorageMutation(async () => {
+    const stored = await readStorage(STORAGE_KEYS.pendingQuestion);
+    const pending = normalizePendingQuestion(stored[STORAGE_KEYS.pendingQuestion]);
+    if (stored[STORAGE_KEYS.pendingQuestion] !== undefined) {
+      await removeStorage(STORAGE_KEYS.pendingQuestion);
+    }
+    return pending;
+  });
 }
 
 export async function clearPendingQuestion() {

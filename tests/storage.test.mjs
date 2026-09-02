@@ -20,6 +20,7 @@ import {
   resetSettings,
   saveSettings,
   setPendingQuestion,
+  takePendingQuestion,
   updateHistory,
 } from "../js/storage.js";
 import { solveRationalInequality } from "../js/solver/rational-inequality.js";
@@ -305,8 +306,23 @@ test("recordOutputView appends unique output usage atomically without changing t
   assert.equal(record.usage.stepsViewed, true);
   assert.equal(record.usage.answerViewed, true);
   assert.equal(record.usage.directAnswerViewed, false);
+  assert.equal(record.selfAssessment, "hint1_solved");
   assert.equal(await recordOutputView("missing", "answer"), null);
   await assert.rejects(() => recordOutputView("session", "invalid"), /出力モード/);
+});
+
+test("Answerを後から表示すると未評価だけをanswer_seenへ更新する", async () => {
+  await addHistory(historyInput({
+    id: "answer-later",
+    mode: "hint1",
+    selfAssessment: "unassessed",
+    usage: { viewedModes: ["hint1"] },
+  }));
+
+  const updated = await recordOutputView("answer-later", "answer", { output: "x=4" });
+  assert.equal(updated.selfAssessment, "answer_seen");
+  assert.equal(updated.score, 0);
+  assert.equal(updated.usage.answerViewed, true);
 });
 
 test("concurrent history additions are serialized without losing records", async () => {
@@ -414,6 +430,9 @@ test("pending questions retain parent history identifiers", async () => {
   const pending = await setPendingQuestion("x+1=2", "history-1");
   assert.equal(pending.parentHistoryId, "history-1");
   assert.deepEqual(await getPendingQuestion(), pending);
+  assert.deepEqual(await takePendingQuestion(), pending);
+  assert.equal(await getPendingQuestion(), null);
+  assert.equal(await takePendingQuestion(), null);
 });
 
 test("export/import are JSON-safe, validate structure, and merge without duplicate IDs", async () => {

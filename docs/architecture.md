@@ -3,7 +3,7 @@
 ## Runtime flow
 
 ```text
-typed or selected question
+typed / selected / clipboard / confirmed-OCR question
           |
           v
 volume -> area -> tangent -> normal -> variation -> rational-limit preflights
@@ -15,15 +15,21 @@ category classifier
 solver router -> deterministic solver -> mathematical verification
                                       |
                                       v
+                         cached verified workflow
+                                      |
+                                      v
                                solution presenter
                                       |
                      answer / hint / steps / explanation
                                       |
                                       v
-                         local history and analytics
+                Quick: ephemeral | Study: one local attempt
 ```
 
-The popup and keyboard shortcut use the same asynchronous solver router.
+The popup and keyboard shortcut use the same asynchronous solver router. The
+popup runs a solver once for the same input metadata and derives later display
+stages from the cached verified result. The shortcut prefers selected page text
+and falls back to the clipboard only when the selection is empty.
 Symbolic requests from a visible extension page run in a fresh module worker.
 Shortcut requests travel through a bundled offscreen document, which creates
 the same deadline-controlled worker because the service worker does not own a
@@ -40,6 +46,29 @@ verified-history creation.
 - Legacy `demo`, `ai-only`, `geometry`, and obsolete setting fields are read
   only for stored-data compatibility. New runtime paths never create them.
 - No input string is executed as JavaScript.
+
+## Acquisition and learning-session boundaries
+
+- Manual popup text, page selection, clipboard fallback, future confirmed OCR,
+  and review reruns enter the same deterministic solve workflow with explicit
+  source metadata.
+- Quick Mode is ephemeral. Its popup and shortcut coordinators do not call
+  history APIs, and storage also rejects a non-Study record defensively.
+- Study Mode creates one attempt for the first viewed output stage and appends
+  later unique stages to that same history record. Changing the question,
+  source, or review parent starts a new attempt. A Quick/Study switch pauses or
+  resumes that Study attempt for unchanged input; stages viewed while Quick is
+  active are not appended. The verified solver result is reused across the
+  switch.
+- Analytics and review consume Study records only. Legacy records remain
+  readable through schema normalization and imported verification claims
+  remain downgraded.
+- OCR recognition, when enabled, will end at editable candidate text. It is
+  never mathematical verification. Only an explicitly confirmed transcription
+  may enter the solver, and only the solver can create the verified label.
+- The provisional OCR model assets are not bundled. The OCR control remains
+  visibly disabled while the redistribution license gate and browser runtime
+  adapter are unresolved.
 
 ## Polynomial-tangent verification
 

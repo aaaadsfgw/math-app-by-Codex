@@ -60,12 +60,20 @@ The current migration checkpoint supports:
 - binary-to-decimal conversion;
 - direct percentage calculation;
 - answer, two hint levels, working, and explanation output;
-- selected-text shortcut, clipboard write, history, analytics, and review.
+- Quick Mode for ephemeral answers and Study Mode for one-record learning
+  attempts across Hint 1, Hint 2, Steps, Answer, and explanation;
+- popup manual input, selected-text input, and a selection-first shortcut that
+  falls back to the clipboard and only replaces it after a verified result;
+- source-aware history, staged-output usage, analytics, and review.
 
 The long-term target is text/formula input from junior-high mathematics through
-Japanese Mathematics III. Image input, diagram-dependent geometry, construction
-problems, and proof prose are intentionally out of scope. An unsupported input
-returns an explicit error instead of a guessed answer.
+Japanese Mathematics III. Printed-formula OCR is being developed as an
+untrusted input method only; its provisional model is not bundled and the
+visible OCR action remains disabled while redistribution terms and the browser
+adapter are unresolved. Diagram understanding, diagram-dependent geometry,
+construction problems, handwriting OCR, and proof prose are intentionally out
+of scope. An unsupported input returns an explicit error instead of a guessed
+answer.
 
 See [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and
 [docs/supported-problems.md](docs/supported-problems.md) for the exact migration
@@ -83,10 +91,18 @@ No companion process or model download is required.
 
 ## Use
 
-Enter a question in the popup or select a question on a normal HTTP/HTTPS page.
-Choose an output mode and run the analysis. The shortcut
-`Ctrl+Shift+Y` (`Command+Shift+Y` on macOS) solves selected text, copies the
-verified final answer, and optionally records the attempt.
+Choose Quick Mode when no learning record should be created, or Study Mode when
+the viewed stages should be collected into one attempt. Enter a question in the
+popup or select a question on a normal HTTP/HTTPS page, then choose only the
+stage you need. Switching stages for the same input reuses the verified solver
+result instead of recalculating it.
+
+The shortcut `Ctrl+Shift+Y` (`Command+Shift+Y` on macOS) first uses selected
+page text and otherwise reads the clipboard. It copies the configured verified
+Answer, Hint 1, Hint 2, or Steps output only after the solver succeeds. An
+unsupported or invalid input leaves the original clipboard unchanged. Quick
+Mode never writes history; Study Mode records the input source and viewed
+stage.
 
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result.
@@ -250,12 +266,14 @@ The manifest requests only:
 
 - `storage` for settings and learning records;
 - `activeTab` and `scripting` for user-triggered selection capture;
-- `clipboardWrite` for copying a verified answer;
-- `offscreen` for running shortcut-triggered symbolic work in a disposable,
-  time-limited Web Worker.
+- `clipboardRead` for the explicit keyboard-shortcut fallback when no page
+  text is selected;
+- `clipboardWrite` for copying a verified output only after success;
+- `offscreen` for clipboard access and shortcut-triggered symbolic work in a
+  disposable, time-limited Web Worker.
 
-It does not request `clipboardRead` or any host permission. Questions and
-history remain on the device.
+It does not request any host permission. Questions and history remain on the
+device, and no local or cloud answer-generation service is contacted.
 
 ## Project continuity
 
