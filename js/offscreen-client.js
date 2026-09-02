@@ -1,6 +1,6 @@
 const OFFSCREEN_PATH = "offscreen.html";
 const OFFSCREEN_TARGET = "math-study-log-offscreen";
-const OFFSCREEN_REASONS = Object.freeze(["WORKERS", "CLIPBOARD"]);
+const OFFSCREEN_REASONS = Object.freeze(["WORKERS", "CLIPBOARD", "BLOBS"]);
 const OFFSCREEN_JUSTIFICATION =
   "Run bounded offline symbolic, clipboard, image, and OCR operations.";
 

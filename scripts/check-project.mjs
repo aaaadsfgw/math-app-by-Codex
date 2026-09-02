@@ -46,12 +46,14 @@ let manifest;
 try {
   manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
   assert(manifest.manifest_version === 3, 'manifest_version must be 3');
+  assert(Number(manifest.minimum_chrome_version) >= 109, 'minimum_chrome_version must support offscreen documents');
+  assert(manifest.incognito === 'not_allowed', 'incognito must remain disabled for the shared offscreen preview boundary');
 } catch (error) {
   fail(`manifest.json is invalid: ${error.message}`);
   manifest = {};
 }
 
-const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'settings.html', 'examples.html', 'help.html', 'about.html', 'offscreen.html'];
+const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'settings.html', 'examples.html', 'help.html', 'about.html', 'offscreen.html', 'ocr-confirm.html'];
 for (const page of expectedPages) assert(relativeFiles.has(page), `Missing HTML page: ${page}`);
 assert(relativeFiles.has('js/content-script.js'), 'Missing on-demand content script: js/content-script.js');
 assert(!manifest.content_scripts, 'Declarative content scripts are not allowed; inject on demand with activeTab');

@@ -605,3 +605,44 @@ disabled. Capture geometry and other provider-independent infrastructure may
 be implemented and tested behind this gate, but a demo or README must not
 claim working recognition until the gate closes and real Chrome measurements
 pass.
+
+## D-028: Keep OCR capture ephemeral and background-owned
+
+**Status:** accepted
+**Date:** 2026-09-03
+
+OCR range capture uses one metadata-only session owned by the extension service
+worker. The session lives in `chrome.storage.session` so popup closure or a
+service-worker restart does not detach a live overlay from its capture ID, but
+its strict schema rejects screenshots, Data URLs, Blobs, bytes, and pixels.
+Every content-side operation must match the stored tab, window, main-frame
+number, `documentId`, source URL, phase, capture ID, and expiry. Phase changes
+are serialized so a replayed submit cannot take a second screenshot, and a
+new start is rejected while screenshot processing is active.
+
+The selection overlay is injected only after an extension-popup start request.
+It uses an isolated closed shadow tree, accepts only a trusted primary
+left-pointer drag, keeps ranges below 24 CSS pixels unsubmitted, cancels on Esc
+or viewport changes, blocks page interaction while active, and removes its
+visible chrome for two animation frames before capture. The background checks
+the active tab around `captureVisibleTab`, monitors tab activation during the
+capture window, and requires a completion acknowledgement from the original
+`documentId`. A switch-away-and-back, same-URL reload, mismatch, or failure
+cleans the overlay and session. The overlay itself rejects a missing or wrong
+extension sender, background target, capture ID, document ID, normalized source
+URL, or bounded canonical expiry.
+
+PNG decoding and cropping run in the existing offscreen document with the
+`BLOBS` reason. Only an inline PNG Data URL is accepted. Input bytes, decoded
+pixels, crop pixels, and output bytes are bounded, and CSS coordinates are
+mapped from the actual decoded bitmap dimensions. The resulting Blob URL is
+held only in offscreen memory, limited to two entries, and revoked on discard,
+replacement, confirmation-tab closure, or a refreshed two-minute preview
+expiry. The background stores the confirmation tab ID so only that tab can
+retrieve or discard the preview, then verifies that the tab still exists after
+persisting the binding. The page receives the preview expiry and removes its
+loaded image source before idempotent discard and closure. It can show the crop
+and discard it, but while D-027 remains gated it cannot produce or confirm text,
+call the solver, save history, or change the clipboard. Chrome 109 is the
+minimum supported version for this boundary, and incognito use remains disabled
+because this preview lives in a shared offscreen document.

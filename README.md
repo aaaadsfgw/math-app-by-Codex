@@ -70,7 +70,10 @@ The long-term target is text/formula input from junior-high mathematics through
 Japanese Mathematics III. Printed-formula OCR is being developed as an
 untrusted input method only; its provisional model is not bundled and the
 visible OCR action remains disabled while redistribution terms and the browser
-adapter are unresolved. Diagram understanding, diagram-dependent geometry,
+adapter are unresolved. The provider-independent capture foundation can now
+select a visible page range, crop it in an offscreen document, and show a
+short-lived confirmation preview without recognizing text or sending the image
+to the solver. Diagram understanding, diagram-dependent geometry,
 construction problems, handwriting OCR, and proof prose are intentionally out
 of scope. An unsupported input returns an explicit error instead of a guessed
 answer.
@@ -252,6 +255,8 @@ bounds themselves contain `pi`.
 
 Requirements: Node.js 20 or newer.
 
+The unpacked extension requires Chrome 109 or newer.
+
 ```powershell
 npm.cmd test
 npm.cmd run check
@@ -265,15 +270,21 @@ Chrome checks in [docs/test-plan.md](docs/test-plan.md).
 The manifest requests only:
 
 - `storage` for settings and learning records;
-- `activeTab` and `scripting` for user-triggered selection capture;
+- `activeTab` and `scripting` for user-triggered text selection and gated image
+  range capture;
 - `clipboardRead` for the explicit keyboard-shortcut fallback when no page
   text is selected;
 - `clipboardWrite` for copying a verified output only after success;
-- `offscreen` for clipboard access and shortcut-triggered symbolic work in a
-  disposable, time-limited Web Worker.
+- `offscreen` for clipboard access, shortcut-triggered symbolic work in a
+  disposable time-limited Web Worker, and bounded in-memory image cropping.
 
 It does not request any host permission. Questions and history remain on the
-device, and no local or cloud answer-generation service is contacted.
+device, and no local or cloud answer-generation service is contacted. OCR
+screenshots and cropped previews are never written to `storage.local` or
+`storage.session`; a preview Blob URL is revoked on discard, replacement,
+confirmation-tab closure, or expiry. The confirmation page also removes its
+loaded image source at expiry before discarding and closing. Incognito use is
+disabled while this shared offscreen-preview boundary remains in place.
 
 ## Project continuity
 

@@ -172,7 +172,24 @@ such as `sin(x)+sin(pi*x)` remain unsupported as one whole problem.
 
 Select a question on an HTTP/HTTPS page and press `Ctrl+Shift+Y`
 (`Command+Shift+Y` on macOS). A verified final answer is copied and a toast
-confirms success. The extension never reads the existing clipboard.
+confirms success. If the page selection is empty, this explicit shortcut reads
+the current clipboard as a fallback. Unsupported or invalid input leaves the
+clipboard unchanged.
+
+## Image input status
+
+The popup's image-reading button is intentionally disabled. The extension can
+already isolate a user-selected visible page range, crop a bounded PNG, and
+show a short-lived local preview, but no OCR model or runtime is bundled and no
+problem text is generated. This capture preview is development infrastructure,
+not a working recognition feature. Images never enter the deterministic solver
+or learning history. Incognito windows are not supported while this temporary
+preview boundary remains shared through the extension's offscreen document.
+
+Printed-formula recognition will remain disabled until the model-weight
+redistribution terms and both WebGPU and WASM browser execution are qualified.
+Handwriting, diagrams, and figure-dependent questions are not planned for this
+path.
 
 ## History and review
 
@@ -190,6 +207,7 @@ delete all application data.
 
 ## Limits
 
-Image recognition, diagram-dependent geometry, construction problems, and
-proof prose are outside scope. Current mathematical coverage is listed in
-`docs/supported-problems.md` and will expand incrementally.
+Printed-formula recognition is currently unavailable. Handwriting recognition,
+diagram-dependent geometry, construction problems, and proof prose are outside
+scope. Current mathematical coverage is listed in `docs/supported-problems.md`
+and will expand incrementally.

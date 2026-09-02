@@ -1,0 +1,106 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const root = new URL("../", import.meta.url);
+
+async function source(path) {
+  return readFile(new URL(path, root), "utf8");
+}
+
+function attributeValues(html, attribute) {
+  const pattern = new RegExp(`\\b${attribute}=["']([^"']+)["']`, "gu");
+  return [...html.matchAll(pattern)].map((match) => match[1]);
+}
+
+test("OCR確認ページのDOM契約とアクセシブルな状態領域を固定する", async () => {
+  const html = await source("ocr-confirm.html");
+  const ids = attributeValues(html, "id");
+  const idSet = new Set(ids);
+
+  assert.equal(idSet.size, ids.length, "duplicate IDs are not allowed");
+  for (const id of [
+    "ocrConfirmMain",
+    "captureStatus",
+    "previewFrame",
+    "previewImage",
+    "previewPlaceholder",
+    "cropInfo",
+    "sourceInfo",
+    "availabilityInfo",
+    "ocrUnavailableMessage",
+    "discardButton",
+    "discardHelp",
+    "pageMessage",
+  ]) {
+    assert.ok(idSet.has(id), `missing #${id}`);
+  }
+
+  for (const target of attributeValues(html, "aria-describedby")) {
+    for (const id of target.split(/\s+/u)) assert.ok(idSet.has(id), `missing description #${id}`);
+  }
+  assert.match(html, /id=["']previewImage["'][^>]*\balt=["'][^"']+["']/u);
+  assert.match(html, /id=["']previewImage["'][^>]*\breferrerpolicy=["']no-referrer["']/u);
+  assert.match(html, /id=["']captureStatus["'][^>]*\brole=["']status["']/u);
+  assert.match(html, /id=["']pageMessage["'][^>]*\brole=["']status["'][^>]*\baria-live=["']polite["']/u);
+  assert.match(html, /id=["']discardButton["'][^>]*\btype=["']button["']/u);
+  assert.match(html, /文字認識は現在利用できません/u);
+  assert.match(html, /問題文は生成されていません/u);
+  assert.match(html, /解答、履歴、クリップボードへ送られることはありません/u);
+});
+
+test("確認ページはローカルassetだけを読み込む", async () => {
+  const html = await source("ocr-confirm.html");
+  assert.match(html, /href=["']css\/ocr-confirm\.css["']/u);
+  assert.match(html, /<script\s+type=["']module["']\s+src=["']js\/ocr\/ocr-confirm\.js["']/u);
+  assert.doesNotMatch(html, /(?:src|href)=["']https?:/iu);
+  assert.doesNotMatch(html, /<iframe\b|\bsrcdoc=/iu);
+});
+
+test("確認scriptはprotocol v1で取得と破棄だけを要求する", async () => {
+  const script = await source("js/ocr/ocr-confirm.js");
+
+  for (const token of [
+    "OCR_CAPTURE_TARGET",
+    "OCR_CAPTURE_PROTOCOL_VERSION",
+    "GET_OCR_CAPTURE_PREVIEW",
+    "DISCARD_OCR_CAPTURE",
+    "normalizeOcrCaptureMessage",
+  ]) {
+    assert.match(script, new RegExp(`\\b${token}\\b`, "u"));
+  }
+  assert.match(script, /searchParams\.get\(["']captureId["']\)/u);
+  assert.match(script, /chrome\?\.runtime\?\.sendMessage/u);
+  assert.match(script, /discardButton\.addEventListener\(["']click["']/u);
+  assert.doesNotMatch(script, /\b(?:solver|history|clipboard)\b/iu);
+});
+
+test("応答を文字列挿入せず、外部画像URLをfail closedにする", async () => {
+  const script = await source("js/ocr/ocr-confirm.js");
+
+  assert.match(script, /\.textContent\s*=/u);
+  assert.match(script, /startsWith\(["']blob:["']\)/u);
+  assert.match(script, /data:image\/png;base64,/u);
+  assert.match(script, /parsed\.href\.startsWith\(`blob:\$\{globalThis\.location\.origin\}\/`\)/u);
+  assert.match(script, /payload\.startsWith\(["']iVBORw0KGgo["']\)/u);
+  assert.match(script, /外部URLのプレビュー画像は表示できません/u);
+  assert.match(script, /availability\.available\s*!==\s*false/u);
+  assert.match(script, /expiresAt:\s*previewExpiryTimestamp\(result\.expiresAt\)/u);
+  assert.match(script, /previewExpiryTimer\s*=\s*globalThis\.setTimeout/u);
+  assert.match(script, /function expirePreview\(\)[\s\S]*?clearPreviewSource\(\)[\s\S]*?discardAndClose\(\)/u);
+  assert.match(script, /elements\.image\.removeAttribute\(["']src["']\)/u);
+  assert.match(script, /image\.addEventListener\(["']error["']/u);
+  assert.doesNotMatch(script, /\.innerHTML\b|\.outerHTML\b|insertAdjacentHTML|document\.write/u);
+  assert.doesNotMatch(script, /\beval\s*\(|new\s+Function\b/u);
+  assert.doesNotMatch(script, /elements\.image\.src\s*=\s*result\.previewUrl/u);
+});
+
+test("専用CSSは狭い画面と状態表示を扱う", async () => {
+  const css = await source("css/ocr-confirm.css");
+
+  assert.match(css, /\.preview-frame\b/u);
+  assert.match(css, /\.preview-frame\[data-state=["']error["']\]/u);
+  assert.match(css, /\.capture-details\b/u);
+  assert.match(css, /@media\s*\(max-width:\s*640px\)/u);
+  assert.doesNotMatch(css, /url\s*\(/iu);
+});

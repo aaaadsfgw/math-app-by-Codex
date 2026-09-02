@@ -1,5 +1,7 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "109",
+  "incognito": "not_allowed",
   "name": "Math Study Log",
   "version": "0.1.0",
   "description": "Solve mathematics offline with deterministic, verifiable solvers and keep a study log.",

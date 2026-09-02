@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 
 ## Repository checkpoint
 
@@ -17,7 +17,8 @@ Last updated: 2026-09-02
 - Confirmed the revised product boundary:
   - no local or cloud AI;
   - junior-high mathematics through Mathematics III;
-  - no image recognition;
+  - no image-derived answer generation, and printed-formula recognition stays
+    disabled until it can be used only as editable, untrusted candidate input;
   - no diagram-based geometry;
   - no proof generation.
 - Audited deterministic CAS candidates.
@@ -577,30 +578,56 @@ Last updated: 2026-09-02
   explicit OCR availability, candidate backend/model, model-not-bundled, and
   WebGPU-to-WASM status. Added page contract checks for unique IDs, labels,
   selectors, staged controls, and safe text rendering.
+- Added provider-independent OCR range-capture infrastructure behind the
+  disabled license/model gate:
+  - protocol-v1 messages and a metadata-only `storage.session` schema that
+    rejects screenshots, Data URLs, Blobs, bytes, and pixels;
+  - a background-owned metadata session bound to tab, window, main-frame
+    `documentId`, source URL, capture ID, phase, and expiry, with a two-minute
+    selection/capture limit, refreshed two-minute preview limit, serialized
+    transitions, duplicate-submit protection, and lifecycle-wide exclusion of
+    a replacement start while screenshot processing is active;
+  - an on-demand closed-shadow overlay with trusted-pointer reverse drags,
+    24 CSS px minimum size, Esc/resize/background-error cleanup, interaction
+    blocking, two-frame screenshot preparation, and strict background target,
+    sender, capture ID, document ID, source URL, and expiry validation;
+  - active-tab rechecks plus a tab-activation monitor around one PNG
+    `captureVisibleTab` operation, followed by an acknowledgement from the
+    original `documentId` so switch-away-and-back and same-URL reloads fail
+    closed;
+  - bounded offscreen PNG decode/crop using actual bitmap X/Y scaling, plus
+    explicit bitmap close and Blob-URL revocation paths;
+  - at most two in-memory previews with two-minute expiry and a tracked local
+    confirmation tab that can only display and discard the crop; closing the
+    tab also revokes its preview and clears the session, while page-side expiry
+    removes an already-loaded image before idempotent discard and closure.
+- Set the extension minimum to Chrome 109 and added the offscreen `BLOBS`
+  reason. Incognito use is disabled for this shared offscreen-preview boundary.
+  No OCR model/runtime, recognized text, solver input, history record, or
+  clipboard path was enabled.
 
 ## In progress
 
-- Build provider-independent OCR range selection, screenshot crop, and
-  confirmation infrastructure behind the disabled model/license gate.
-- Keep unpacked-Chrome integration verification as a release blocker.
+- Keep unpacked-Chrome capture, offscreen Blob-URL sharing, and complete
+  Quick/Study integration verification as release blockers.
 
 ## Next
 
-1. Add a background-owned OCR capture session that survives popup closure and
-   validates the sender, tab, document, phase, and expiry.
-2. Add Esc-cancellable overlay selection, exact screenshot-to-crop mapping, and
-   an editable confirmation page without enabling recognition.
+1. Run the development-only unpacked-Chrome range-selection, screenshot crop,
+   confirmation, discard, cancellation, tab-change, and expiry smoke test.
+2. Run the complete unpacked-Chrome Quick/Study, shortcut, history, analytics,
+   worker, offscreen, and OCR-gate smoke test.
 3. Resolve a redistributable model/runtime combination, then qualify WebGPU and
    WASM in real Chrome before enabling the OCR button.
-4. Run the complete unpacked-Chrome Quick/Study, shortcut, history, analytics,
-   worker, offscreen, and OCR-gate smoke test.
+4. Only after that gate closes, add editable OCR candidate confirmation and
+   connect explicitly confirmed text to the existing deterministic workflow.
 
 ## Last verified commands
 
-- `npm.cmd test` - 577 passed, 0 failed on 2026-09-02, including 5,500
+- `npm.cmd test` - 678 passed, 0 failed on 2026-09-03, including 5,500
   generated evaluation cases.
-- `npm.cmd run check` - passed for 197 files, 10 HTML, 158 JS/MJS, and 11 CSS
-  files on 2026-09-02.
+- `npm.cmd run check` - passed for 216 files, 11 HTML, 175 JS/MJS, and 12 CSS
+  files on 2026-09-03.
 
 ## Restart procedure
 

@@ -70,6 +70,51 @@ verified-history creation.
   visibly disabled while the redistribution license gate and browser runtime
   adapter are unresolved.
 
+## Gated OCR capture boundary
+
+The disabled OCR control is backed by provider-independent capture
+infrastructure so capture safety can be qualified separately from any model:
+
+```text
+popup START (development-only while gated)
+  -> background session in storage.session (metadata only, two-minute capture TTL)
+  -> on-demand main-frame overlay (selection / Esc cancel)
+  -> sender + tab + frame + document + URL + phase validation
+  -> hide overlay for two animation frames
+  -> captureVisibleTab inside an active-tab event monitor
+  -> original documentId completion acknowledgement
+  -> offscreen PNG decode and crop using actual bitmap dimensions
+  -> refreshed two-minute Blob URL -> tracked extension confirmation tab
+```
+
+The session record contains routing metadata, a capture ID, phase, expiry,
+CSS-pixel selection, and viewport dimensions. It cannot contain a screenshot,
+Blob, Data URL, decoded bytes, or pixels. Selection messages are bound to the
+main-frame `documentId`; duplicate submissions cannot advance the serialized
+session twice, and a new start cannot replace a session while screenshot
+processing is active. The injected overlay accepts only the expected extension
+sender, background target, capture ID, document ID, normalized source URL, and
+bounded canonical expiry. Active-tab queries, activation events, and a
+completion message to the original `documentId` cover switch-away-and-back and
+same-URL reload races during the screenshot boundary. A tab switch, navigation,
+expiry, invalid phase, malformed PNG, size limit, or crop failure cancels the
+capture instead of using a different image.
+
+The offscreen document accepts only an inline PNG Data URL from
+`captureVisibleTab`, checks the PNG header and decoded bitmap dimensions, and
+maps CSS coordinates from the real bitmap X/Y scale rather than trusting DPR.
+It keeps at most two expiring preview Blob URLs and revokes them on replacement,
+discard, confirmation-tab closure, or timeout. Creating the preview refreshes
+the session expiry for the two-minute confirmation window, and the background
+tracks and verifies the confirmation tab ID. The page receives the same expiry,
+removes its image source at that boundary, and requests idempotent discard and
+closure so a previously decoded image does not remain visible. The confirmation
+page currently displays only the crop and an explicit unavailable notice. It
+cannot recognize text, call the solver, write history, or touch the clipboard.
+Chrome 109 is the minimum version for this offscreen boundary, and incognito
+use is disabled while the offscreen preview is shared by the regular extension
+profile.
+
 ## Polynomial-tangent verification
 
 Tangent requests use a strict full-input preflight after volume and area, and

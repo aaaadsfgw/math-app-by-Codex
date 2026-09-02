@@ -2,10 +2,21 @@ import { OFFSCREEN_SYMBOLIC_OPERATIONS } from "./math-core/offscreen-symbolic-cl
 import { runOffscreenRequest } from "./offscreen-client.js";
 import { runShortcutWorkflow } from "./shortcut-workflow.js";
 import { addHistory, getSettings } from "./storage.js";
+import {
+  createOcrCaptureController,
+  createOcrCaptureRuntimeListener,
+} from "./ocr/capture-controller.js";
+import { createOcrCaptureSessionStore } from "./ocr/capture-session-store.js";
 
 const SOLVE_SELECTION_COMMAND = "solve-selection-to-clipboard";
 const MAX_TOAST_ANSWER_LENGTH = 72;
 const activeShortcutTabs = new Set();
+const ocrCaptureSessionStore = createOcrCaptureSessionStore();
+const ocrCaptureController = createOcrCaptureController({
+  extensionApi: chrome,
+  sessionStore: ocrCaptureSessionStore,
+  runOffscreenRequest,
+});
 
 function isWebPage(url) {
   return /^https?:\/\//i.test(String(url || ""));
@@ -113,4 +124,12 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === SOLVE_SELECTION_COMMAND) void handleShortcut();
+});
+
+chrome.runtime.onMessage.addListener(createOcrCaptureRuntimeListener(ocrCaptureController));
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void ocrCaptureController.handleTabRemoved(tabId).catch((error) => {
+    console.warn("Could not clean OCR preview after confirmation tab closed", error);
+  });
 });

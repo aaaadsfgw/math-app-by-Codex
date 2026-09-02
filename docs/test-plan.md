@@ -28,6 +28,25 @@ The Digicon learning workflow additionally requires automated coverage for:
 - v2 UI selector, label, source, OCR-status, and staged-metric contracts;
 - OCR crop geometry including reverse drags, viewport clipping, minimum size,
   actual screenshot scaling, malformed dimensions, and empty crops.
+- OCR protocol/session validation including message direction, sender tab,
+  main-frame document ID, source URL, expiry, phase transitions, duplicate
+  submission, and a storage schema that rejects image data;
+- on-demand overlay cleanup for Esc, background rejection, tab changes, and
+  completion, plus two-frame screenshot preparation, switch-away-and-back
+  detection, and same-URL reload rejection;
+- strict PNG decoding and byte/pixel limits, offscreen preview creation,
+  Blob-URL expiry/revocation, confirmation-tab ownership/closure cleanup, and
+  the preview-only confirmation-page contract;
+- manifest checks that Chrome 109 is the minimum and incognito use stays
+  disabled for the shared offscreen-preview boundary.
+
+A dependency-free Node VM harness executes the classic overlay lifecycle with
+minimal DOM, event, timer, animation-frame, and extension-message fakes. It
+covers trusted dragging, reverse normalization, two-frame preparation,
+completion, Esc, background rejection, and fail-closed routing. It does not
+prove Chrome isolated-world routing, dialog/top-layer rendering, frame paint,
+or actual screenshot pixels; those remain part of the unpacked-Chrome smoke
+test.
 
 ## Digicon workflow smoke test
 
@@ -48,6 +67,29 @@ The Digicon learning workflow additionally requires automated coverage for:
 6. Confirm the popup OCR action is disabled and its license/model limitation
    is visible. Until the OCR gate closes, no working-recognition pass may be
    recorded.
+
+## Development-only OCR capture preview smoke test
+
+This checks capture and cropping without enabling or claiming OCR recognition:
+
+1. Load the unpacked extension in Chrome 109 or newer and open the popup's
+   DevTools while an ordinary HTTP/HTTPS page is active.
+2. From the popup context, send protocol-v1 `START_OCR_CAPTURE` to target
+   `math-study-log-background`. Do not enable or alter the visible OCR button.
+3. Drag in both directions and confirm a range smaller than 24 CSS px is kept
+   selectable, while Esc removes the overlay immediately.
+4. Select a valid range. Confirm the overlay is absent from the captured image
+   and a local `ocr-confirm.html` tab shows only the intended crop.
+5. Confirm the page says recognition is unavailable and no problem text was
+   generated. No solver result, history item, or clipboard change is allowed.
+6. Press **プレビューを破棄して閉じる** and confirm the preview disappears
+   and the confirmation tab closes. Repeat after switching tabs during
+   selection and after waiting past the capture expiry; neither case may
+   capture another tab or leave an overlay.
+
+This smoke test remains a release blocker because automated checks cannot
+exercise `captureVisibleTab`, extension `documentId` routing, or offscreen Blob
+URL sharing in real Chrome.
 
 ## Unpacked Chrome smoke test
 

@@ -8,6 +8,7 @@ const pageContracts = [
   ["analytics.html", "js/analytics.js"],
   ["history.html", "js/history.js"],
   ["settings.html", "js/settings.js"],
+  ["ocr-confirm.html", "js/ocr/ocr-confirm.js"],
 ];
 
 async function source(path) {

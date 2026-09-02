@@ -1,0 +1,145 @@
+.ocr-confirm-shell {
+  width: min(900px, calc(100% - 2rem));
+}
+
+.eyebrow {
+  margin-bottom: 0.25rem;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.preview-card {
+  padding: clamp(0.8rem, 2.5vw, 1.35rem);
+}
+
+.preview-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.preview-heading-row h2,
+.preview-description {
+  margin-bottom: 0;
+}
+
+.preview-frame {
+  display: grid;
+  min-height: clamp(210px, 45vw, 460px);
+  place-items: center;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background:
+    linear-gradient(45deg, color-mix(in srgb, var(--line) 35%, transparent) 25%, transparent 25%) 0 0 / 24px 24px,
+    linear-gradient(-45deg, color-mix(in srgb, var(--line) 35%, transparent) 25%, transparent 25%) 0 12px / 24px 24px,
+    var(--surface-muted);
+}
+
+.preview-frame[data-state="error"] {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+}
+
+.preview-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: min(65vh, 680px);
+  object-fit: contain;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 8px 22px rgba(24, 33, 47, 0.16);
+}
+
+.preview-placeholder {
+  max-width: 34rem;
+  margin: 0;
+  padding: 2rem 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.capture-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.capture-details > div {
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.capture-details dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.capture-details dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 750;
+}
+
+.ocr-unavailable-notice {
+  border-left-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 8%, var(--surface));
+}
+
+.ocr-unavailable-notice h2 {
+  margin-bottom: 0.35rem;
+  color: var(--warning);
+}
+
+.ocr-unavailable-notice p:last-child {
+  margin-bottom: 0;
+}
+
+.confirm-actions {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+}
+
+.confirm-actions .button {
+  min-width: min(100%, 18rem);
+}
+
+@media (max-width: 640px) {
+  .ocr-confirm-shell {
+    width: min(100% - 1rem, 900px);
+  }
+
+  .preview-heading-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .preview-heading-row .badge {
+    align-self: flex-start;
+  }
+
+  .capture-details {
+    grid-template-columns: 1fr;
+  }
+
+  .confirm-actions,
+  .confirm-actions .button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-frame img {
+    scroll-behavior: auto;
+  }
+}

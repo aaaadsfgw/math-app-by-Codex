@@ -43,7 +43,7 @@ test("既存文書がなければ共有理由でオフスクリーン文書を�
   assert.equal(calls.create.length, 1);
   assert.deepEqual(calls.create[0], {
     url: "offscreen.html",
-    reasons: ["WORKERS", "CLIPBOARD"],
+    reasons: ["WORKERS", "CLIPBOARD", "BLOBS"],
     justification: "Run bounded offline symbolic, clipboard, image, and OCR operations.",
   });
 });

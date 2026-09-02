@@ -29,7 +29,7 @@ test("共有offscreen hostを必要時だけ作成する", async () => {
   const { api, calls } = fakeApi();
   await ensureOffscreenDocument(api);
   assert.equal(calls.create.length, 1);
-  assert.deepEqual(calls.create[0].reasons, ["WORKERS", "CLIPBOARD"]);
+  assert.deepEqual(calls.create[0].reasons, ["WORKERS", "CLIPBOARD", "BLOBS"]);
 
   const existing = fakeApi({ contexts: [{}] });
   await ensureOffscreenDocument(existing.api);

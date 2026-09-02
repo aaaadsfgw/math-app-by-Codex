@@ -732,3 +732,42 @@ unpacked Chrome extension path still requires the release smoke test.
 `npm test` passes 484 tests including the 5,500-case generated corpus, and
 `npm run check` passes 173 files (10 HTML, 135 JS/MJS, and 11 CSS). The
 unpacked Chrome extension path still requires the release smoke test.
+
+## 2026-09-03: gated OCR range-capture and crop foundation
+
+- Added protocol-v1 contracts for start, selection, screenshot preparation,
+  completion, cancellation, preview retrieval, and discard. Unknown fields,
+  hostile objects, unsafe IDs, non-HTTP(S) sources, malformed geometry, and
+  image-bearing `storage.session` records fail closed.
+- Added a background-owned metadata session with serialized phase transitions,
+  a two-minute selection/capture limit, and a refreshed two-minute preview
+  limit. Selection submission is bound to the stored tab, window, main-frame
+  `documentId`, source URL, and capture ID; duplicate submissions, navigation,
+  active-tab changes, switch-away-and-back races, same-URL reloads, and expiry
+  cannot capture a different page. New starts are rejected while screenshot
+  processing is active.
+- Added an on-demand classic overlay with a closed shadow tree, trusted primary
+  pointer selection, reverse-drag support, a 24 CSS px minimum, Esc and resize
+  cancellation, page-interaction guards, two-frame screenshot preparation,
+  strict target/sender/capture/document/URL/expiry validation, and cleanup for
+  both successful and rejected background responses.
+- Added bounded PNG processing in the offscreen document. It accepts only
+  `data:image/png;base64`, validates the PNG header and decoded bitmap, derives
+  independent X/Y scales from the actual screenshot dimensions, applies byte
+  and pixel limits, closes every bitmap path, and produces an explicitly
+  revocable Blob URL.
+- Added an expiring in-memory preview store and a responsive local confirmation
+  page. The background tracks the confirmation tab, and closing it revokes the
+  preview and clears the session. It also verifies that a newly created tab is
+  still present after persisting its ID. At expiry the page removes the loaded
+  image source, requests idempotent discard, and closes. The page shows only
+  the cropped image and unavailable status; it cannot recognize text, invoke
+  the solver, create history, or use the clipboard.
+- Added Chrome 109 as the minimum version and the offscreen `BLOBS` reason.
+  Incognito use is disabled for the shared offscreen-preview boundary. The
+  visible OCR action remains disabled under the model/license gate. The real
+  unpacked-Chrome capture and Blob-URL smoke test remains pending.
+
+`npm test` passes 678 tests including the 5,500-case generated corpus, and
+`npm run check` passes 216 files (11 HTML, 175 JS/MJS, and 12 CSS). The real
+unpacked-Chrome capture path remains the release blocker for this checkpoint.
