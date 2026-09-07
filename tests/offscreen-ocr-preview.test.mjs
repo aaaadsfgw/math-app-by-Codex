@@ -3,12 +3,15 @@ import test from "node:test";
 
 import { createOffscreenMessageDispatcher } from "../js/offscreen.js";
 import {
+  CANCEL_OCR_RECOGNITION,
   CREATE_OCR_CAPTURE_PREVIEW,
   DISCARD_OCR_CAPTURE_PREVIEW,
+  RECOGNIZE_OCR_CAPTURE_PREVIEW,
 } from "../js/ocr/capture-preview-operations.js";
 
 function harness() {
-  const calls = { create: [], get: [], discard: [] };
+  const calls = { create: [], get: [], getBlob: [], discard: [], recognize: [], cancel: 0 };
+  const blob = new Blob(["formula"], { type: "image/png" });
   const capturePreviews = {
     async create(value) {
       calls.create.push(value);
@@ -18,12 +21,26 @@ function harness() {
       calls.get.push(value);
       return { previewId: value, previewUrl: "blob:preview" };
     },
+    async getBlob(value) {
+      calls.getBlob.push(value);
+      return blob;
+    },
     async discard(value) {
       calls.discard.push(value);
       return true;
     },
   };
-  const dispatch = createOffscreenMessageDispatcher({ capturePreviews });
+  const ocrEngine = {
+    async recognize(value, options) {
+      calls.recognize.push({ value, options });
+      return { text: "x=1", confirmationRequired: true };
+    },
+    cancel() {
+      calls.cancel += 1;
+      return 1;
+    },
+  };
+  const dispatch = createOffscreenMessageDispatcher({ capturePreviews, ocrEngine });
   return { calls, dispatch };
 }
 
@@ -55,6 +72,23 @@ test("offscreen dispatcherがcrop previewの作成・取得・破棄を分離す
   }]);
   assert.deepEqual(calls.get, ["capture-1"]);
   assert.deepEqual(calls.discard, ["capture-1"]);
+});
+
+test("offscreen dispatcherが保持BlobだけをOCRへ渡しcancelを中継する", async () => {
+  const { calls, dispatch } = harness();
+  const output = await dispatch({
+    type: RECOGNIZE_OCR_CAPTURE_PREVIEW,
+    previewId: "capture-1",
+    timeoutMs: 120_000,
+  });
+  const cancelled = await dispatch({ type: CANCEL_OCR_RECOGNITION });
+
+  assert.deepEqual(output, { text: "x=1", confirmationRequired: true });
+  assert.deepEqual(calls.getBlob, ["capture-1"]);
+  assert.equal(calls.recognize[0].value instanceof Blob, true);
+  assert.equal(calls.recognize[0].options.timeoutMs, 120_000);
+  assert.deepEqual(cancelled, { cancelled: true });
+  assert.equal(calls.cancel, 1);
 });
 
 test("未知のoffscreen操作は型付きで拒否する", async () => {

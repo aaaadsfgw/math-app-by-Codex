@@ -19,8 +19,8 @@
   <main id="ocrConfirmMain" class="page-shell ocr-confirm-shell stack" aria-busy="true">
     <header class="page-heading">
       <p class="eyebrow">範囲選択プレビュー</p>
-      <h1>選択した画像を確認</h1>
-      <p class="muted">切り出した範囲だけを表示します。この画面から数式の解答処理は行いません。</p>
+      <h1>画像と読み取り候補を確認</h1>
+      <p class="muted">切り出した画像を端末内で文字認識します。候補を確認・修正して「この内容で解く」を押すまで、解答処理は始まりません。</p>
     </header>
 
     <section class="card preview-card stack" aria-labelledby="previewHeading">
@@ -48,20 +48,50 @@
         </div>
         <div>
           <dt>文字認識</dt>
-          <dd id="availabilityInfo">利用不可</dd>
+          <dd id="availabilityInfo">確認中</dd>
         </div>
       </dl>
     </section>
 
-    <section class="notice ocr-unavailable-notice" role="note" aria-labelledby="ocrUnavailableHeading">
-      <h2 id="ocrUnavailableHeading">文字認識は現在利用できません</h2>
-      <p id="ocrUnavailableMessage"><strong>問題文は生成されていません。</strong> モデル資産の配布条件とブラウザ実行を確認できるまで、画像から文字列を作る機能は無効です。</p>
-      <p class="muted">この画像が解答、履歴、クリップボードへ送られることはありません。</p>
+    <section class="card recognition-card stack" aria-labelledby="recognitionHeading">
+      <div class="recognition-heading-row">
+        <div>
+          <h2 id="recognitionHeading">印刷数式を文字認識</h2>
+          <p class="muted">対象は、1つの数式だけを含む鮮明な印刷画像です。手書き・図・文章全体の読み取りには対応しません。</p>
+        </div>
+        <span id="recognitionStatus" class="badge info" role="status" aria-live="polite">未開始</span>
+      </div>
+
+      <div class="recognition-controls">
+        <button id="recognizeButton" class="button primary" type="button" aria-describedby="recognitionHelp" disabled>文字認識を開始</button>
+        <button id="cancelRecognitionButton" class="button ghost" type="button" hidden>認識を中止</button>
+      </div>
+      <p id="recognitionHelp" class="field-help">初回はモデルの準備に時間がかかることがあります。画像と認識処理は外部サービスへ送信しません。</p>
+      <div id="recognitionProgress" class="notice loading-dot" role="status" aria-live="polite" hidden>端末内で文字認識しています</div>
+      <div id="recognitionError" class="notice error" role="alert" hidden></div>
+
+      <div id="candidatePanel" class="candidate-panel stack" hidden>
+        <div class="field">
+          <label for="candidateInput">読み取り候補</label>
+          <textarea id="candidateInput" maxlength="4096" spellcheck="false" autocomplete="off" aria-describedby="candidateHelp" placeholder="認識した数式がここに表示されます"></textarea>
+          <p id="candidateHelp" class="field-help">候補は未確認です。記号・指数・分数・括弧を見直し、必要なら直接修正してください。</p>
+        </div>
+        <dl class="runtime-details" aria-label="文字認識の実行情報">
+          <div><dt>実行方式</dt><dd id="providerInfo">未実行</dd></div>
+          <div><dt>認識エンジン</dt><dd id="backendInfo">未実行</dd></div>
+          <div><dt>モデル</dt><dd id="modelInfo">未実行</dd></div>
+        </dl>
+        <div id="candidateWarning" class="notice" role="note">文字認識の候補は正解とは限りません。確認した文字列だけが解答処理へ渡されます。</div>
+        <div class="solve-actions">
+          <button id="solveButton" class="button primary" type="button" aria-describedby="solveHelp" disabled>この内容で解く</button>
+          <p id="solveHelp" class="field-help">このボタンを押したときだけ、候補を確認済みとして数式エンジンへ渡します。</p>
+        </div>
+      </div>
     </section>
 
     <div class="confirm-actions">
       <button id="discardButton" class="button danger" type="button" aria-describedby="discardHelp">プレビューを破棄して閉じる</button>
-      <p id="discardHelp" class="field-help">切り出し画像を破棄し、この確認画面を閉じます。</p>
+      <p id="discardHelp" class="field-help">切り出し画像と未確定の候補を破棄し、この確認画面を閉じます。画像は履歴や保存領域へ残しません。</p>
     </div>
     <div id="pageMessage" role="status" aria-live="polite"></div>
   </main>

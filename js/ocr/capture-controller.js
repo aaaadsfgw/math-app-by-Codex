@@ -1,6 +1,7 @@
 import {
   BEGIN_OCR_SELECTION,
   CANCEL_OCR_CAPTURE,
+  CANCEL_OCR_RECOGNITION,
   DISCARD_OCR_CAPTURE,
   GET_OCR_CAPTURE_PREVIEW,
   normalizeOcrCaptureMessage,
@@ -8,14 +9,17 @@ import {
   OCR_CAPTURE_MESSAGE_TARGET,
   OCR_CAPTURE_PROTOCOL_VERSION,
   PREPARE_OCR_SCREENSHOT,
+  RECOGNIZE_OCR_CAPTURE,
   START_OCR_CAPTURE,
   SUBMIT_OCR_SELECTION,
 } from "./capture-contract.js";
 import { validateViewportSelection } from "./capture-geometry.js";
-import { OCR_UNAVAILABLE_STATUS } from "./ocr-config.js";
+import { OCR_AVAILABLE_STATUS, OCR_DEFAULT_TIMEOUT_MS } from "./ocr-config.js";
 import {
+  CANCEL_OCR_RECOGNITION as CANCEL_OCR_RECOGNITION_OFFSCREEN,
   CREATE_OCR_CAPTURE_PREVIEW,
   DISCARD_OCR_CAPTURE_PREVIEW,
+  RECOGNIZE_OCR_CAPTURE_PREVIEW,
 } from "./capture-preview-operations.js";
 
 export {
@@ -23,7 +27,7 @@ export {
   DISCARD_OCR_CAPTURE_PREVIEW,
 } from "./capture-preview-operations.js";
 
-export const OCR_CAPTURE_SESSION_TTL_MS = 2 * 60 * 1_000;
+export const OCR_CAPTURE_SESSION_TTL_MS = 10 * 60 * 1_000;
 export const OCR_CAPTURE_CONFIRMATION_PATH = "ocr-confirm.html";
 
 const INBOUND_MESSAGE_TYPES = new Set([
@@ -31,6 +35,8 @@ const INBOUND_MESSAGE_TYPES = new Set([
   SUBMIT_OCR_SELECTION,
   CANCEL_OCR_CAPTURE,
   GET_OCR_CAPTURE_PREVIEW,
+  RECOGNIZE_OCR_CAPTURE,
+  CANCEL_OCR_RECOGNITION,
   DISCARD_OCR_CAPTURE,
 ]);
 
@@ -282,6 +288,18 @@ export function createOcrCaptureController({
     }
   }
 
+  async function cancelRecognitionBestEffort() {
+    try {
+      await offscreenRequest(
+        CANCEL_OCR_RECOGNITION_OFFSCREEN,
+        {},
+        { timeoutMs: 5_000, extensionApi },
+      );
+    } catch (error) {
+      console.warn("Could not cancel OCR recognition", error);
+    }
+  }
+
   async function cleanupSession(
     session,
     {
@@ -296,6 +314,7 @@ export function createOcrCaptureController({
         // Navigation or tab closure is an expected cleanup path.
       }
     }
+    if (session.phase === "preview") await cancelRecognitionBestEffort();
     if (discardPreview) await discardPreviewBestEffort(session.captureId);
     await sessionStore.clear({ captureId: session.captureId });
   }
@@ -313,8 +332,6 @@ export function createOcrCaptureController({
 
   async function performStartCapture(sender) {
     requireExtensionPageSender(sender, "popup.html");
-    await cleanupPreviousSession();
-
     const [tab] = await tabs.query({ active: true, currentWindow: true });
     const tabId = requireRoutingId(tab?.id, "アクティブなタブID");
     const windowId = requireRoutingId(tab?.windowId, "ウィンドウID");
@@ -325,6 +342,8 @@ export function createOcrCaptureController({
         "OCR_CAPTURE_PAGE_UNSUPPORTED",
       );
     }
+
+    await cleanupPreviousSession();
 
     const captureId = String(createCaptureId());
     const expiresAt = new Date(safeNow(now) + ttlMs).toISOString();
@@ -639,9 +658,79 @@ export function createOcrCaptureController({
       source: preview.source,
       crop: preview.crop,
       expiresAt: preview.expiresAt,
-      availability: OCR_UNAVAILABLE_STATUS,
+      availability: OCR_AVAILABLE_STATUS,
       candidateText: "",
     });
+  }
+
+  async function recognizeCapture(message, sender) {
+    const session = await getSessionOrThrow(message.captureId);
+    requireConfirmationSender(sender, message.captureId, session);
+    if (session.phase !== "preview") {
+      throw controllerError("認識できるOCR previewがありません。", "OCR_CAPTURE_PHASE_MISMATCH");
+    }
+    let output;
+    try {
+      output = await offscreenRequest(
+        RECOGNIZE_OCR_CAPTURE_PREVIEW,
+        { previewId: session.captureId, timeoutMs: OCR_DEFAULT_TIMEOUT_MS },
+        { timeoutMs: OCR_DEFAULT_TIMEOUT_MS + 5_000, extensionApi },
+      );
+    } catch (cause) {
+      try {
+        await offscreenRequest(
+          CANCEL_OCR_RECOGNITION_OFFSCREEN,
+          {},
+          { timeoutMs: 5_000, extensionApi },
+        );
+      } catch {
+        // The original recognition failure is authoritative.
+      }
+      throw controllerError(
+        String(cause?.message || "ローカルOCRを完了できませんでした。"),
+        String(cause?.code || "OCR_RECOGNITION_FAILED"),
+        cause,
+      );
+    }
+    if (
+      !output
+      || typeof output !== "object"
+      || typeof output.text !== "string"
+      || !output.text.trim()
+      || output.confirmationRequired !== true
+      || output.verified !== false
+    ) {
+      throw controllerError("OCR候補の応答形式が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+    }
+    const currentSession = await getSessionOrThrow(message.captureId);
+    requireConfirmationSender(sender, message.captureId, currentSession);
+    if (currentSession.phase !== "preview") {
+      throw controllerError("認識できるOCR previewがありません。", "OCR_CAPTURE_PHASE_MISMATCH");
+    }
+    return Object.freeze({
+      captureId: currentSession.captureId,
+      candidateText: output.text,
+      provider: String(output.provider || ""),
+      backend: output.backend,
+      model: output.model,
+      warnings: Array.isArray(output.warnings) ? Object.freeze([...output.warnings]) : Object.freeze([]),
+      confidence: output.confidence || null,
+      timings: output.timings || null,
+      confirmationRequired: true,
+    });
+  }
+
+  async function cancelRecognition(message, sender) {
+    const session = await getSessionOrThrow(message.captureId);
+    requireConfirmationSender(sender, message.captureId, session);
+    if (session.phase !== "preview") {
+      throw controllerError("キャンセルできるOCR previewがありません。", "OCR_CAPTURE_PHASE_MISMATCH");
+    }
+    return offscreenRequest(
+      CANCEL_OCR_RECOGNITION_OFFSCREEN,
+      {},
+      { timeoutMs: 5_000, extensionApi },
+    );
   }
 
   async function discardCapture(message, sender) {
@@ -728,6 +817,10 @@ export function createOcrCaptureController({
           return cancelCapture(message, sender);
         case GET_OCR_CAPTURE_PREVIEW:
           return getPreview(message, sender);
+        case RECOGNIZE_OCR_CAPTURE:
+          return recognizeCapture(message, sender);
+        case CANCEL_OCR_RECOGNITION:
+          return cancelRecognition(message, sender);
         case DISCARD_OCR_CAPTURE:
           return discardCapture(message, sender);
         default:

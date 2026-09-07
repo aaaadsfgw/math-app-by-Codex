@@ -11,12 +11,16 @@ code. Unsupported input will be reported, not guessed.
 
 ## D-002: Exclude image recognition, diagram geometry, and proofs
 
-**Status:** accepted  
+**Status:** amended by D-027 and D-029
 **Date:** 2026-07-30
 
 The target is text-based and formula-based calculation through Mathematics III.
 Geometry screens and geometry solvers are removed from the revised completion
 scope. Proof generation is not a success criterion.
+
+D-027 and D-029 later permit one acquisition-only exception for a tightly
+cropped machine-printed formula. General image recognition, diagram reasoning,
+and proof generation remain excluded.
 
 ## D-003: Keep a project-owned solver contract
 
@@ -586,7 +590,7 @@ verified solver result.
 
 ## D-027: Gate printed-math OCR until assets and browser execution are qualified
 
-**Status:** accepted
+**Status:** superseded by D-029
 **Date:** 2026-09-02
 
 Printed-math OCR is allowed only as an untrusted acquisition path from a user-
@@ -608,7 +612,7 @@ pass.
 
 ## D-028: Keep OCR capture ephemeral and background-owned
 
-**Status:** accepted
+**Status:** amended by D-029
 **Date:** 2026-09-03
 
 OCR range capture uses one metadata-only session owned by the extension service
@@ -646,3 +650,59 @@ and discard it, but while D-027 remains gated it cannot produce or confirm text,
 call the solver, save history, or change the clipboard. Chrome 109 is the
 minimum supported version for this boundary, and incognito use remains disabled
 because this preview lives in a shared offscreen document.
+
+## D-029: Adopt a pinned IBEM browser OCR as an acquisition-only exception
+
+**Status:** accepted for experimental local use
+**Date:** 2026-09-07
+
+D-027's trust boundary remains mandatory, but its RapidLaTeXOCR asset gate is
+superseded. The selected implementation is `dbcccc/IBEM-im2typst` at Hugging
+Face revision `a7ced2309da108a911fa6880055a165264872a84`, used with packaged
+ONNX Runtime Web 1.22.0. The project and the identified exported model weights
+are MIT licensed; the pinned deployment metadata, model/runtime notices, and
+artifact hashes must ship with the extension. Runtime code, graphs,
+configuration, and vocabulary are local extension assets. No CDN, host
+permission, model download, external server, or companion process is allowed.
+
+This is a narrow exception to the no-model rule for acquisition, not for
+mathematical reasoning. It accepts only a user-selected, tightly cropped,
+machine-printed single formula. It outputs untrusted, editable transcription
+text and cannot solve, explain, classify support, verify a result, or create a
+verified label. The crop and candidate must be shown together. Recognition and
+solving require distinct user actions, and only the text present when the user
+explicitly confirms may enter the existing deterministic solver. Recognition
+alone cannot create a pending solve, history item, or clipboard change. A Study
+record may store `source: "ocr"` and confirmation separately from solver
+verification.
+
+WebGPU is attempted first with the pinned FP16 encoder/decoder pair. Session or
+provider failure falls back to the pinned dynamic-INT8 WASM pair. A dedicated
+Worker owns ONNX sessions so timeout and cancellation terminate active
+inference. Successful sessions may be reused while warm; cancellation, timeout,
+invalid output, terminal failure, and disposal must release or terminate them.
+All provider paths retain image, dimension, pixel, token, output, and time
+limits. Output-policy violations, missing termination, repetition, malformed or
+unbalanced text, and ambiguous glyphs fail without guessing or solving.
+
+The metadata session and in-memory preview remain ephemeral under D-028, but
+their expiry is extended from two minutes to ten minutes so a cold model load
+and deliberate user editing do not destroy the crop prematurely. Recognition
+has its own 120-second deadline. Cancellation or that deadline terminates the
+dedicated Worker rather than merely ignoring a still-running inference.
+
+The model remains experimental. Its bundled FP32 validation evidence reports
+92.6268% exact match over 16,899 document-disjoint validation crops, but only
+70.1197% for displayed formulas and 88.4282% for the 33–64-token slice. The
+reported token score is uncalibrated, and the quantized browser variants do not
+have a complete domain evaluation. These figures cannot be presented as the
+probability that a candidate is correct. Every candidate therefore requires
+character-by-character user review and explicit confirmation.
+
+Handwriting, photographs, perspective correction, full-page segmentation,
+multiple formulas, prose, tables, graphs, geometry diagrams, spatial label
+interpretation, construction, and proof interpretation remain outside scope.
+OCR cannot expand the deterministic solver's supported problem set. Release
+still requires unpacked-Chrome checks of capture pixels, extension CSP,
+WebGPU, forced WASM fallback, cancellation, timeout, disposal, warm reuse, and
+the no-auto-solve boundary.

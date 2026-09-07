@@ -771,3 +771,50 @@ unpacked Chrome extension path still requires the release smoke test.
 `npm test` passes 678 tests including the 5,500-case generated corpus, and
 `npm run check` passes 216 files (11 HTML, 175 JS/MJS, and 12 CSS). The real
 unpacked-Chrome capture path remains the release blocker for this checkpoint.
+
+## 2026-09-07: experimental local printed-formula OCR implementation
+
+- Replaced the gated RapidLaTeXOCR proposal with the pinned
+  `dbcccc/IBEM-im2typst` browser deployment at revision
+  `a7ced2309da108a911fa6880055a165264872a84`. Selected packaged ONNX Runtime
+  Web 1.22.0, WebGPU-first FP16 execution, and a dynamic-INT8 WASM fallback.
+  The model source and identified exported weights are MIT licensed; exact
+  deployment metadata, checksums, model notices, and runtime license are kept
+  with the local assets.
+- Kept OCR strictly outside mathematical trust. The only admitted image is a
+  user-selected, tightly cropped, machine-printed single formula. Recognition
+  produces editable candidate text beside the crop; it cannot call the solver,
+  write learning history, change the clipboard, or mark anything verified.
+  Only a separate explicit confirmation sends the then-visible edited text to
+  the existing deterministic workflow with OCR source metadata.
+- Defined a lazy dedicated-Worker boundary for model preprocessing, session
+  construction, and cached autoregressive decoding. WebGPU failure falls back
+  to WASM; cancellation and the 120-second timeout terminate the active Worker;
+  successful sessions may be reused while warm; failure and disposal release
+  them. The metadata/preview session expires after ten minutes. Input, decoded
+  pixels, dimensions, output tokens, characters, duration, and queued work
+  remain bounded.
+- Preserved fail-safe transcription semantics. Packaged output-policy and asset
+  integrity checks precede use; malformed, unbalanced, unterminated, repeating,
+  oversized, or unsupported output does not become solver input. Conservative
+  syntax conversion cannot guess ambiguous glyphs or rewrite output merely to
+  make it solvable.
+- Recorded the model's experimental limitations. The FP32 validation evidence
+  reports 92.6268% exact match overall but 70.1197% for displayed formulas and
+  88.4282% for 33–64-token formulas; its token score is uncalibrated and the
+  browser variants lack a complete domain evaluation. Handwriting,
+  photographs, pages, prose, multiple formulas, tables, graphs, diagrams,
+  spatial inference, construction, and proof interpretation remain excluded.
+
+The implementation checkpoint was verified on 2026-09-07. `npm.cmd test` passed
+700 tests, `npm.cmd run check` passed 245 files (11 HTML, 185 JS/MJS, and 12
+CSS), and an isolated Chrome for Testing 152 loaded the unpacked extension. The
+extension-origin browser smoke returned `x + y` from explicit WebGPU and WASM
+sessions and from two consecutive Worker-backed recognitions with warm reuse.
+In a separate `--disable-gpu --disable-webgpu` profile, WebGPU session creation
+failed with `OCR_SESSION_CREATE_FAILED`, explicit WASM returned `x + y`, and the
+Worker selected WASM for both recognitions. The browser smoke does not prove
+captureVisibleTab pixels, offscreen Blob transfer, or toolbar-driven selection;
+those remain the only interactive validation item because this environment does
+not expose the browser toolbar. The no-auto-solve boundary is covered by the
+confirmation-page and learning-session tests.

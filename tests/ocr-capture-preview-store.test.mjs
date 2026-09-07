@@ -20,6 +20,7 @@ function harness({ maxEntries = 2 } = {}) {
       nextUrl += 1;
       const url = `blob:preview-${nextUrl}`;
       return {
+        blob: new Blob(["test"], { type: "image/png" }),
         blobUrl: url,
         revoke: () => calls.revoked.push(url),
         source: { width: 1600, height: 1200, bytes: 100 },
@@ -55,9 +56,10 @@ test("crop結果からBlob URLと最小metadataだけを保持する", async () 
     previewUrl: "blob:preview-1",
     source: { width: 1600, height: 1200 },
     crop: { width: 400, height: 200 },
-    expiresAt: "2026-09-02T00:02:00.000Z",
+    expiresAt: "2026-09-02T00:10:00.000Z",
   });
   assert.deepEqual(await store.get("capture-1"), result);
+  assert.equal((await store.getBlob("capture-1")).type, "image/png");
   assert.equal(Object.hasOwn(result, "blob"), false);
   assert.equal(Object.hasOwn(result, "screenshotDataUrl"), false);
 });
@@ -75,7 +77,7 @@ test("明示破棄はBlob URLを一度だけrevokeする", async () => {
 test("期限切れpreviewは取得時にrevokeして型付きで拒否する", async () => {
   const { store, calls, setClock } = harness();
   await store.create(createInput());
-  setClock(NOW + 120_000);
+  setClock(NOW + 600_000);
 
   await assert.rejects(
     store.get("capture-1"),

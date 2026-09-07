@@ -429,10 +429,82 @@ test("score and repeated-category rules produce review items in priority order",
 test("pending questions retain parent history identifiers", async () => {
   const pending = await setPendingQuestion("x+1=2", "history-1");
   assert.equal(pending.parentHistoryId, "history-1");
+  assert.equal(pending.source, "review");
+  assert.equal(pending.ocrConfirmed, false);
+  assert.equal(pending.requestedMode, null);
+  assert.equal(pending.autoSolve, false);
   assert.deepEqual(await getPendingQuestion(), pending);
   assert.deepEqual(await takePendingQuestion(), pending);
   assert.equal(await getPendingQuestion(), null);
   assert.equal(await takePendingQuestion(), null);
+});
+
+test("confirmed OCR pending questions retain only text workflow metadata", async () => {
+  const pending = await setPendingQuestion({
+    question: "  x^2 = 4  ",
+    source: "ocr",
+    ocrConfirmed: true,
+    requestedMode: "answer",
+    autoSolve: true,
+    image: "data:image/png;base64,forbidden",
+    previewUrl: "blob:forbidden",
+  });
+
+  assert.deepEqual(pending, {
+    question: "x^2 = 4",
+    parentHistoryId: null,
+    source: "ocr",
+    ocrConfirmed: true,
+    requestedMode: "answer",
+    autoSolve: true,
+    createdAt: pending.createdAt,
+  });
+  assert.deepEqual(await takePendingQuestion(), pending);
+  assert.equal(Object.hasOwn(pending, "image"), false);
+  assert.equal(Object.hasOwn(pending, "previewUrl"), false);
+  assert.equal(Object.hasOwn(pending, "blob"), false);
+});
+
+test("unconfirmed or non-OCR pending questions cannot request automatic solving", async () => {
+  const unconfirmed = await setPendingQuestion({
+    question: "x=1",
+    source: "ocr",
+    ocrConfirmed: false,
+    requestedMode: "answer",
+    autoSolve: true,
+  });
+  assert.equal(unconfirmed.ocrConfirmed, false);
+  assert.equal(unconfirmed.autoSolve, false);
+
+  const manual = await setPendingQuestion({
+    question: "x=2",
+    source: "manual",
+    ocrConfirmed: true,
+    requestedMode: "steps",
+    autoSolve: true,
+  });
+  assert.equal(manual.ocrConfirmed, false);
+  assert.equal(manual.requestedMode, "steps");
+  assert.equal(manual.autoSolve, false);
+});
+
+test("imported pending text cannot restore OCR confirmation or automatic solving", async () => {
+  await importData({
+    pendingQuestion: {
+      question: "x^2 = 4",
+      source: "ocr",
+      ocrConfirmed: true,
+      requestedMode: "answer",
+      autoSolve: true,
+    },
+  });
+
+  const pending = await getPendingQuestion();
+  assert.equal(pending.question, "x^2 = 4");
+  assert.equal(pending.source, "review");
+  assert.equal(pending.ocrConfirmed, false);
+  assert.equal(pending.requestedMode, "answer");
+  assert.equal(pending.autoSolve, false);
 });
 
 test("export/import are JSON-safe, validate structure, and merge without duplicate IDs", async () => {

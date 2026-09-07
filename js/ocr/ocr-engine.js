@@ -1,7 +1,4 @@
-import {
-  OCR_FOUNDATION_CONFIG,
-  OCR_PROVIDER_ORDER,
-} from "./ocr-config.js";
+import { OCR_FOUNDATION_CONFIG } from "./ocr-config.js";
 import {
   createOcrOutput,
   OcrOutputValidationError,
@@ -124,6 +121,18 @@ function providerAttemptRecord(error) {
   });
 }
 
+function providerIndependentInputError(error) {
+  const code = String(error?.originalError?.code || "");
+  if (!code.startsWith("OCR_IMAGE_")) return null;
+  return new OcrEngineError(safeMessage(error.originalError), {
+    code,
+    cause: error.originalError,
+    provider: error.provider,
+    phase: "input",
+    attempts: [providerAttemptRecord(error)],
+  });
+}
+
 export class OcrEngine {
   constructor({
     backendFactory = null,
@@ -158,9 +167,9 @@ export class OcrEngine {
     return Object.freeze({
       state,
       available: injected && !this._disposed,
-      availability: injected ? "injected-backend" : this._config.availability.status,
-      unavailableReason: injected ? null : this._config.availability.reason,
-      unavailableCode: injected ? null : this._config.availability.code,
+      availability: injected ? "local-backend" : "unavailable",
+      unavailableReason: injected ? null : "backend-not-configured",
+      unavailableCode: injected ? null : "OCR_BACKEND_NOT_CONFIGURED",
       licenseGate: this._config.licenseGate,
       redistributionAllowed: this._config.licenseGate.redistributionAllowed === true,
       backend: this._config.backend,
@@ -187,13 +196,13 @@ export class OcrEngine {
       });
     }
     if (typeof this._backendFactory !== "function") {
-      throw new OcrEngineError(this._config.licenseGate.reason, {
+      throw new OcrEngineError("OCRバックエンドが設定されていません。", {
         code: "OCR_UNAVAILABLE",
         phase: "availability",
         attempts: [{
           provider: null,
-          phase: "license-gate",
-          message: this._config.licenseGate.reason,
+          phase: "backend-configuration",
+          message: "OCRバックエンドが設定されていません。",
         }],
       });
     }
@@ -362,14 +371,25 @@ export class OcrEngine {
         phase: "inference",
       });
     }
-    this._sessionRecord = record;
-    return this._validatedOutput(raw, provider);
+    try {
+      const output = this._validatedOutput(raw, provider);
+      this._sessionRecord = record;
+      return output;
+    } catch (error) {
+      await this._clearSession(record);
+      throw error;
+    }
   }
 
   async _runWarmSession(input, signal) {
     const record = this._sessionRecord;
     const raw = await this._invokeSession(record, input, signal);
-    return this._validatedOutput(raw, record.provider);
+    try {
+      return this._validatedOutput(raw, record.provider);
+    } catch (error) {
+      await this._clearSession(record);
+      throw error;
+    }
   }
 
   _finalProviderError(attempts, cause) {
@@ -398,12 +418,19 @@ export class OcrEngine {
       } catch (error) {
         if (error instanceof OcrEngineError) throw error;
         if (!(error instanceof ProviderAttemptError)) throw error;
+        const inputError = providerIndependentInputError(error);
+        if (inputError) throw inputError;
         attempts.push(providerAttemptRecord(error));
         if (warmProvider !== "webgpu") throw this._finalProviderError(attempts, error);
       }
     }
 
-    const providers = attempts.length > 0 ? ["wasm"] : OCR_PROVIDER_ORDER;
+    const configuredProviders = Array.isArray(this._config.providers)
+      ? [...this._config.providers]
+      : [];
+    const providers = attempts.length > 0
+      ? configuredProviders.filter((provider) => provider !== "webgpu")
+      : configuredProviders;
     let lastFailure = null;
     for (const provider of providers) {
       try {
@@ -411,6 +438,8 @@ export class OcrEngine {
       } catch (error) {
         if (error instanceof OcrEngineError) throw error;
         if (!(error instanceof ProviderAttemptError)) throw error;
+        const inputError = providerIndependentInputError(error);
+        if (inputError) throw inputError;
         lastFailure = error;
         attempts.push(providerAttemptRecord(error));
       }

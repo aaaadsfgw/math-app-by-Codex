@@ -17,16 +17,27 @@ graduated learning assistance, and records the learner's level of independence.
 6. Refuse unsupported, ambiguous, contradictory, or invalid input clearly.
 7. Save optional local history, self-assessment, analytics, and review state.
 8. Preserve readable legacy learning records during data migration.
-9. Operate with no AI, network request, external server, API key, or CDN.
+9. Operate with no answer-generation AI, network request, external server, API
+   key, or CDN. A pinned browser-local printed-formula OCR model may only
+   transcribe input under the confirmation boundary below.
+10. For OCR, accept only a user-selected crop containing one machine-printed
+    formula, show the crop beside editable candidate text, and require a
+    separate explicit confirmation before sending that text to the existing
+    deterministic solver.
 
 ## Scope
 
 Target: textual/formula questions from junior-high mathematics through Japanese
-Mathematics III.
+Mathematics III. Input may be typed, selected as text, or explicitly confirmed
+after local printed-formula OCR. OCR output is untrusted acquisition data, not a
+solver result or verification signal.
 
 Excluded:
 
-- image recognition;
+- general image recognition other than the bounded printed-formula acquisition
+  path described above;
+- handwriting, photographs, full-page OCR, surrounding prose, tables, graphs,
+  diagrams, or spatially inferred notation;
 - questions whose essential information is only in a diagram;
 - construction and diagram editing;
 - free-form proof generation;
@@ -34,6 +45,12 @@ Excluded:
 
 Coordinate formulas and vector algebra expressed completely as text may be added
 later as algebraic domains. That does not restore diagram geometry.
+
+The OCR implementation is packaged and offline. It prefers WebGPU and falls
+back to WASM. Provider failure, timeout, cancellation, invalid output, or an
+ambiguous transcription must stop before solving. The user may edit the
+candidate or discard it; recognition alone cannot create history or a verified
+label.
 
 ## Result states
 

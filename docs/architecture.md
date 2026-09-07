@@ -49,9 +49,9 @@ verified-history creation.
 
 ## Acquisition and learning-session boundaries
 
-- Manual popup text, page selection, clipboard fallback, future confirmed OCR,
-  and review reruns enter the same deterministic solve workflow with explicit
-  source metadata.
+- Manual popup text, page selection, clipboard fallback, explicitly confirmed
+  OCR text, and review reruns enter the same deterministic solve workflow with
+  explicit source metadata.
 - Quick Mode is ephemeral. Its popup and shortcut coordinators do not call
   history APIs, and storage also rejects a non-Study record defensively.
 - Study Mode creates one attempt for the first viewed output stage and appends
@@ -63,28 +63,35 @@ verified-history creation.
 - Analytics and review consume Study records only. Legacy records remain
   readable through schema normalization and imported verification claims
   remain downgraded.
-- OCR recognition, when enabled, will end at editable candidate text. It is
-  never mathematical verification. Only an explicitly confirmed transcription
-  may enter the solver, and only the solver can create the verified label.
-- The provisional OCR model assets are not bundled. The OCR control remains
-  visibly disabled while the redistribution license gate and browser runtime
-  adapter are unresolved.
+- OCR recognition ends at editable candidate text. It is never mathematical
+  verification. Recognition and solving are separate user actions: only an
+  explicitly confirmed transcription may enter the solver, and only the solver
+  can create the verified label. Recognition alone cannot write a learning
+  attempt or touch the clipboard.
+- The OCR path is limited to one tightly cropped machine-printed formula. It
+  cannot use a diagram, graph, table, surrounding prose, handwriting, page
+  layout, or spatial relationships to complete a question.
 
-## Gated OCR capture boundary
+## Local printed-formula OCR boundary
 
-The disabled OCR control is backed by provider-independent capture
-infrastructure so capture safety can be qualified separately from any model:
+The capture and recognition stages remain outside the deterministic solver
+trust boundary:
 
 ```text
-popup START (development-only while gated)
-  -> background session in storage.session (metadata only, two-minute capture TTL)
+popup START (explicit user action)
+  -> background session in storage.session (metadata only, ten-minute TTL)
   -> on-demand main-frame overlay (selection / Esc cancel)
   -> sender + tab + frame + document + URL + phase validation
   -> hide overlay for two animation frames
   -> captureVisibleTab inside an active-tab event monitor
   -> original documentId completion acknowledgement
   -> offscreen PNG decode and crop using actual bitmap dimensions
-  -> refreshed two-minute Blob URL -> tracked extension confirmation tab
+  -> expiring in-memory Blob -> tracked extension confirmation tab
+  -> explicit RECOGNIZE action
+  -> dedicated Worker: packaged ONNX model, WebGPU then WASM fallback
+  -> untrusted normalized candidate beside the original crop
+  -> user edits and explicitly chooses SOLVE
+  -> pending confirmed-OCR text -> existing deterministic solve workflow
 ```
 
 The session record contains routing metadata, a capture ID, phase, expiry,
@@ -103,17 +110,37 @@ capture instead of using a different image.
 The offscreen document accepts only an inline PNG Data URL from
 `captureVisibleTab`, checks the PNG header and decoded bitmap dimensions, and
 maps CSS coordinates from the real bitmap X/Y scale rather than trusting DPR.
-It keeps at most two expiring preview Blob URLs and revokes them on replacement,
-discard, confirmation-tab closure, or timeout. Creating the preview refreshes
-the session expiry for the two-minute confirmation window, and the background
-tracks and verifies the confirmation tab ID. The page receives the same expiry,
-removes its image source at that boundary, and requests idempotent discard and
-closure so a previously decoded image does not remain visible. The confirmation
-page currently displays only the crop and an explicit unavailable notice. It
-cannot recognize text, call the solver, write history, or touch the clipboard.
-Chrome 109 is the minimum version for this offscreen boundary, and incognito
-use is disabled while the offscreen preview is shared by the regular extension
-profile.
+It retains the bounded crop only in memory, keeps at most two expiring previews,
+and revokes them on replacement, discard, confirmation-tab closure, or timeout.
+The background tracks and verifies the confirmation tab ID. The page receives
+the same ten-minute expiry, removes its image source at that boundary, and
+requests idempotent discard and closure so a previously decoded image does not
+remain visible.
+
+Recognition lazy-loads the pinned `dbcccc/IBEM-im2typst` deployment at revision
+`a7ced2309da108a911fa6880055a165264872a84` through the packaged ONNX Runtime
+Web 1.22.0 runtime. The deployment and weights are MIT licensed and integrity
+checked. WebGPU is attempted first with the FP16 graphs; provider or session
+failure falls back to the dynamic-INT8 WASM graphs. No CDN, model download,
+external process, or host permission is involved. A dedicated Worker owns both
+ONNX sessions so the 120-second timeout or user cancellation can terminate
+active inference. A successful worker may reuse its sessions for later crops;
+cancellation, timeout, invalid output, terminal failure, or disposal tears it
+down.
+
+Image byte, decoded-pixel, dimension, crop, token, and output limits apply
+before or during recognition. Model output is checked against the bundled
+output policy and converted conservatively to the solver's text notation.
+Ambiguous glyphs are never guessed. A provider error, missing end token,
+repetition guard, malformed/unbalanced output, unsupported symbol, timeout, or
+user cancellation produces no pending question and no solver call. Even a
+well-formed candidate remains visibly experimental and untrusted until the user
+reviews and confirms it.
+
+Chrome 109 is the minimum version for the offscreen boundary, and incognito use
+is disabled while the offscreen preview is shared by the regular extension
+profile. Real unpacked-Chrome checks remain mandatory for capture pixels,
+offscreen Blob sharing, WebGPU, WASM fallback, cancellation, and extension CSP.
 
 ## Polynomial-tangent verification
 

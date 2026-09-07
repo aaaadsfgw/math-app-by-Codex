@@ -9,6 +9,10 @@ import {
   isOcrCaptureRuntimeMessage,
 } from "../js/ocr/capture-controller.js";
 import { createOcrCaptureSessionStore } from "../js/ocr/capture-session-store.js";
+import {
+  CANCEL_OCR_RECOGNITION,
+  RECOGNIZE_OCR_CAPTURE_PREVIEW,
+} from "../js/ocr/capture-preview-operations.js";
 
 const PAGE_URL = ["https:", "//example.invalid/problem"].join("");
 const EXTENSION_ORIGIN = ["chrome-extension:", "//test-extension"].join("");
@@ -39,6 +43,7 @@ function fakeEnvironment({
   failPreviewTabTransition = false,
   failPreviewCreation = false,
   previewMetadataPatch = null,
+  recognitionGate = null,
 } = {}) {
   let clock = NOW;
   const calls = {
@@ -117,13 +122,29 @@ function fakeEnvironment({
         previewUrl: "blob:preview-1",
         source: { width: 1600, height: 1200 },
         crop: { width: 160, height: 80 },
-        expiresAt: new Date(clock + 120_000).toISOString(),
+        expiresAt: new Date(clock + 600_000).toISOString(),
         ...(previewMetadataPatch ?? {}),
       };
       previews.set(payload.previewId, preview);
       return preview;
     }
     if (type === "GET_OCR_CAPTURE_PREVIEW") return previews.get(payload.previewId);
+    if (type === RECOGNIZE_OCR_CAPTURE_PREVIEW) {
+      if (recognitionGate) await recognitionGate;
+      return {
+        text: "x^2 - 5x + 6 = 0",
+        provider: "wasm",
+        status: "unconfirmed",
+        verified: false,
+        confirmationRequired: true,
+        backend: { id: "ibem-im2typst-onnx-web" },
+        model: { id: "ibem-semantic-length33-phase10-step002000" },
+        warnings: [],
+        confidence: { geometricMeanProbability: 0.9 },
+        timings: { totalMilliseconds: 123 },
+      };
+    }
+    if (type === CANCEL_OCR_RECOGNITION) return { cancelled: true };
     if (type === DISCARD_OCR_CAPTURE_PREVIEW) {
       return previews.delete(payload.previewId);
     }
@@ -209,7 +230,7 @@ test("popupからだけmain frameへ範囲選択overlayを開始する", async (
 
   assert.deepEqual(result, {
     captureId: "capture-1",
-    expiresAt: "2026-09-02T00:02:00.000Z",
+    expiresAt: "2026-09-02T00:10:00.000Z",
     phase: "selecting",
   });
   assert.deepEqual(environment.calls.injections, [{
@@ -221,7 +242,7 @@ test("popupからだけmain frameへ範囲選択overlayを開始する", async (
     protocolVersion: 1,
     captureId: "capture-1",
     phase: "selecting",
-    expiresAt: "2026-09-02T00:02:00.000Z",
+    expiresAt: "2026-09-02T00:10:00.000Z",
     tabId: 12,
     windowId: 4,
     frameId: 0,
@@ -246,6 +267,20 @@ test("外部ページsenderとHTTP(S)以外のactive tabを拒否する", async 
     (error) => error.code === "OCR_CAPTURE_PAGE_UNSUPPORTED",
   );
   assert.equal(unsupported.calls.injections.length, 0);
+});
+
+test("未対応ページからの開始失敗では既存previewを先に破棄しない", async () => {
+  const environment = fakeEnvironment();
+  await start(environment);
+  await submit(environment);
+  environment.activeTab.url = "chrome://settings/";
+
+  await assert.rejects(
+    start(environment),
+    (error) => error.code === "OCR_CAPTURE_PAGE_UNSUPPORTED",
+  );
+  assert.equal((await environment.store.get()).phase, "preview");
+  assert.equal(environment.previews.size, 1);
 });
 
 test("選択を隠してからactive tabを再確認し一度だけPNG captureする", async () => {
@@ -380,7 +415,7 @@ test("capture中の同一URL reloadは元documentへの完了確認で拒否す�
 test("選択中にsession期限が切れてもoverlayとmetadataを残さない", async () => {
   const environment = fakeEnvironment();
   await start(environment);
-  environment.setClock(NOW + 120_001);
+  environment.setClock(NOW + 600_001);
 
   await assert.rejects(
     submit(environment),
@@ -475,7 +510,7 @@ test("不正なpreview metadataはpreviewを破棄して確認tabを開かない
   assert.equal(await environment.store.get(), null);
 });
 
-test("preview作成時に確認用の2分期限を新しく開始する", async () => {
+test("preview作成時に確認用の10分期限を新しく開始する", async () => {
   const environment = fakeEnvironment();
   await start(environment);
   environment.setClock(NOW + 119_000);
@@ -483,7 +518,7 @@ test("preview作成時に確認用の2分期限を新しく開始する", async 
 
   assert.equal(
     (await environment.store.get()).expiresAt,
-    "2026-09-02T00:03:59.000Z",
+    "2026-09-02T00:11:59.000Z",
   );
 });
 
@@ -535,7 +570,7 @@ test("利用者のcancelはoverlay通知を重複せずsessionを消す", async 
   );
 });
 
-test("確認ページだけがpreviewを取得・破棄でき、OCRはunavailableのまま", async () => {
+test("確認ページだけがpreview取得・OCR実行・破棄を行える", async () => {
   const environment = fakeEnvironment();
   await start(environment);
   await submit(environment);
@@ -552,10 +587,25 @@ test("確認ページだけがpreviewを取得・破棄でき、OCRはunavailabl
     confirmationSender(),
   );
   assert.equal(preview.previewUrl, "blob:preview-1");
-  assert.equal(preview.expiresAt, "2026-09-02T00:02:00.000Z");
+  assert.equal(preview.expiresAt, "2026-09-02T00:10:00.000Z");
   assert.equal(preview.candidateText, "");
-  assert.equal(preview.availability.available, false);
-  assert.equal(preview.availability.code, "OCR_LICENSE_GATE");
+  assert.equal(preview.availability.available, true);
+  assert.equal(preview.availability.code, "OCR_AVAILABLE");
+
+  const recognized = await environment.controller.handleMessage(
+    message("RECOGNIZE_OCR_CAPTURE", { captureId: "capture-1" }),
+    confirmationSender(),
+  );
+  assert.equal(recognized.candidateText, "x^2 - 5x + 6 = 0");
+  assert.equal(recognized.provider, "wasm");
+  assert.equal(recognized.confirmationRequired, true);
+  assert.equal((await environment.store.get()).phase, "preview");
+
+  const cancelled = await environment.controller.handleMessage(
+    message("CANCEL_OCR_RECOGNITION", { captureId: "capture-1" }),
+    confirmationSender(),
+  );
+  assert.deepEqual(cancelled, { cancelled: true });
 
   const discarded = await environment.controller.handleMessage(
     message("DISCARD_OCR_CAPTURE", { captureId: "capture-1" }),
@@ -570,13 +620,44 @@ test("期限後の破棄はidempotent成功として確認ページを閉じら�
   const environment = fakeEnvironment();
   await start(environment);
   await submit(environment);
-  environment.setClock(NOW + 120_001);
+  environment.setClock(NOW + 600_001);
 
   const discarded = await environment.controller.handleMessage(
     message("DISCARD_OCR_CAPTURE", { captureId: "capture-1" }),
     confirmationSender(),
   );
   assert.deepEqual(discarded, { discarded: false, alreadyFinished: true });
+  assert.equal(await environment.store.get(), null);
+  assert.equal(environment.previews.size, 0);
+});
+
+test("session破棄後に遅れて返るOCR結果を受け入れない", async () => {
+  let releaseRecognition;
+  const recognitionGate = new Promise((resolve) => { releaseRecognition = resolve; });
+  const environment = fakeEnvironment({ recognitionGate });
+  await start(environment);
+  await submit(environment);
+
+  const recognition = environment.controller.handleMessage(
+    message("RECOGNIZE_OCR_CAPTURE", { captureId: "capture-1" }),
+    confirmationSender(),
+  );
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(
+    environment.calls.offscreen.some(({ type }) => type === RECOGNIZE_OCR_CAPTURE_PREVIEW),
+    true,
+  );
+
+  const discarded = await environment.controller.handleMessage(
+    message("DISCARD_OCR_CAPTURE", { captureId: "capture-1" }),
+    confirmationSender(),
+  );
+  assert.deepEqual(discarded, { discarded: true });
+  releaseRecognition();
+  await assert.rejects(
+    recognition,
+    (error) => error.code === "OCR_CAPTURE_SESSION_NOT_FOUND",
+  );
   assert.equal(await environment.store.get(), null);
   assert.equal(environment.previews.size, 0);
 });

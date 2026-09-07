@@ -25,7 +25,8 @@ The Digicon learning workflow additionally requires automated coverage for:
 - unsupported/invalid results never reaching presentation, history, or the
   clipboard;
 - history failures preserving a verified displayed or copied result;
-- v2 UI selector, label, source, OCR-status, and staged-metric contracts;
+- v2 UI selector, label, source, OCR-state, editable-candidate, explicit-solve,
+  and staged-metric contracts;
 - OCR crop geometry including reverse drags, viewport clipping, minimum size,
   actual screenshot scaling, malformed dimensions, and empty crops.
 - OCR protocol/session validation including message direction, sender tab,
@@ -34,11 +35,21 @@ The Digicon learning workflow additionally requires automated coverage for:
 - on-demand overlay cleanup for Esc, background rejection, tab changes, and
   completion, plus two-frame screenshot preparation, switch-away-and-back
   detection, and same-URL reload rejection;
-- strict PNG decoding and byte/pixel limits, offscreen preview creation,
-  Blob-URL expiry/revocation, confirmation-tab ownership/closure cleanup, and
-  the preview-only confirmation-page contract;
+- strict PNG decoding and byte/pixel/dimension limits, offscreen preview
+  creation, Blob-URL expiry/revocation, and confirmation-tab ownership/closure
+  cleanup;
+- pinned OCR asset/runtime integrity and license presence, output-policy checks,
+  conservative candidate normalization, malformed/unbalanced output rejection,
+  and no ambiguous-glyph guessing;
+- WebGPU-first session construction, automatic WASM fallback, warm-session
+  reuse, timeout, cancellation, worker termination, disposal, provider errors,
+  missing end token, and repetition-guard failure;
+- recognition alone causing no solver call, pending question, history record,
+  or clipboard change; only separately confirmed editable text may enter the
+  solver with `source: "ocr"` and `ocrConfirmed: true`;
 - manifest checks that Chrome 109 is the minimum and incognito use stays
-  disabled for the shared offscreen-preview boundary.
+  disabled for the shared offscreen-preview boundary, while the extension CSP
+  permits only the packaged WASM runtime and no remote script or host access.
 
 A dependency-free Node VM harness executes the classic overlay lifecycle with
 minimal DOM, event, timer, animation-frame, and extension-message fakes. It
@@ -64,32 +75,60 @@ test.
 5. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
    Steps, direct Answer rate, understanding, and review priority agree with the
    Study attempt. Confirm Quick interactions are absent.
-6. Confirm the popup OCR action is disabled and its license/model limitation
-   is visible. Until the OCR gate closes, no working-recognition pass may be
-   recorded.
+6. Use the popup OCR action on one tightly cropped printed formula. Confirm the
+   crop and editable candidate are shown together, no solver runs after
+   recognition, and the solver starts only after the separate confirmation.
+   In Study Mode confirm the saved source is OCR and confirmation is recorded
+   separately from solver verification.
 
-## Development-only OCR capture preview smoke test
+## Unpacked-Chrome printed-formula OCR smoke test
 
-This checks capture and cropping without enabling or claiming OCR recognition:
+Run this with DevTools open and the network disabled. It is a release blocker;
+Node tests cannot prove real screenshot pixels, extension Worker/CSP behavior,
+WebGPU operators, or the WASM runtime in Chrome.
 
-1. Load the unpacked extension in Chrome 109 or newer and open the popup's
-   DevTools while an ordinary HTTP/HTTPS page is active.
-2. From the popup context, send protocol-v1 `START_OCR_CAPTURE` to target
-   `math-study-log-background`. Do not enable or alter the visible OCR button.
+For the reproducible provider/runtime check, launch an isolated Chrome for
+Testing profile with remote debugging and the unpacked extension, then run
+`node scripts/ocr-browser-smoke.mjs 9333 [extensionId] [either|webgpu|wasm-fallback]`.
+Use `webgpu` for the normal GPU profile and `wasm-fallback` for the forced
+fallback profile. The script opens only
+the extension's offscreen document and checks the packaged smoke image through
+explicit WebGPU, explicit WASM, and the real Worker-backed `OcrEngine`. It runs
+two Worker recognitions to verify warm-session reuse. It does not replace the
+interactive capture/confirmation/solve flow below, and its reported provider
+must be checked in the JSON output (a WebGPU initialization error is expected
+only in the separately forced-fallback profile).
+
+1. Load the unpacked extension in Chrome 109 or newer. Confirm no model, script,
+   or data request leaves the extension.
+2. Open an ordinary HTTP/HTTPS page with a clear, machine-printed single
+   formula, start OCR from the popup, and drag a close crop around that formula.
 3. Drag in both directions and confirm a range smaller than 24 CSS px is kept
    selectable, while Esc removes the overlay immediately.
 4. Select a valid range. Confirm the overlay is absent from the captured image
-   and a local `ocr-confirm.html` tab shows only the intended crop.
-5. Confirm the page says recognition is unavailable and no problem text was
-   generated. No solver result, history item, or clipboard change is allowed.
-6. Press **プレビューを破棄して閉じる** and confirm the preview disappears
-   and the confirmation tab closes. Repeat after switching tabs during
-   selection and after waiting past the capture expiry; neither case may
-   capture another tab or leave an overlay.
-
-This smoke test remains a release blocker because automated checks cannot
-exercise `captureVisibleTab`, extension `documentId` routing, or offscreen Blob
-URL sharing in real Chrome.
+   and local `ocr-confirm.html` shows the intended crop without solving it.
+5. Start recognition on a WebGPU-capable Chrome profile. Confirm the displayed
+   provider is WebGPU, candidate text is editable, the crop stays visible, and
+   recognition alone creates no result, pending solve, history item, or
+   clipboard change.
+6. Disable WebGPU for a separate run or force the test seam to reject WebGPU
+   session creation. Confirm the same packaged feature reports WASM and returns
+   an editable candidate without any network request.
+7. Edit one character, choose the separate solve action, and confirm the edited
+   text—not the raw OCR text—enters the existing solver. In Study Mode verify
+   `source: "ocr"` and `ocrConfirmed: true`; verify the final answer is marked
+   only by deterministic solver verification.
+8. Repeat and cancel during active recognition. Confirm the Worker terminates,
+   no late result appears, and a retry starts cleanly. Also exercise timeout and
+   dispose/reopen behavior. For two successful consecutive crops, confirm the
+   second request may reuse a warm session without mixing results.
+9. Use malformed/oversized input and a crop containing handwriting, prose, a
+   diagram, or two formulas. Confirm the feature fails or presents only an
+   untrusted candidate; it must not infer omitted information or auto-confirm.
+10. Press **プレビューを破棄して閉じる** and confirm the preview disappears
+    and the confirmation tab closes. Repeat after switching tabs during
+    selection and after waiting past the ten-minute expiry; neither case may
+    capture another tab, leave an overlay, or preserve a usable image URL.
 
 ## Unpacked Chrome smoke test
 

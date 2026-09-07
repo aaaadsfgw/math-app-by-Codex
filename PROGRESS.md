@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-03
+Last updated: 2026-09-07
 
 ## Repository checkpoint
 
@@ -15,10 +15,11 @@ Last updated: 2026-09-03
 - Confirmed repository identity, branch, remote, clean starting state, and
   original specification.
 - Confirmed the revised product boundary:
-  - no local or cloud AI;
+  - no local or cloud answer-generation AI;
   - junior-high mathematics through Mathematics III;
-  - no image-derived answer generation, and printed-formula recognition stays
-    disabled until it can be used only as editable, untrusted candidate input;
+  - no image-derived answer generation; the only model-based acquisition
+    exception is a tightly cropped, machine-printed single formula transcribed
+    into editable, explicitly confirmed, untrusted candidate text;
   - no diagram-based geometry;
   - no proof generation.
 - Audited deterministic CAS candidates.
@@ -545,9 +546,10 @@ Last updated: 2026-09-03
   - indefinite integration of `x^2`.
   All six passed through the real module-worker and symbolic bundle, with no
   browser console warnings or errors.
-- The available browser surface cannot load unpacked Chrome extensions, so the
-  manifest, popup-as-extension, service-worker shortcut, and offscreen-document
-  integration remain explicitly unverified in real Chrome.
+- The earlier browser-surface limitation was closed for this checkpoint: an
+  isolated Chrome for Testing profile loaded the unpacked extension and the
+  existing module-worker symbolic harness passed. The complete toolbar-driven
+  capture/confirmation flow remains a separate interactive check.
 - Recorded the clean starting behavior:
   - `npm test`: 44 passed, 0 failed.
   - `npm run check`: passed for 68 files, 9 HTML files, 31 JS/MJS files, and
@@ -561,30 +563,31 @@ Last updated: 2026-09-03
   offscreen document. Clipboard contents are replaced only after a verified
   presentation succeeds; unsupported, invalid, and failed requests preserve the
   original clipboard. Quick Mode never writes history.
-- Added a gated local OCR foundation and candidate evaluation. RapidLaTeXOCR
-  ONNX is the provisional technical candidate, but no runtime or model assets
-  are bundled and the visible OCR action is disabled because model-weight
-  redistribution terms and the browser adapter are not qualified.
+- Re-evaluated the gated local OCR foundation and selected
+  `dbcccc/IBEM-im2typst` revision
+  `a7ced2309da108a911fa6880055a165264872a84` with packaged ONNX Runtime Web
+  1.22.0. The pinned source and identified weights are MIT licensed. WebGPU uses
+  the deployment's FP16 pair first; WASM uses the dynamic-INT8 pair as fallback.
+  Model/runtime assets, provenance notices, output policy, configuration, and
+  integrity metadata are staged locally with no download or host permission.
 - Connected the popup to one learning session: the deterministic solver runs
   once for unchanged input, while Hint 1, Hint 2, Steps, Answer, and explanation
   reuse that result. Study Mode stores one attempt and appends viewed stages;
-  Quick Mode remains ephemeral. Manual, selection, review, clipboard, and future
-  confirmed-OCR sources stay distinct.
+  Quick Mode remains ephemeral. Manual, selection, review, clipboard, and
+  explicitly confirmed OCR sources stay distinct.
 - Reworked History and Analytics around the v2 data: source and OCR confirmation
   are visible, staged use is retained, and category metrics show Hint 1/2,
   Steps, direct Answer, recent struggle, understanding, and review priority
   without making claims beyond stored events.
-- Updated Settings with Quick/Study and shortcut-action persistence plus an
-  explicit OCR availability, candidate backend/model, model-not-bundled, and
-  WebGPU-to-WASM status. Added page contract checks for unique IDs, labels,
-  selectors, staged controls, and safe text rendering.
-- Added provider-independent OCR range-capture infrastructure behind the
-  disabled license/model gate:
+- Updated Settings with Quick/Study and shortcut-action persistence plus OCR
+  backend/model and WebGPU-to-WASM status. Added page contract checks for unique
+  IDs, labels, selectors, staged controls, and safe text rendering.
+- Added provider-independent OCR range-capture infrastructure:
   - protocol-v1 messages and a metadata-only `storage.session` schema that
     rejects screenshots, Data URLs, Blobs, bytes, and pixels;
   - a background-owned metadata session bound to tab, window, main-frame
-    `documentId`, source URL, capture ID, phase, and expiry, with a two-minute
-    selection/capture limit, refreshed two-minute preview limit, serialized
+    `documentId`, source URL, capture ID, phase, and expiry, with a ten-minute
+    session/confirmation limit, refreshed ten-minute preview limit, serialized
     transitions, duplicate-submit protection, and lifecycle-wide exclusion of
     a replacement start while screenshot processing is active;
   - an on-demand closed-shadow overlay with trusted-pointer reverse drags,
@@ -597,37 +600,54 @@ Last updated: 2026-09-03
     closed;
   - bounded offscreen PNG decode/crop using actual bitmap X/Y scaling, plus
     explicit bitmap close and Blob-URL revocation paths;
-  - at most two in-memory previews with two-minute expiry and a tracked local
+  - at most two in-memory previews with ten-minute expiry and a tracked local
     confirmation tab that can only display and discard the crop; closing the
     tab also revokes its preview and clears the session, while page-side expiry
     removes an already-loaded image before idempotent discard and closure.
 - Set the extension minimum to Chrome 109 and added the offscreen `BLOBS`
   reason. Incognito use is disabled for this shared offscreen-preview boundary.
-  No OCR model/runtime, recognized text, solver input, history record, or
-  clipboard path was enabled.
+- Implemented the OCR boundary: lazy packaged runtime, dedicated Worker
+  ownership, WebGPU-first and WASM fallback sessions, timeout, cancellation,
+  disposal, serialized warm reuse, bounded inputs/outputs, and conservative
+  candidate normalization. Recognition remains separate from the explicit
+  confirmation that alone may create a pending deterministic solve. Recognition
+  is capped at 120 seconds; the metadata/preview session expires after ten
+  minutes.
+- Connected the pinned IBEM/ONNX runtime to the offscreen Worker and editable
+  confirmation page. Recognition failures keep the crop and expose a manual
+  candidate field; imported pending JSON is downgraded so it cannot restore OCR
+  confirmation or automatic solving. Late results after session cleanup are
+  rejected.
+- Added automated coverage for provider fallback, asset integrity, output
+  rejection, timeout/cancel/dispose/warm reuse, source metadata, malformed
+  candidate text, invisible-character rejection, and the recognition-versus-
+  confirmation trust boundary.
+- Real Chrome for Testing 152 smoke results (isolated profile, extension ID
+  `llamjohdodaenghphknjjclnmklilfjm`): WebGPU and explicit WASM both returned
+  `x + y`; the Worker returned `x + y` twice with the same provider and warm
+  state. With `--disable-gpu --disable-webgpu`, WebGPU session creation failed
+  with `OCR_SESSION_CREATE_FAILED`, the explicit WASM session returned `x + y`,
+  and the Worker selected WASM for both warm requests.
 
-## In progress
+## Remaining validation
 
-- Keep unpacked-Chrome capture, offscreen Blob-URL sharing, and complete
-  Quick/Study integration verification as release blockers.
-
-## Next
-
-1. Run the development-only unpacked-Chrome range-selection, screenshot crop,
-   confirmation, discard, cancellation, tab-change, and expiry smoke test.
-2. Run the complete unpacked-Chrome Quick/Study, shortcut, history, analytics,
-   worker, offscreen, and OCR-gate smoke test.
-3. Resolve a redistributable model/runtime combination, then qualify WebGPU and
-   WASM in real Chrome before enabling the OCR button.
-4. Only after that gate closes, add editable OCR candidate confirmation and
-   connect explicitly confirmed text to the existing deterministic workflow.
+- The deterministic Node suite and packaged runtime/provider smoke are green.
+  A full toolbar-driven range-selection through crop, confirmation-page edit,
+  and Quick/Study solve still needs an interactive Chrome surface that can
+  click the browser action; this environment can load the extension through
+  DevTools but cannot expose the browser toolbar. The implementation is kept
+  behind the same explicit confirmation and protocol tests until that manual
+  step is available.
 
 ## Last verified commands
 
-- `npm.cmd test` - 678 passed, 0 failed on 2026-09-03, including 5,500
+- `npm.cmd test` - 700 passed, 0 failed on 2026-09-07, including 5,500
   generated evaluation cases.
-- `npm.cmd run check` - passed for 216 files, 11 HTML, 175 JS/MJS, and 12 CSS
-  files on 2026-09-03.
+- `npm.cmd run check` - passed for 245 files, 11 HTML, 185 JS/MJS, and 12 CSS
+  files on 2026-09-07.
+- `node scripts/ocr-browser-smoke.mjs 9333` - Chrome for Testing 152 passed
+  WebGPU, explicit WASM, Worker warm reuse, and forced-WASM fallback as
+  recorded above.
 
 ## Restart procedure
 

@@ -28,7 +28,20 @@ test("OCR確認ページのDOM契約とアクセシブルな状態領域を固�
     "cropInfo",
     "sourceInfo",
     "availabilityInfo",
-    "ocrUnavailableMessage",
+    "recognitionStatus",
+    "recognizeButton",
+    "cancelRecognitionButton",
+    "recognitionProgress",
+    "recognitionError",
+    "candidatePanel",
+    "candidateInput",
+    "candidateHelp",
+    "providerInfo",
+    "backendInfo",
+    "modelInfo",
+    "candidateWarning",
+    "solveButton",
+    "solveHelp",
     "discardButton",
     "discardHelp",
     "pageMessage",
@@ -43,10 +56,14 @@ test("OCR確認ページのDOM契約とアクセシブルな状態領域を固�
   assert.match(html, /id=["']previewImage["'][^>]*\breferrerpolicy=["']no-referrer["']/u);
   assert.match(html, /id=["']captureStatus["'][^>]*\brole=["']status["']/u);
   assert.match(html, /id=["']pageMessage["'][^>]*\brole=["']status["'][^>]*\baria-live=["']polite["']/u);
+  assert.match(html, /id=["']candidateInput["'][^>]*\bmaxlength=["']4096["']/u);
+  assert.match(html, /id=["']recognizeButton["'][^>]*\btype=["']button["']/u);
+  assert.match(html, /id=["']cancelRecognitionButton["'][^>]*\btype=["']button["']/u);
+  assert.match(html, /id=["']solveButton["'][^>]*\btype=["']button["']/u);
   assert.match(html, /id=["']discardButton["'][^>]*\btype=["']button["']/u);
-  assert.match(html, /文字認識は現在利用できません/u);
-  assert.match(html, /問題文は生成されていません/u);
-  assert.match(html, /解答、履歴、クリップボードへ送られることはありません/u);
+  assert.match(html, /「この内容で解く」を押すまで、解答処理は始まりません/u);
+  assert.match(html, /手書き・図・文章全体の読み取りには対応しません/u);
+  assert.match(html, /画像は履歴や保存領域へ残しません/u);
 });
 
 test("確認ページはローカルassetだけを読み込む", async () => {
@@ -57,13 +74,15 @@ test("確認ページはローカルassetだけを読み込む", async () => {
   assert.doesNotMatch(html, /<iframe\b|\bsrcdoc=/iu);
 });
 
-test("確認scriptはprotocol v1で取得と破棄だけを要求する", async () => {
+test("確認scriptはprotocol v1で認識・中止・破棄を要求する", async () => {
   const script = await source("js/ocr/ocr-confirm.js");
 
   for (const token of [
     "OCR_CAPTURE_TARGET",
     "OCR_CAPTURE_PROTOCOL_VERSION",
     "GET_OCR_CAPTURE_PREVIEW",
+    "RECOGNIZE_OCR_CAPTURE",
+    "CANCEL_OCR_RECOGNITION",
     "DISCARD_OCR_CAPTURE",
     "normalizeOcrCaptureMessage",
   ]) {
@@ -71,8 +90,27 @@ test("確認scriptはprotocol v1で取得と破棄だけを要求する", async 
   }
   assert.match(script, /searchParams\.get\(["']captureId["']\)/u);
   assert.match(script, /chrome\?\.runtime\?\.sendMessage/u);
+  assert.match(script, /recognizeButton\.addEventListener\(["']click["']/u);
+  assert.match(script, /cancelRecognitionButton\.addEventListener\(["']click["']/u);
+  assert.match(script, /solveButton\.addEventListener\(["']click["']/u);
   assert.match(script, /discardButton\.addEventListener\(["']click["']/u);
-  assert.doesNotMatch(script, /\b(?:solver|history|clipboard)\b/iu);
+  assert.match(script, /showManualCandidateFallback\(\)/u);
+  assert.match(script, /candidatePanel\.hidden = false/u);
+  assert.match(script, /DISALLOWED_INVISIBLE_CHARACTERS/u);
+  assert.doesNotMatch(script, /solveWorkflow|createLearningSession|addHistory|copyText/u);
+});
+
+test("認識だけでは保存も解答開始もせず、明示操作だけが確認済み問題を渡す", async () => {
+  const script = await source("js/ocr/ocr-confirm.js");
+  const recognition = script.match(/async function startRecognition\(\) \{([\s\S]*?)\n\}/u)?.[1] || "";
+  const submission = script.match(/async function solveCandidate\(\) \{([\s\S]*?)\n\}/u)?.[1] || "";
+
+  assert.ok(recognition, "startRecognition body must be inspectable");
+  assert.ok(submission, "solveCandidate body must be inspectable");
+  assert.doesNotMatch(recognition, /setPendingQuestion|location\.replace/u);
+  assert.match(submission, /setPendingQuestion\(\{[\s\S]*?source:\s*["']ocr["'][\s\S]*?ocrConfirmed:\s*true[\s\S]*?requestedMode:\s*["']answer["'][\s\S]*?autoSolve:\s*true/u);
+  assert.match(submission, /location\.replace\(["']popup\.html["']\)/u);
+  assert.match(submission, /await discardPreview\(\)[\s\S]*?await setPendingQuestion/u);
 });
 
 test("応答を文字列挿入せず、外部画像URLをfail closedにする", async () => {
@@ -84,7 +122,9 @@ test("応答を文字列挿入せず、外部画像URLをfail closedにする", 
   assert.match(script, /parsed\.href\.startsWith\(`blob:\$\{globalThis\.location\.origin\}\/`\)/u);
   assert.match(script, /payload\.startsWith\(["']iVBORw0KGgo["']\)/u);
   assert.match(script, /外部URLのプレビュー画像は表示できません/u);
-  assert.match(script, /availability\.available\s*!==\s*false/u);
+  assert.match(script, /availability\.available\s*===\s*true/u);
+  assert.match(script, /confirmationRequired\s*!==\s*true/u);
+  assert.match(script, /new Set\(\[["']webgpu["'],\s*["']wasm["']\]\)/u);
   assert.match(script, /expiresAt:\s*previewExpiryTimestamp\(result\.expiresAt\)/u);
   assert.match(script, /previewExpiryTimer\s*=\s*globalThis\.setTimeout/u);
   assert.match(script, /function expirePreview\(\)[\s\S]*?clearPreviewSource\(\)[\s\S]*?discardAndClose\(\)/u);
@@ -95,12 +135,23 @@ test("応答を文字列挿入せず、外部画像URLをfail closedにする", 
   assert.doesNotMatch(script, /elements\.image\.src\s*=\s*result\.previewUrl/u);
 });
 
+test("認識失敗時も候補欄を開き、手入力を明示確定へ渡せる", async () => {
+  const script = await source("js/ocr/ocr-confirm.js");
+  const failure = script.match(/if \(!cancelled\) \{([\s\S]*?)\n\s*\}/u)?.[1] || "";
+  assert.match(failure, /showManualCandidateFallback\(\)/u);
+  assert.match(failure, /setRecognitionError\(/u);
+  assert.match(failure, /candidateInput\.focus\(\)/u);
+  assert.match(script, /DISALLOWED_INVISIBLE_CHARACTERS\s*=\s*\/[^/]*\\u202A[^/]*\\u2066/u);
+});
+
 test("専用CSSは狭い画面と状態表示を扱う", async () => {
   const css = await source("css/ocr-confirm.css");
 
   assert.match(css, /\.preview-frame\b/u);
   assert.match(css, /\.preview-frame\[data-state=["']error["']\]/u);
   assert.match(css, /\.capture-details\b/u);
+  assert.match(css, /\.candidate-panel\b/u);
+  assert.match(css, /\.runtime-details\b/u);
   assert.match(css, /@media\s*\(max-width:\s*640px\)/u);
   assert.doesNotMatch(css, /url\s*\(/iu);
 });

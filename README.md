@@ -4,8 +4,11 @@ Math Study Log is a build-free Manifest V3 Chrome extension that solves
 supported mathematics problems entirely inside the extension and records how
 independently the learner reached the solution.
 
-The application uses deterministic JavaScript solvers. It has no AI runtime,
-API key, external server, network permission, remote script, or CDN.
+The application uses deterministic JavaScript solvers and has no
+answer-generation AI, API key, external server, network host permission, remote
+script, or CDN. Its only model runtime is a packaged local printed-formula
+transcriber whose editable output requires explicit user confirmation before
+the deterministic solver can see it.
 
 ## Current state
 
@@ -64,19 +67,21 @@ The current migration checkpoint supports:
   attempts across Hint 1, Hint 2, Steps, Answer, and explanation;
 - popup manual input, selected-text input, and a selection-first shortcut that
   falls back to the clipboard and only replaces it after a verified result;
+- experimental browser-local OCR for one tightly cropped machine-printed
+  formula, producing editable text that requires a separate explicit solve
+  action;
 - source-aware history, staged-output usage, analytics, and review.
 
 The long-term target is text/formula input from junior-high mathematics through
-Japanese Mathematics III. Printed-formula OCR is being developed as an
-untrusted input method only; its provisional model is not bundled and the
-visible OCR action remains disabled while redistribution terms and the browser
-adapter are unresolved. The provider-independent capture foundation can now
-select a visible page range, crop it in an offscreen document, and show a
-short-lived confirmation preview without recognizing text or sending the image
-to the solver. Diagram understanding, diagram-dependent geometry,
-construction problems, handwriting OCR, and proof prose are intentionally out
-of scope. An unsupported input returns an explicit error instead of a guessed
-answer.
+Japanese Mathematics III. Printed-formula OCR is a narrow, untrusted input
+method: it locally transcribes one tightly cropped machine-printed formula into
+editable candidate text. The crop and candidate remain visible together, and
+the existing deterministic solver receives the text only after the user presses
+the separate confirmation action. OCR never answers, explains, validates, or
+marks mathematics as verified. Diagram understanding, diagram-dependent
+geometry, construction problems, handwriting, full-page OCR, photographs,
+surrounding prose, and proof interpretation are intentionally out of scope. An
+unsupported input returns an explicit error instead of a guessed answer.
 
 See [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and
 [docs/supported-problems.md](docs/supported-problems.md) for the exact migration
@@ -109,6 +114,15 @@ stage.
 
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result.
+
+For image input, choose the OCR action and drag around one printed formula only.
+Recognition runs entirely in the extension, preferring WebGPU and falling back
+to WASM. Review and edit every returned character, then explicitly choose to
+solve the transcription. Recognition by itself does not run the solver or save
+a verified result. The first OCR use can be slower while the packaged model is
+loaded; later recognition can reuse the warm local session. Recognition has a
+120-second deadline, and the crop/confirmation session expires after ten
+minutes.
 
 For logarithmic equations, write an explicit integer base as `log_2(x)` or
 `log₂(x)`. Bare `log(x)` and `ln(x)` both mean the natural logarithm, matching
@@ -270,21 +284,24 @@ Chrome checks in [docs/test-plan.md](docs/test-plan.md).
 The manifest requests only:
 
 - `storage` for settings and learning records;
-- `activeTab` and `scripting` for user-triggered text selection and gated image
+- `activeTab` and `scripting` for user-triggered text selection and bounded OCR
   range capture;
 - `clipboardRead` for the explicit keyboard-shortcut fallback when no page
   text is selected;
 - `clipboardWrite` for copying a verified output only after success;
 - `offscreen` for clipboard access, shortcut-triggered symbolic work in a
-  disposable time-limited Web Worker, and bounded in-memory image cropping.
+  disposable time-limited Web Worker, bounded in-memory image cropping, and
+  locally orchestrated printed-formula recognition.
 
 It does not request any host permission. Questions and history remain on the
-device, and no local or cloud answer-generation service is contacted. OCR
-screenshots and cropped previews are never written to `storage.local` or
-`storage.session`; a preview Blob URL is revoked on discard, replacement,
-confirmation-tab closure, or expiry. The confirmation page also removes its
-loaded image source at expiry before discarding and closing. Incognito use is
-disabled while this shared offscreen-preview boundary remains in place.
+device, and no local or cloud answer-generation service is contacted. The OCR
+model and ONNX Runtime Web are packaged with the extension; recognition makes
+no network request. OCR screenshots and cropped previews are never written to
+`storage.local` or `storage.session`; a preview Blob URL is revoked on discard,
+replacement, confirmation-tab closure, or expiry. The confirmation page also
+removes its loaded image source at expiry before discarding and closing.
+Incognito use is disabled while this shared offscreen-preview boundary remains
+in place.
 
 ## Project continuity
 

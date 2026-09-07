@@ -118,7 +118,41 @@ function candidateFromObject(raw) {
   }
   if (format === "latex" && !latex && text) format = "text";
 
-  return Object.freeze({ value: latex || text, format });
+  const warningsValue = readField(raw, "warnings");
+  const confidenceValue = readField(raw, "confidence");
+  const timingsValue = readField(raw, "timings");
+  const warnings = Array.isArray(warningsValue)
+    ? warningsValue
+        .filter((warning) => typeof warning === "string" && warning.trim())
+        .slice(0, 20)
+        .map((warning) => warning.trim().slice(0, 500))
+    : [];
+  const finiteSnapshot = (value, allowedKeys) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const snapshot = {};
+    for (const key of allowedKeys) {
+      const number = readField(value, key);
+      if (typeof number === "number" && Number.isFinite(number)) snapshot[key] = number;
+    }
+    return Object.keys(snapshot).length > 0 ? Object.freeze(snapshot) : null;
+  };
+
+  return Object.freeze({
+    value: latex || text,
+    format,
+    warnings: Object.freeze(warnings),
+    confidence: finiteSnapshot(confidenceValue, [
+      "geometricMeanProbability",
+      "meanMargin",
+      "minimumMargin",
+      "minimumProbability",
+    ]),
+    timings: finiteSnapshot(timingsValue, [
+      "encoderMilliseconds",
+      "decoderMilliseconds",
+      "totalMilliseconds",
+    ]),
+  });
 }
 
 export function createOcrOutput(
@@ -133,7 +167,13 @@ export function createOcrOutput(
   const limit = positiveInteger(maxCharacters, OCR_MAX_OUTPUT_CHARACTERS);
   let candidate;
   if (typeof raw === "string") {
-    candidate = Object.freeze({ value: raw, format: "latex" });
+    candidate = Object.freeze({
+      value: raw,
+      format: "latex",
+      warnings: Object.freeze([]),
+      confidence: null,
+      timings: null,
+    });
   } else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     candidate = candidateFromObject(raw);
   } else {
@@ -156,6 +196,9 @@ export function createOcrOutput(
     confirmationRequired: true,
     backend: snapshotBackend(backend),
     model: snapshotModel(model),
+    warnings: candidate.warnings,
+    confidence: candidate.confidence,
+    timings: candidate.timings,
   });
 }
 

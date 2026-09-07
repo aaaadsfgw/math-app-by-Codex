@@ -105,6 +105,12 @@ export class LearningSession {
 
   async _workflowForMode(mode, symbolicOperations) {
     if (!this._input) throw new TypeError("問題文を先に設定してください。");
+    if (this._input.ocrUsed && !this._input.ocrConfirmed) {
+      const error = new Error("画像から読み取った問題文を確認してから解析してください。");
+      error.name = "LearningSessionError";
+      error.code = "OCR_CONFIRMATION_REQUIRED";
+      throw error;
+    }
     if (!this._baseWorkflow) {
       const workflow = await this._solve(this._input.question, {
         mode,

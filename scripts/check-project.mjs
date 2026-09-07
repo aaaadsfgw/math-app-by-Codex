@@ -31,6 +31,21 @@ const pinnedVendorHashes = new Map([
     'vendor/algebrite/algebrite.bundle.js',
     'D51C5DBE412DF49E6EDA0376D81FB4C09DAF7B4D7EFC69AE693ED5876F2FF67E',
   ],
+  ['vendor/onnxruntime-web/ort.webgpu.bundle.min.mjs', 'A690203281CBEAFA25B72AE30E56848EEE22DC8D881D8745D1B3353B0F5F4B87'],
+  ['vendor/onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm', 'B45970D0632383A057C27CA5B660B216F8E00C17CF8DB9F6207B5E4ABC839368'],
+  ['vendor/ocr/ibem-im2typst/deployment.json', 'B8C710EADDE7B1E0173DB7742DA4629C08942E9B935F98FADB75ABF4DD01E78E'],
+  ['vendor/ocr/ibem-im2typst/encoder.int8.onnx', '6C889DF95EB503C3DEBEFAD306E3BDC1F4D4A4F1D217F89A664D5710262BDAB1'],
+  ['vendor/ocr/ibem-im2typst/decoder-step.int8.onnx', 'FEA2C1792DCFBB8B9E4ED3215D9591FA8AD5F99BD626BC9862355C666083EECF'],
+  ['vendor/ocr/ibem-im2typst/encoder.fp16.onnx', 'E0720D76D8B78A68F281522A6FC3AD20B42D7E3A0102FBA9C08509C01E8D8477'],
+  ['vendor/ocr/ibem-im2typst/decoder-step.fp16.onnx', '531B2B82D680A1CE1B082CCE1DB8ED83273E043947CE8F340D82CE728F078EE9'],
+  ['vendor/ocr/ibem-im2typst/model-config.json', '91CE74A06E698C31323E61948C4016FC7D267D62976E6291095A71CB13CCCB34'],
+  ['vendor/ocr/ibem-im2typst/preprocess-config.json', 'E39D199285CC83EC7B48A5A02AF39F3D904607E7B462D023AA6964ED3EE5659D'],
+  ['vendor/ocr/ibem-im2typst/vocabulary.json', '45516A0227A25922979210A3D69DC400B2876D072FEC68B4C26557E05C7FE737'],
+  ['vendor/ocr/ibem-im2typst/output-policy.json', '73B611F8CB8B9035F8DB334E5A0390956B78D20B8BBA4CF92C789221C8316797'],
+  ['vendor/ocr/ibem-im2typst/LICENSE', 'B61D1B5BD1739737D2FA4395286F4F955618EA942854C60C8B810245A4DAF2CF'],
+  ['vendor/ocr/ibem-im2typst/MODEL_CARD.md', 'DBBF239DF2DC281C44F76BFE7C9798817A2F750653A0753DCBB509C5FF0030FB'],
+  ['vendor/ocr/ibem-im2typst/MODEL_LICENSE.md', '82C57FA9D3744FA58C1F6B346FCB2EA04C4CE73A2ED43AACE5B24B5E7022B5E7'],
+  ['vendor/onnxruntime-web/LICENSE', '2F07C72751AED99790B8A4869CF2311DF85A860B22DED05FA22803587A48922C'],
 ]);
 
 for (const [file, expectedHash] of pinnedVendorHashes) {
@@ -41,6 +56,9 @@ for (const [file, expectedHash] of pinnedVendorHashes) {
   assert(actualHash === expectedHash, `Vendored dependency hash mismatch: ${file}`);
 }
 assert(relativeFiles.has('vendor/algebrite/LICENSE'), 'Missing Algebrite license');
+assert(relativeFiles.has('vendor/ocr/ibem-im2typst/LICENSE'), 'Missing IBEM OCR model license');
+assert(relativeFiles.has('vendor/ocr/ibem-im2typst/MODEL_LICENSE.md'), 'Missing IBEM OCR model license notice');
+assert(relativeFiles.has('vendor/onnxruntime-web/LICENSE'), 'Missing ONNX Runtime Web license');
 
 let manifest;
 try {
@@ -48,6 +66,10 @@ try {
   assert(manifest.manifest_version === 3, 'manifest_version must be 3');
   assert(Number(manifest.minimum_chrome_version) >= 109, 'minimum_chrome_version must support offscreen documents');
   assert(manifest.incognito === 'not_allowed', 'incognito must remain disabled for the shared offscreen preview boundary');
+  assert(
+    manifest.content_security_policy?.extension_pages === "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+    'Extension CSP must allow only local scripts plus local WebAssembly compilation',
+  );
 } catch (error) {
   fail(`manifest.json is invalid: ${error.message}`);
   manifest = {};
@@ -131,7 +153,8 @@ for (const file of files.filter((candidate) => extname(candidate) === '.html')) 
   if (remoteAsset) fail(`External script or stylesheet in ${relative(root, file)}`);
 }
 
-const textFiles = files.filter((file) => !['.png', '.jpg', '.jpeg', '.gif', '.ico'].includes(extname(file)));
+const binaryExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.ico', '.onnx', '.wasm', '.tgz']);
+const textFiles = files.filter((file) => !binaryExtensions.has(extname(file)));
 const markerPattern = /TO[D]O|FIXM[E]/g;
 for (const file of textFiles) {
   const info = await stat(file);

@@ -2,6 +2,12 @@ import { classifyCategory } from "./category-classifier.js";
 import { copyText } from "./clipboard.js";
 import { createLearningSession } from "./learning-session.js";
 import {
+  OCR_CAPTURE_PROTOCOL_VERSION,
+  OCR_CAPTURE_TARGET,
+  START_OCR_CAPTURE,
+  normalizeOcrCaptureMessage,
+} from "./ocr/capture-contract.js";
+import {
   getSettings,
   saveSettings,
   takePendingQuestion,
@@ -111,9 +117,7 @@ function syncControlStates() {
     input.disabled = controlsLocked;
   });
 
-  // OCR remains deliberately gated until the model redistribution terms and
-  // capture backend are both ready. A visible reason is rendered beside it.
-  elements.ocrButton.disabled = true;
+  elements.ocrButton.disabled = controlsLocked;
   elements.copyButton.disabled = controlsLocked || !latestCopyText;
   elements.assessmentSaveButton.disabled = controlsLocked || !canSaveAssessment();
   elements.processStatus.hidden = !analysisRunning;
@@ -160,7 +164,7 @@ function setInputSource(source, { ocrConfirmed = false } = {}) {
       ? "読み取り結果を確認済みです。"
       : "読み取り結果を確認してから解析してください。";
   } else {
-    elements.ocrStatus.textContent = "画像読み取りは準備中です（OCRモデルの利用条件を確認中）。";
+    elements.ocrStatus.textContent = "ページ上で、印刷された数式1つが収まる範囲を選択します。";
   }
 }
 
@@ -420,6 +424,37 @@ async function loadSelection() {
   }
 }
 
+async function startOcrCapture() {
+  if (analysisRunning || selectionLoading || learningModeSaving) return;
+  selectionLoading = true;
+  clearError();
+  elements.ocrStatus.textContent = "画像の範囲選択を開始しています…";
+  setAppState("画像範囲を準備中", "loading");
+  syncControlStates();
+
+  try {
+    const message = normalizeOcrCaptureMessage({
+      target: OCR_CAPTURE_TARGET,
+      protocolVersion: OCR_CAPTURE_PROTOCOL_VERSION,
+      type: START_OCR_CAPTURE,
+    });
+    const response = await globalThis.chrome?.runtime?.sendMessage(message);
+    if (!response || response.ok !== true) {
+      const reported = cleanText(response?.error?.message);
+      throw new Error(reported || "画像の範囲選択を開始できませんでした。");
+    }
+    elements.ocrStatus.textContent = "ページ上で数式を囲んでください。選択後に確認画面が開きます。";
+    setAppState("範囲を選択中", "success");
+    globalThis.close();
+  } catch (error) {
+    showError(errorMessage(error, "画像の範囲選択を開始できませんでした。"));
+    elements.ocrStatus.textContent = "画像読み取りを開始できませんでした。もう一度お試しください。";
+  } finally {
+    selectionLoading = false;
+    syncControlStates();
+  }
+}
+
 async function saveAssessment() {
   const historyId = learningSession.snapshot.historyId;
   if (!historyId || !canSaveAssessment()) {
@@ -496,11 +531,22 @@ async function loadPendingQuestion() {
 
   const question = typeof pending === "string" ? pending : pending.question;
   if (cleanText(question)) {
+    const source = typeof pending === "object" && Object.hasOwn(SOURCE_LABELS, pending.source)
+      ? pending.source
+      : "review";
+    const requestedMode = typeof pending === "object" && OUTPUT_MODES.has(pending.requestedMode)
+      ? pending.requestedMode
+      : activeOutputMode;
     setQuestion(question, {
-      source: "review",
+      source,
       parentHistoryId: typeof pending === "object" ? pending.parentHistoryId : null,
+      ocrConfirmed: typeof pending === "object" && pending.ocrConfirmed === true,
     });
-    setAppState("復習問題を読込", "success");
+    setActiveOutputMode(requestedMode);
+    setAppState(source === "ocr" ? "画像読み取りを確認済み" : "復習問題を読込", "success");
+    if (typeof pending === "object" && pending.autoSolve === true) {
+      await runOutputMode(requestedMode);
+    }
   }
 }
 
@@ -526,6 +572,7 @@ async function initialize() {
 
   elements.questionInput.addEventListener("input", handleManualInput);
   elements.selectionButton.addEventListener("click", () => void loadSelection());
+  elements.ocrButton.addEventListener("click", () => void startOcrCapture());
   elements.outputActionButtons.forEach((button) => {
     button.addEventListener("click", () => void runOutputMode(button.dataset.outputMode));
   });

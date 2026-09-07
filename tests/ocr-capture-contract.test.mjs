@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   BEGIN_OCR_SELECTION,
   CANCEL_OCR_CAPTURE,
+  CANCEL_OCR_RECOGNITION,
   DISCARD_OCR_CAPTURE,
   GET_OCR_CAPTURE_PREVIEW,
   OCR_CAPTURE_COMPLETE,
@@ -16,6 +17,7 @@ import {
   OCR_CAPTURE_TARGET,
   OcrCaptureContractError,
   PREPARE_OCR_SCREENSHOT,
+  RECOGNIZE_OCR_CAPTURE,
   START_OCR_CAPTURE,
   SUBMIT_OCR_SELECTION,
   isOcrCaptureExpired,
@@ -85,6 +87,8 @@ test("OCR capture protocol v1のtarget、message、phaseを固定する", () => 
     "PREPARE_OCR_SCREENSHOT",
     "CANCEL_OCR_CAPTURE",
     "GET_OCR_CAPTURE_PREVIEW",
+    "RECOGNIZE_OCR_CAPTURE",
+    "CANCEL_OCR_RECOGNITION",
     "DISCARD_OCR_CAPTURE",
     "OCR_CAPTURE_COMPLETE",
   ]);
@@ -107,6 +111,8 @@ test("STARTとcaptureIdだけの制御messageをJSON-safeに正規化する", ()
   for (const type of [
     PREPARE_OCR_SCREENSHOT,
     GET_OCR_CAPTURE_PREVIEW,
+    RECOGNIZE_OCR_CAPTURE,
+    CANCEL_OCR_RECOGNITION,
     DISCARD_OCR_CAPTURE,
     OCR_CAPTURE_COMPLETE,
   ]) {

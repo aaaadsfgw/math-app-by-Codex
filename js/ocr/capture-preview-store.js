@@ -1,6 +1,6 @@
 import { cropScreenshotPng } from "./capture-image.js";
 
-export const OCR_CAPTURE_PREVIEW_TTL_MS = 2 * 60 * 1_000;
+export const OCR_CAPTURE_PREVIEW_TTL_MS = 10 * 60 * 1_000;
 export const OCR_CAPTURE_MAX_PREVIEWS = 2;
 
 const PREVIEW_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u;
@@ -173,6 +173,7 @@ export function createOcrCapturePreviewStore({
         const entry = {
           previewId,
           previewUrl: result.blobUrl,
+          blob: result.blob,
           source,
           crop,
           expiresAt: safeNow(now) + ttlMs,
@@ -197,6 +198,24 @@ export function createOcrCapturePreviewStore({
           throw previewError("OCR previewの期限が切れました。", "OCR_CAPTURE_PREVIEW_EXPIRED");
         }
         return publicMetadata(entry);
+      });
+    },
+
+    getBlob(rawPreviewId) {
+      return withLock(() => {
+        const previewId = normalizePreviewId(rawPreviewId);
+        const entry = entries.get(previewId);
+        if (!entry) {
+          throw previewError("OCR previewが見つかりません。", "OCR_CAPTURE_PREVIEW_NOT_FOUND");
+        }
+        if (entry.expiresAt <= safeNow(now)) {
+          discardUnlocked(previewId);
+          throw previewError("OCR previewの期限が切れました。", "OCR_CAPTURE_PREVIEW_EXPIRED");
+        }
+        if (!(entry.blob instanceof Blob) || entry.blob.size <= 0) {
+          throw previewError("OCR preview画像を読み取れません。", "OCR_CAPTURE_PREVIEW_RESULT_INVALID");
+        }
+        return entry.blob;
       });
     },
 

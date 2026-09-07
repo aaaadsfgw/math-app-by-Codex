@@ -3,18 +3,24 @@ import { runSymbolicOperation } from "./math-core/symbolic-client.js";
 import { OFFSCREEN_MESSAGE_TARGET } from "./offscreen-client.js";
 import { GET_OCR_CAPTURE_PREVIEW } from "./ocr/capture-contract.js";
 import {
+  CANCEL_OCR_RECOGNITION,
   CREATE_OCR_CAPTURE_PREVIEW,
   DISCARD_OCR_CAPTURE_PREVIEW,
+  RECOGNIZE_OCR_CAPTURE_PREVIEW,
 } from "./ocr/capture-preview-operations.js";
 import { createOcrCapturePreviewStore } from "./ocr/capture-preview-store.js";
+import { createOcrEngine } from "./ocr/ocr-engine.js";
+import { createIbemOcrBackendSession } from "./ocr/ocr-worker-client.js";
 
 const ocrCapturePreviews = createOcrCapturePreviewStore();
+const localOcrEngine = createOcrEngine({ backendFactory: createIbemOcrBackendSession });
 
 export function createOffscreenMessageDispatcher({
   symbolicOperation = runSymbolicOperation,
   readClipboard = readFromClipboard,
   writeClipboard = writeToClipboard,
   capturePreviews = ocrCapturePreviews,
+  ocrEngine = localOcrEngine,
 } = {}) {
   return async function dispatch(message) {
     switch (message?.type) {
@@ -38,6 +44,12 @@ export function createOffscreenMessageDispatcher({
         return capturePreviews.get(message.previewId);
       case DISCARD_OCR_CAPTURE_PREVIEW:
         return capturePreviews.discard(message.previewId);
+      case RECOGNIZE_OCR_CAPTURE_PREVIEW:
+        return ocrEngine.recognize(await capturePreviews.getBlob(message.previewId), {
+          timeoutMs: message.timeoutMs,
+        });
+      case CANCEL_OCR_RECOGNITION:
+        return Object.freeze({ cancelled: ocrEngine.cancel() > 0 });
       default: {
         const error = new Error("未対応のオフスクリーン処理です。");
         error.code = "OFFSCREEN_UNSUPPORTED_OPERATION";
@@ -46,6 +58,10 @@ export function createOffscreenMessageDispatcher({
     }
   };
 }
+
+globalThis.addEventListener?.("pagehide", () => {
+  void localOcrEngine.dispose();
+});
 
 export const dispatchOffscreenMessage = createOffscreenMessageDispatcher();
 

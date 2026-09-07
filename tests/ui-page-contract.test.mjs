@@ -80,7 +80,12 @@ test("v2 learning controls and metadata regions remain wired", async () => {
   }
   const outputModes = attributeValues(popup, "data-output-mode");
   assert.deepEqual(outputModes, ["hint1", "hint2", "steps", "answer", "explain"]);
-  assert.match(popup, /id=["']ocrButton["'][^>]*\bdisabled\b/u);
+  assert.doesNotMatch(popup, /id=["']ocrButton["'][^>]*\bdisabled\b/u);
+  assert.match(scripts[0], /START_OCR_CAPTURE/u);
+  assert.match(scripts[0], /ocrButton\.addEventListener\(["']click["']/u);
+  assert.match(scripts[0], /pending\.autoSolve\s*===\s*true/u);
+  assert.match(scripts[0], /await runOutputMode\(requestedMode\)/u);
+  assert.match(scripts[0], /ocrConfirmed:\s*typeof pending === ["']object["'] && pending\.ocrConfirmed === true/u);
   assert.match(history, /id=["']sourceFilter["']/u);
   assert.match(analytics, /id=["']categoryAnalytics["'][^>]*role=["']list["']/u);
   for (const script of scripts) assert.doesNotMatch(script, /\.innerHTML\b/u);

@@ -135,6 +135,19 @@ test("問題または入力元の変更はsolver cacheと履歴をリセット�
   assert.equal(calls.adds[1].ocrConfirmed, true);
 });
 
+test("未確認のOCR入力はsolver呼び出し前に拒否する", async () => {
+  const { session, calls } = fixture();
+  session.setInput({ question: "x^2=4", source: "ocr", ocrConfirmed: false });
+
+  await assert.rejects(
+    session.view("answer", { learningMode: "quick" }),
+    (error) => error.code === "OCR_CONFIRMATION_REQUIRED",
+  );
+  assert.equal(calls.solves.length, 0);
+  assert.equal(calls.adds.length, 0);
+  assert.equal(session.snapshot.hasCachedResult, false);
+});
+
 test("unsupportedは表示も履歴も作らず同じ入力で再実行しない", async () => {
   const { session, calls } = fixture({ presentable: false });
   session.setInput({ question: "proof", source: "manual" });

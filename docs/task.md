@@ -5,7 +5,9 @@ mathematics engine while keeping the study-log product useful.
 
 Acceptance requires:
 
-- no runtime model or network dependency;
+- no answer-generation model or network dependency; the only model exception
+  is packaged local transcription of one tightly cropped machine-printed
+  formula into editable, explicitly confirmed input text;
 - no diagram editor or geometry solver;
 - safe parser and common expression representation;
 - solver, verification, hint, working, and explanation coverage for the agreed

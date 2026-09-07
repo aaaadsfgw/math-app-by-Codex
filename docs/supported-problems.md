@@ -49,7 +49,9 @@ and regression tests are complete.
 
 ## Intentionally unsupported
 
-- image-only questions;
+- image-only questions other than a tightly cropped machine-printed single
+  formula that the user has reviewed, edited if necessary, and explicitly
+  confirmed as text; OCR does not expand the solver's supported mathematics;
 - missing conditions that appear only in a figure;
 - diagram-dependent geometry and construction;
 - proof requests such as “prove that” or “show that” requiring prose reasoning;

@@ -741,11 +741,20 @@ export async function setPendingQuestion(questionOrObject, parentHistoryId = nul
       : { question: questionOrObject, parentHistoryId };
     const question = normalizeWhitespace(candidate.question);
     if (!question) throw new TypeError("問題文が空です。");
+    const source = SOURCES.has(candidate.source) ? candidate.source : "review";
+    const ocrConfirmed = source === "ocr" && candidate.ocrConfirmed === true;
+    const requestedMode = MODES.has(candidate.requestedMode)
+      ? candidate.requestedMode
+      : null;
     const pending = {
       question,
       parentHistoryId: normalizeWhitespace(
         candidate.parentHistoryId ?? candidate.historyId ?? parentHistoryId,
       ) || null,
+      source,
+      ocrConfirmed,
+      requestedMode,
+      autoSolve: source === "ocr" && ocrConfirmed && candidate.autoSolve === true,
       createdAt: validIso(candidate.createdAt, toIsoString()),
     };
     await writeStorage({ [STORAGE_KEYS.pendingQuestion]: pending });
@@ -760,10 +769,27 @@ export async function getPendingQuestion() {
 
 function normalizePendingQuestion(value) {
   if (!isPlainObject(value) || !normalizeWhitespace(value.question)) return null;
+  const source = SOURCES.has(value.source) ? value.source : "review";
+  const ocrConfirmed = source === "ocr" && value.ocrConfirmed === true;
   return {
     question: normalizeWhitespace(value.question),
     parentHistoryId: normalizeWhitespace(value.parentHistoryId) || null,
+    source,
+    ocrConfirmed,
+    requestedMode: MODES.has(value.requestedMode) ? value.requestedMode : null,
+    autoSolve: source === "ocr" && ocrConfirmed && value.autoSolve === true,
     createdAt: validIso(value.createdAt, toIsoString()),
+  };
+}
+
+function normalizeImportedPendingQuestion(value) {
+  const pending = normalizePendingQuestion(value);
+  if (!pending) return null;
+  return {
+    ...pending,
+    source: "review",
+    ocrConfirmed: false,
+    autoSolve: false,
   };
 }
 
@@ -900,11 +926,12 @@ async function importDataUnlocked(payload, { mode = "replace" } = {}) {
         code: "INVALID_IMPORT",
       });
     } else {
-      entries[STORAGE_KEYS.pendingQuestion] = {
-        question: normalizeWhitespace(parsed.pendingQuestion.question),
-        parentHistoryId: normalizeWhitespace(parsed.pendingQuestion.parentHistoryId) || null,
-        createdAt: validIso(parsed.pendingQuestion.createdAt, toIsoString()),
-      };
+      // Imported JSON cannot attest that the current user reviewed an OCR
+      // transcription. Keep the text available, but remove the confirmation
+      // and auto-solve capability at the import trust boundary.
+      entries[STORAGE_KEYS.pendingQuestion] = normalizeImportedPendingQuestion(
+        parsed.pendingQuestion,
+      );
     }
   }
   if (Object.hasOwn(parsed, "appMeta")) {

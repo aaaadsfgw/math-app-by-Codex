@@ -90,18 +90,78 @@
   font-weight: 750;
 }
 
-.ocr-unavailable-notice {
-  border-left-color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 8%, var(--surface));
+.recognition-card {
+  padding: clamp(0.8rem, 2.5vw, 1.35rem);
 }
 
-.ocr-unavailable-notice h2 {
-  margin-bottom: 0.35rem;
-  color: var(--warning);
+.recognition-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.ocr-unavailable-notice p:last-child {
+.recognition-heading-row h2,
+.recognition-heading-row p {
   margin-bottom: 0;
+}
+
+.recognition-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.recognition-controls .button {
+  min-width: 10rem;
+}
+
+.candidate-panel {
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.candidate-panel[hidden] {
+  display: none;
+}
+
+.candidate-panel textarea {
+  min-height: 8rem;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  line-height: 1.55;
+}
+
+.runtime-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.runtime-details > div {
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+
+.runtime-details dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.runtime-details dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 750;
+}
+
+.solve-actions {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
 }
 
 .confirm-actions {
@@ -128,10 +188,24 @@
     align-self: flex-start;
   }
 
-  .capture-details {
+  .recognition-heading-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recognition-heading-row .badge {
+    align-self: flex-start;
+  }
+
+  .capture-details,
+  .runtime-details {
     grid-template-columns: 1fr;
   }
 
+  .recognition-controls,
+  .recognition-controls .button,
+  .solve-actions,
+  .solve-actions .button,
   .confirm-actions,
   .confirm-actions .button {
     width: 100%;

@@ -21,9 +21,9 @@
     <section class="card compact-card stack" aria-labelledby="questionHeading">
       <div class="spread"><h2 id="questionHeading">問題文</h2><span id="charCount" class="muted" aria-live="polite">0文字</span></div>
       <textarea id="questionInput" aria-label="数学の問題文" placeholder="例: 2x + 3 = 11"></textarea>
-      <div class="input-actions"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><button id="ocrButton" class="button ghost" type="button" aria-describedby="ocrStatus" disabled>画像から読み取る</button></div>
+      <div class="input-actions"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><button id="ocrButton" class="button ghost" type="button" aria-describedby="ocrStatus">画像から読み取る</button></div>
       <div class="input-meta"><span id="categoryStatus" class="badge">未分類</span><span id="inputSourceStatus" class="badge">手入力</span></div>
-      <div id="ocrStatus" class="muted" role="status" aria-live="polite">画像読み取りは準備中です（OCRモデルの利用条件を確認中）。</div>
+      <div id="ocrStatus" class="muted" role="status" aria-live="polite">ページ上で、印刷された数式1つが収まる範囲を選択します。</div>
     </section>
     <section class="card compact-card stack" aria-labelledby="actionHeading">
       <div><h2 id="actionHeading">必要なところだけ見る</h2><p class="muted action-help">同じ問題では再計算せず、段階を切り替えます。</p></div>

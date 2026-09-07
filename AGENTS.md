@@ -11,12 +11,20 @@ previously submitted extension.
 
 - Never edit, import from, depend on, commit to, or rewrite the history of the
   existing `math-answer-paste` project.
-- Do not add local AI, API keys, cloud AI APIs, external application servers,
-  CDNs, or clipboard read access.
+- Do not add local or cloud answer-generation AI, API keys, cloud AI APIs,
+  external application servers, or CDNs. The existing clipboard permissions
+  are limited to the documented selection-first workflow. The only
+  model-based exception is the pinned, packaged printed-formula OCR described
+  below; it may transcribe input but must never answer or verify mathematics.
 - Do not use `eval`, `new Function`, or equivalent dynamic code execution for
   mathematics.
-- Do not add image recognition, diagram-based geometry solving, or proof
-  generation.
+- Do not add general image recognition, diagram-based geometry solving, or
+  proof generation. The sole image-input exception is a user-selected, tightly
+  cropped, machine-printed single formula. Local OCR may produce an untrusted,
+  editable candidate, but that candidate may reach the existing deterministic
+  solver only after an explicit user confirmation. Handwriting, page OCR,
+  photographs, prose, tables, graphs, diagrams, and spatial inference remain
+  outside scope.
 
 ## Verification policy
 

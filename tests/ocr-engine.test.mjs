@@ -21,13 +21,13 @@ function sessionReturning(output, { onRecognize = null, onDispose = null } = {})
   };
 }
 
-test("モデル未同梱の既定状態はlicense gateで明示的にunavailable", async () => {
+test("backend未注入のengineは資産ライセンスと区別してunavailable", async () => {
   const engine = createOcrEngine();
   assert.equal(engine.status.available, false);
   assert.equal(engine.status.availability, "unavailable");
-  assert.equal(engine.status.unavailableReason, "license-gate");
-  assert.equal(engine.status.unavailableCode, "OCR_LICENSE_GATE");
-  assert.equal(engine.status.redistributionAllowed, false);
+  assert.equal(engine.status.unavailableReason, "backend-not-configured");
+  assert.equal(engine.status.unavailableCode, "OCR_BACKEND_NOT_CONFIGURED");
+  assert.equal(engine.status.redistributionAllowed, true);
   assert.equal(engine.metadata.licenseGate, OCR_LICENSE_GATE);
   assert.equal(engine.metadata.model, OCR_PROVISIONAL_MODEL);
 
@@ -66,7 +66,7 @@ test("初回recognizeまでlazy loadし成功sessionをwarm reuseする", async 
   assert.equal(first.verified, false);
   assert.equal(first.confirmationRequired, true);
   assert.equal(first.model.provisional, true);
-  assert.equal(first.model.redistributionStatus, "blocked-license-gate");
+  assert.equal(first.model.redistributionStatus, "allowed-with-attribution");
   assert.equal(Object.isFrozen(first), true);
   assert.equal(second.provider, "webgpu");
   assert.equal(engine.status.warm, true);
@@ -137,6 +137,28 @@ test("両providerのmodel load failureをattempt evidence付きで返す", async
     },
   );
   assert.equal(engine.status.warm, false);
+});
+
+test("画像入力エラーはprovider非依存としてWASMへ重複実行しない", async () => {
+  const providers = [];
+  const engine = createOcrEngine({
+    backendFactory: async ({ provider }) => {
+      providers.push(provider);
+      return {
+        async recognize() {
+          const error = new Error("画像をデコードできません。");
+          error.code = "OCR_IMAGE_DECODE_FAILED";
+          throw error;
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    engine.recognize(new Blob(["invalid"])),
+    (error) => error.code === "OCR_IMAGE_DECODE_FAILED" && error.phase === "input",
+  );
+  assert.deepEqual(providers, ["webgpu"]);
 });
 
 test("無応答推論をtimeoutで停止し不確かなsessionを再利用しない", async () => {

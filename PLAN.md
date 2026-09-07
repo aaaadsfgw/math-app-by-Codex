@@ -7,15 +7,24 @@ deterministic local code while preserving the learning log, shortcut, history,
 analytics, review, settings, import/export, and accessibility behavior.
 
 The supported curriculum target is routine calculation from junior-high
-mathematics through Mathematics III. Image recognition, diagram-based geometry,
-and proof generation are explicitly out of scope.
+mathematics through Mathematics III. General image recognition,
+diagram-based geometry, and proof generation are explicitly out of scope. A
+single acquisition-only exception permits local transcription of a tightly
+cropped, machine-printed single formula into editable candidate text. OCR never
+solves or verifies mathematics, and the existing deterministic solver receives
+the text only after explicit user confirmation.
 
 ## Constraints
 
-- No local or cloud AI.
+- No local or cloud answer-generation AI. The pinned, packaged OCR model is an
+  acquisition-only exception and cannot create mathematical answers.
 - No API key, CDN, or external application server.
 - No JavaScript `eval`, `new Function`, or equivalent dynamic code execution.
 - The extension must remain usable offline as a Manifest V3 extension.
+- Printed-formula OCR must use packaged assets only, prefer WebGPU, fall back to
+  WASM, and fail without submitting or solving when neither provider succeeds.
+- OCR output must remain visibly untrusted and editable until the user confirms
+  it; recognition alone must never invoke a solver or create verified history.
 - Unsupported or ambiguous input must return a clear limitation instead of a
   guessed answer.
 - Existing history records must continue to load.
@@ -64,10 +73,23 @@ and proof generation are explicitly out of scope.
      unsupported cases.
    - Automated checks, unpacked-Chrome smoke testing, documentation update, and
      a final go/no-go report.
+9. **Bounded printed-formula OCR acquisition**
+   - Bundle a pinned and licensed formula-transcription model plus browser
+     runtime; lazy-load it only after the user requests OCR.
+   - Recognize one tightly cropped machine-printed formula locally, with
+     WebGPU-to-WASM fallback, bounded input, timeout, cancellation, disposal,
+     and safe reuse of a warm session.
+   - Show the crop and editable candidate together. Require a separate explicit
+     confirmation before the existing solver runs, and record `source: "ocr"`
+     without treating OCR as verification.
+   - Reject handwriting, full-page segmentation, prose, diagrams, graphs,
+     tables, proof interpretation, and any attempt to infer missing notation.
 
 ## Definition of done
 
-- No Ollama or other AI code, permission, setting, or documentation remains.
+- No Ollama or answer-generation AI code, permission, setting, or documentation
+  remains; the pinned local OCR exception only transcribes printed input and
+  never generates or verifies an answer.
 - All implemented solvers use the common result and solution-trace contracts.
 - All existing non-geometry learning workflows remain operational.
 - Every supported result is independently verified or explicitly marked as a
@@ -75,5 +97,8 @@ and proof generation are explicitly out of scope.
 - Ambiguous, malformed, unsupported, and non-elementary cases fail safely.
 - The automated evaluation suite passes.
 - Manual Chrome flows pass with no external process running.
+- OCR recognition and its provider fallback pass in unpacked Chrome, while an
+  OCR result by itself still cannot solve, write verified history, or change
+  the clipboard.
 - `PROGRESS.md` contains no unfinished milestone.
 

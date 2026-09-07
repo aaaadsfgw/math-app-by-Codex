@@ -8,6 +8,8 @@ export const SUBMIT_OCR_SELECTION = "SUBMIT_OCR_SELECTION";
 export const PREPARE_OCR_SCREENSHOT = "PREPARE_OCR_SCREENSHOT";
 export const CANCEL_OCR_CAPTURE = "CANCEL_OCR_CAPTURE";
 export const GET_OCR_CAPTURE_PREVIEW = "GET_OCR_CAPTURE_PREVIEW";
+export const RECOGNIZE_OCR_CAPTURE = "RECOGNIZE_OCR_CAPTURE";
+export const CANCEL_OCR_RECOGNITION = "CANCEL_OCR_RECOGNITION";
 export const DISCARD_OCR_CAPTURE = "DISCARD_OCR_CAPTURE";
 export const OCR_CAPTURE_COMPLETE = "OCR_CAPTURE_COMPLETE";
 
@@ -18,6 +20,8 @@ export const OCR_CAPTURE_MESSAGE_TYPES = Object.freeze([
   PREPARE_OCR_SCREENSHOT,
   CANCEL_OCR_CAPTURE,
   GET_OCR_CAPTURE_PREVIEW,
+  RECOGNIZE_OCR_CAPTURE,
+  CANCEL_OCR_RECOGNITION,
   DISCARD_OCR_CAPTURE,
   OCR_CAPTURE_COMPLETE,
 ]);
@@ -113,6 +117,18 @@ const MESSAGE_KEYS_BY_TYPE = Object.freeze({
     "reason",
   ]),
   [GET_OCR_CAPTURE_PREVIEW]: Object.freeze([
+    "target",
+    "protocolVersion",
+    "type",
+    "captureId",
+  ]),
+  [RECOGNIZE_OCR_CAPTURE]: Object.freeze([
+    "target",
+    "protocolVersion",
+    "type",
+    "captureId",
+  ]),
+  [CANCEL_OCR_RECOGNITION]: Object.freeze([
     "target",
     "protocolVersion",
     "type",
