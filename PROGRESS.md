@@ -646,6 +646,14 @@ Last updated: 2026-09-08
   a timed-out crop request always schedules preview discard even if its late
   offscreen work eventually succeeds, and offscreen-document creation shares
   the request's single overall deadline.
+- Added conservative IBEM candidate cleanup for the observed
+  `zws _( 2 x ^( 2 ) + 5 x + 2 = 0 )` output. Only the known standalone
+  `zws` artifact and an exact whole-formula `_ (...)`/`zws_(...)` wrapper are
+  removed; explicit integer exponent parentheses and unambiguous spaced
+  number/single-letter products are normalized for the existing solver. Raw
+  OCR text remains separate from the editable normalized candidate. Digit
+  suffixes, subscripts, valid underscore forms, and ambiguous adjacency remain
+  unchanged.
 
 ## Remaining validation
 
@@ -658,7 +666,7 @@ Last updated: 2026-09-08
 
 ## Last verified commands
 
-- `npm.cmd test` - 703 passed, 0 failed on 2026-09-08, including 5,500
+- `npm.cmd test` - 708 passed, 0 failed on 2026-09-08, including 5,500
   generated evaluation cases.
 - `npm.cmd run check` - passed for 248 files, 12 HTML, 187 JS/MJS, and 12 CSS
   files on 2026-09-08.

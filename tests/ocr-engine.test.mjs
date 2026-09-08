@@ -117,6 +117,22 @@ test("webgpu推論失敗時は破棄してfresh wasm sessionへfallbackし再利
   assert.deepEqual(disposed, ["webgpu", "wasm"]);
 });
 
+test("正規化済み候補とは別にraw OCR textをデバッグ用に保持する", async () => {
+  const rawText = "zws _( 2 x ^( 2 ) + 5 x + 2 = 0 )";
+  const engine = createOcrEngine({
+    backendFactory: async () => sessionReturning({
+      text: "2*x^2+5*x+2=0",
+      rawText,
+      format: "text",
+    }),
+  });
+
+  const output = await engine.recognize({ image: true });
+  assert.equal(output.text, "2*x^2+5*x+2=0");
+  assert.equal(output.rawText, rawText);
+  await engine.dispose();
+});
+
 test("両providerのmodel load failureをattempt evidence付きで返す", async () => {
   const engine = createOcrEngine({
     backendFactory: async ({ provider }) => {
@@ -184,6 +200,7 @@ test("空・過長・制御文字のOCR出力をinvalidとしてsolver前で拒�
     { latex: "   " },
     { latex: "123456789" },
     { latex: "x\u0000=1" },
+    { text: "x=1", rawText: { unsafe: true }, format: "text" },
   ]) {
     const engine = createOcrEngine({
       maxOutputCharacters: 8,

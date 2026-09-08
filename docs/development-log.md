@@ -852,3 +852,20 @@ confirmation-page and learning-session tests.
 primary toolbar-driven capture-to-solve path is now browser-verified; the
 manual adversarial UI and forced-WASM full-flow items remain in the release
 checklist.
+
+## 2026-09-08: conservative OCR formula syntax normalization
+
+- Normalized the observed IBEM output
+  `zws _( 2 x ^( 2 ) + 5 x + 2 = 0 )` to
+  `2*x^2+5*x+2=0` before explicit user confirmation. The cleanup recognizes
+  only the standalone `zws` artifact and exact whole-formula
+  `_ (...)`/`zws_(...)` wrappers, flattens only numeric exponent parentheses,
+  and inserts `*` only for a spaced numeric coefficient followed by one
+  isolated letter in a safe operator context.
+- Preserved raw OCR text separately for debugging while leaving the normalized
+  candidate editable. `x2`, `x1 + x2`, subscript forms, documented underscore
+  syntax, slash-adjacent coefficients, multi-letter identifiers, and chained
+  implicit products are not guessed or rewritten.
+- The regression passes from raw OCR through normalization and existing solver
+  routing to an exact, verified quadratic result `x=-2,-1/2`. The full suite
+  passes 708 tests, and the static project check passes 248 files.

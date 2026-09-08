@@ -91,6 +91,7 @@ function snapshotModel(metadata) {
 function candidateFromObject(raw) {
   const latexValue = readField(raw, "latex");
   const textValue = readField(raw, "text");
+  const rawTextValue = readField(raw, "rawText");
   const formatValue = readField(raw, "format");
 
   if (latexValue !== undefined && typeof latexValue !== "string") {
@@ -98,6 +99,9 @@ function candidateFromObject(raw) {
   }
   if (textValue !== undefined && typeof textValue !== "string") {
     throw new OcrOutputValidationError("OCRのtextフィールドが文字列ではありません。");
+  }
+  if (rawTextValue !== undefined && typeof rawTextValue !== "string") {
+    throw new OcrOutputValidationError("OCRのrawTextフィールドが文字列ではありません。");
   }
 
   const latex = typeof latexValue === "string" ? latexValue.trim() : "";
@@ -139,6 +143,7 @@ function candidateFromObject(raw) {
 
   return Object.freeze({
     value: latex || text,
+    rawText: rawTextValue === undefined ? (latex || text) : rawTextValue,
     format,
     warnings: Object.freeze(warnings),
     confidence: finiteSnapshot(confidenceValue, [
@@ -169,6 +174,7 @@ export function createOcrOutput(
   if (typeof raw === "string") {
     candidate = Object.freeze({
       value: raw,
+      rawText: raw,
       format: "latex",
       warnings: Object.freeze([]),
       confidence: null,
@@ -186,8 +192,10 @@ export function createOcrOutput(
   if (!actualProvider) throw new TypeError("provider metadataが必要です。");
 
   const outputText = normalizedText(candidate.value, limit);
+  const rawText = normalizedText(candidate.rawText, limit);
   return Object.freeze({
     text: outputText,
+    rawText,
     latex: candidate.format === "latex" ? outputText : null,
     format: candidate.format,
     provider: actualProvider,

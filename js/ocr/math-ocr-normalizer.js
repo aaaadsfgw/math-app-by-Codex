@@ -5,6 +5,10 @@ const SAFE_WIDTH_CHARACTER = /^[\u3000\uFF01-\uFF5E]$/u;
 const SUPERSCRIPT_SEQUENCE = /[⁰¹²³⁴⁵⁶⁷⁸⁹]+/gu;
 const UNSUPPORTED_SUPERSCRIPT = /[\u2070-\u209F\u00B2\u00B3\u00B9]/u;
 const EXPONENT_BASE_CHARACTER = /[\p{L}\p{N})\]}]/u;
+const KNOWN_STANDALONE_ARTIFACT = /(?<![A-Za-z0-9._])zws(?=$|[ \t\n])/gu;
+const CLEAR_NUMERIC_VARIABLE_PRODUCT = /(\d+(?:\.\d+)?|\.\d+)([ \t]+)([A-Za-z])/gu;
+const SAFE_COEFFICIENT_PREFIX = /[([,{+\-*=<>;]/u;
+const SAFE_VARIABLE_SUFFIX = /[)\]},;+\-*/^=<>\n]/u;
 
 const SUPERSCRIPT_DIGITS = Object.freeze({
   "⁰": "0",
@@ -242,6 +246,66 @@ function normalizeSafeMathGlyphs(text, warnings) {
   return normalized;
 }
 
+function removeKnownStandaloneArtifacts(text) {
+  return text.replace(KNOWN_STANDALONE_ARTIFACT, "");
+}
+
+function unwrapKnownWholeFormulaWrapper(text) {
+  const candidate = text.trim();
+  const prefix = /^(?:zws[ \t]*)?_[ \t]*\(/u.exec(candidate);
+  if (!prefix) {
+    return Object.freeze({ text: candidate, unwrapped: false });
+  }
+  const opener = prefix[0].length - 1;
+  const closer = findClosingParenthesis(candidate, opener);
+  if (closer !== candidate.length - 1) {
+    return Object.freeze({ text: candidate, unwrapped: false });
+  }
+  const body = candidate.slice(opener + 1, closer).trim();
+  if (!body) return Object.freeze({ text: candidate, unwrapped: false });
+  return Object.freeze({ text: body, unwrapped: true });
+}
+
+function normalizeExplicitNumericExponents(text) {
+  return text.replace(/\^[ \t]*\([ \t]*([0-9]+)[ \t]*\)/gu, "^$1");
+}
+
+function previousNonWhitespace(text, offset) {
+  for (let index = offset - 1; index >= 0; index -= 1) {
+    if (text[index] !== " " && text[index] !== "\t") return text[index];
+  }
+  return "";
+}
+
+function nextNonWhitespace(text, offset) {
+  for (let index = offset; index < text.length; index += 1) {
+    if (text[index] !== " " && text[index] !== "\t") return text[index];
+  }
+  return "";
+}
+
+function normalizeClearNumericVariableProducts(text) {
+  return text.replace(
+    CLEAR_NUMERIC_VARIABLE_PRODUCT,
+    (match, number, _spacing, variable, offset, source) => {
+      const prefix = previousNonWhitespace(source, offset);
+      if (prefix && !SAFE_COEFFICIENT_PREFIX.test(prefix)) return match;
+      const suffix = nextNonWhitespace(source, offset + match.length);
+      if (suffix && !SAFE_VARIABLE_SUFFIX.test(suffix)) return match;
+      return `${number}*${variable}`;
+    },
+  );
+}
+
+function compactKnownWrapperSpacing(text) {
+  return text
+    .replace(/[ \t]*([+\-*/^=<>])[ \t]*/gu, "$1")
+    .replace(/([([{])[ \t]*/gu, "$1")
+    .replace(/[ \t]*([)\]}])/gu, "$1")
+    .replace(/[ \t]*([,;])[ \t]*/gu, "$1")
+    .trim();
+}
+
 export function normalizeMathOcrCandidate(value) {
   if (typeof value !== "string") {
     throw candidateError("OCR候補は文字列である必要があります。", "OCR_NORMALIZATION_INVALID");
@@ -266,11 +330,16 @@ export function normalizeMathOcrCandidate(value) {
   );
   assertBalancedDelimiters(prepared);
 
-  let text = transformCalls(prepared, warnings);
+  const wrapper = unwrapKnownWholeFormulaWrapper(prepared);
+  const artifactFree = removeKnownStandaloneArtifacts(wrapper.text);
+  let text = transformCalls(artifactFree, warnings);
   text = replaceSymbolWords(text, warnings)
     .replace(/[ \t\u3000]+/gu, " ")
     .replace(/ *\n */gu, "\n")
     .trim();
+  text = normalizeExplicitNumericExponents(text);
+  text = normalizeClearNumericVariableProducts(text);
+  if (wrapper.unwrapped) text = compactKnownWrapperSpacing(text);
 
   if (!text) {
     throw candidateError("正規化後のOCR候補が空です。", "OCR_NORMALIZATION_EMPTY");

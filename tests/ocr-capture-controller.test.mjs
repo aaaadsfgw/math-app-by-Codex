@@ -133,6 +133,7 @@ function fakeEnvironment({
       if (recognitionGate) await recognitionGate;
       return {
         text: "x^2 - 5x + 6 = 0",
+        rawText: "zws _( x ^( 2 ) - 5 x + 6 = 0 )",
         provider: "wasm",
         status: "unconfirmed",
         verified: false,
@@ -601,6 +602,7 @@ test("確認ページだけがpreview取得・OCR実行・破棄を行える", a
     confirmationSender(),
   );
   assert.equal(recognized.candidateText, "x^2 - 5x + 6 = 0");
+  assert.equal(recognized.rawText, "zws _( x ^( 2 ) - 5 x + 6 = 0 )");
   assert.equal(recognized.provider, "wasm");
   assert.equal(recognized.confirmationRequired, true);
   assert.equal((await environment.store.get()).phase, "preview");

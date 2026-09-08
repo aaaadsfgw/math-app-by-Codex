@@ -713,6 +713,7 @@ export function createOcrCaptureController({
     return Object.freeze({
       captureId: currentSession.captureId,
       candidateText: output.text,
+      rawText: typeof output.rawText === "string" ? output.rawText : output.text,
       provider: String(output.provider || ""),
       backend: output.backend,
       model: output.model,
