@@ -72,6 +72,7 @@ class FakeNode extends FakeEventTarget {
     this.textContent = "";
     this.hidden = false;
     this.open = false;
+    this.modal = false;
     this.removed = false;
     this.pointerCaptures = new Set();
     this.shadowRootForTest = null;
@@ -97,6 +98,9 @@ class FakeNode extends FakeEventTarget {
   }
 
   attachShadow() {
+    if (this.tagName === "DIALOG") {
+      throw new Error("This element does not support attachShadow");
+    }
     this.shadowRootForTest = new FakeNode("shadow-root", this.ownerDocument);
     this.shadowRootForTest.setConnected(this.isConnected);
     return this.shadowRootForTest;
@@ -104,10 +108,17 @@ class FakeNode extends FakeEventTarget {
 
   showModal() {
     this.open = true;
+    this.modal = true;
+  }
+
+  show() {
+    this.open = true;
+    this.modal = false;
   }
 
   close() {
     this.open = false;
+    this.modal = false;
     this.dispatchEvent(createEvent("close", { isTrusted: false, cancelable: false }));
   }
 
@@ -348,6 +359,7 @@ test("valid BEGIN creates the on-demand overlay", () => {
   assert.ok(host);
   assert.equal(host.isConnected, true);
   assert.equal(host.open, true);
+  assert.equal(host.modal, true);
   assert.equal(host.dataset.phase, "selecting");
   assert.ok(harness.window.listenerCount() > 0);
   assert.equal(harness.timers.size, 1);
@@ -399,6 +411,8 @@ test("PREPARE responds after two queued animation frames and clears the shield p
   assert.equal(harness.animationFrames.length, 1);
   assert.equal(shield.style.getPropertyValue("background"), "transparent");
   assert.equal(harness.currentHost().dataset.captureReady, "true");
+  assert.equal(harness.currentHost().open, true);
+  assert.equal(harness.currentHost().modal, false);
 
   harness.runNextAnimationFrame();
   assert.equal(prepare.responseCount, 0);

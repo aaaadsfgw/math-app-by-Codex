@@ -14,10 +14,13 @@ test("capture overlay remains a classic, idempotent, on-demand script", () => {
   assert.doesNotMatch(source, /createOverlay\([^)]*\);\s*\}\)\(\)/);
 });
 
-test("capture UI is isolated, top-layer capable, and avoids markup injection", () => {
+test("capture UI keeps a dialog top layer while isolating content in a shadow-capable surface", () => {
   assert.match(source, /document\.createElement\("dialog"\)/);
   assert.match(source, /host\.showModal\(\)/);
-  assert.match(source, /attachShadow\(\{ mode: "closed" \}\)/);
+  assert.match(source, /const surface = document\.createElement\("div"\)/);
+  assert.match(source, /surface\.attachShadow\(\{ mode: "closed" \}\)/);
+  assert.doesNotMatch(source, /host\.attachShadow\(/);
+  assert.match(source, /host\.append\(surface\)/);
   assert.doesNotMatch(source, /\.innerHTML\b/);
   assert.doesNotMatch(source, /\beval\s*\(|new\s+Function\b/);
   assert.match(source, /textContent = text/);
@@ -90,6 +93,9 @@ test("protocol names and routing are explicit", () => {
 });
 
 test("screenshot preparation hides chrome but keeps a transparent shield for two frames", () => {
+  assert.match(source, /removeModalBackdropForScreenshot\(state\)/);
+  assert.match(source, /host\.close\(\)/);
+  assert.match(source, /host\.show\(\)/);
   assert.match(source, /state\.host\.dataset\.captureReady = "true"/);
   assert.match(source, /\.capture-chrome \{ display: none !important; \}/);
   assert.match(source, /\.shield \{[\s\S]*?background: transparent !important/);

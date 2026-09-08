@@ -71,3 +71,15 @@ test("応答しないoffscreen hostをtimeoutにする", async () => {
     (error) => error.code === "OFFSCREEN_TIMEOUT",
   );
 });
+
+test("offscreen document作成を含む要求全体を同じ期限でtimeoutにする", async () => {
+  const { api, calls } = fakeApi();
+  api.offscreen.createDocument = () => new Promise(() => {});
+
+  await assert.rejects(
+    runOffscreenRequest("READ_CLIPBOARD_TEXT", {}, { extensionApi: api, timeoutMs: 5 }),
+    (error) => error instanceof OffscreenHostError
+      && error.code === "OFFSCREEN_TIMEOUT",
+  );
+  assert.equal(calls.messages.length, 0);
+});

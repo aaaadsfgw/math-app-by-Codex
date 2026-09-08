@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "test:browser:serve": "node scripts/serve-browser-harness.mjs",
+    "test:browser:ocr-flow": "node scripts/ocr-extension-flow-smoke.mjs",
     "check": "node scripts/check-project.mjs"
   },
   "engines": {

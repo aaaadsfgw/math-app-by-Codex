@@ -277,7 +277,11 @@ npm.cmd run check
 ```
 
 The extension has no build step. Automated checks do not replace the unpacked
-Chrome checks in [docs/test-plan.md](docs/test-plan.md).
+Chrome checks in [docs/test-plan.md](docs/test-plan.md). That plan also explains
+how to run
+`npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset` against a
+disposable remote-debugging profile for the complete OCR capture-to-solve
+smoke.
 
 ## Privacy and permissions
 

@@ -83,6 +83,12 @@ function requestWithTimeout(request, timeoutMs) {
   });
 }
 
+function monotonicNow() {
+  return typeof globalThis.performance?.now === "function"
+    ? globalThis.performance.now()
+    : Date.now();
+}
+
 export async function runOffscreenRequest(
   type,
   payload = {},
@@ -92,17 +98,24 @@ export async function runOffscreenRequest(
   } = {},
 ) {
   const api = requireApi(extensionApi);
-  await ensureOffscreenDocument(api);
-
   let response;
   try {
+    const hasDeadline = Number.isFinite(timeoutMs) && timeoutMs > 0;
+    const deadline = hasDeadline ? monotonicNow() + timeoutMs : null;
+    await requestWithTimeout(ensureOffscreenDocument(api), timeoutMs);
+    const remainingMs = deadline === null ? timeoutMs : deadline - monotonicNow();
+    if (deadline !== null && remainingMs <= 0) {
+      throw new OffscreenHostError("オフスクリーン処理が時間内に完了しませんでした。", {
+        code: "OFFSCREEN_TIMEOUT",
+      });
+    }
     response = await requestWithTimeout(
       api.runtime.sendMessage({
         target: OFFSCREEN_TARGET,
         type: String(type || ""),
         ...payload,
       }),
-      timeoutMs,
+      remainingMs,
     );
   } catch (error) {
     if (error instanceof OffscreenHostError) throw error;

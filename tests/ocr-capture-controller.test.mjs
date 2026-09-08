@@ -491,6 +491,10 @@ test("offscreen crop失敗は確認tabとsessionを作らない", async () => {
     (error) => error.code === "OCR_CAPTURE_SCREENSHOT_FAILED",
   );
   assert.equal(environment.calls.creates.length, 0);
+  assert.deepEqual(
+    environment.calls.offscreen.map(({ type }) => type),
+    [CREATE_OCR_CAPTURE_PREVIEW, DISCARD_OCR_CAPTURE_PREVIEW],
+  );
   assert.equal(environment.previews.size, 0);
   assert.equal(await environment.store.get(), null);
 });

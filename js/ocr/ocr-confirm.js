@@ -415,6 +415,7 @@ async function startRecognition() {
 
 async function cancelRecognition({ silent = false } = {}) {
   if (!recognitionRunning || captureId === null) return true;
+  recognitionRevision += 1;
   elements.cancelRecognitionButton.disabled = true;
   if (!silent) setRecognitionStatus("中止しています", "warning");
   try {
@@ -425,7 +426,6 @@ async function cancelRecognition({ silent = false } = {}) {
       const reported = cleanText(response?.error?.message);
       throw new Error(reported || "文字認識を中止できませんでした。");
     }
-    recognitionRevision += 1;
     recognitionRunning = false;
     elements.recognitionProgress.hidden = true;
     elements.recognizeButton.textContent = elements.candidatePanel.hidden ? "再試行" : "もう一度認識";
@@ -433,8 +433,14 @@ async function cancelRecognition({ silent = false } = {}) {
     updateActionStates();
     return true;
   } catch (error) {
-    if (!silent) setRecognitionError(`文字認識を中止できません: ${safeErrorMessage(error)}`);
-    elements.cancelRecognitionButton.disabled = false;
+    recognitionRunning = false;
+    elements.recognitionProgress.hidden = true;
+    elements.recognizeButton.textContent = elements.candidatePanel.hidden ? "再試行" : "もう一度認識";
+    if (!silent) {
+      setRecognitionStatus("中止を確認できませんでした", "danger");
+      setRecognitionError(`文字認識を中止できません: ${safeErrorMessage(error)}`);
+    }
+    updateActionStates();
     return false;
   }
 }

@@ -56,8 +56,8 @@ minimal DOM, event, timer, animation-frame, and extension-message fakes. It
 covers trusted dragging, reverse normalization, two-frame preparation,
 completion, Esc, background rejection, and fail-closed routing. It does not
 prove Chrome isolated-world routing, dialog/top-layer rendering, frame paint,
-or actual screenshot pixels; those remain part of the unpacked-Chrome smoke
-test.
+or actual screenshot pixels; the action-driven unpacked-Chrome smoke below
+covers that primary path.
 
 ## Digicon workflow smoke test
 
@@ -83,9 +83,30 @@ test.
 
 ## Unpacked-Chrome printed-formula OCR smoke test
 
-Run this with DevTools open and the network disabled. It is a release blocker;
-Node tests cannot prove real screenshot pixels, extension Worker/CSP behavior,
-WebGPU operators, or the WASM runtime in Chrome.
+Use only an isolated disposable Chrome profile with DevTools remote debugging
+enabled. The flow test clears the extension's local and session storage in that
+profile. Do not point it at a daily-use Chrome profile. Node tests alone cannot
+prove real screenshot pixels, extension Worker/CSP behavior, WebGPU operators,
+or the WASM runtime in Chrome.
+
+Start the loopback fixture server in one terminal, launch the isolated Chrome
+with `--remote-debugging-port=9333` and
+`--enable-unsafe-extension-debugging`, then run the action-driven flow in a
+second terminal:
+
+```powershell
+npm.cmd run test:browser:serve
+npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset
+```
+
+The flow loads the current unpacked directory, triggers the real browser action,
+performs trusted pointer and keyboard input, and verifies Study and Quick from
+capture through cleanup. A remote-debugging window may not be OS-focused; only
+when Chrome reports no `currentWindow`, the harness substitutes the sole active
+tab whose URL exactly matches its loopback fixture. Product routing code is not
+changed. On 2026-09-08, isolated Chrome 152 selected WebGPU, recognized `x + y`
+in both modes, used a 290 x 121 crop, saved one Study record, saved no Quick
+record, and revoked both previews.
 
 For the reproducible provider/runtime check, launch an isolated Chrome for
 Testing profile with remote debugging and the unpacked extension, then run
@@ -94,8 +115,8 @@ Use `webgpu` for the normal GPU profile and `wasm-fallback` for the forced
 fallback profile. The script opens only
 the extension's offscreen document and checks the packaged smoke image through
 explicit WebGPU, explicit WASM, and the real Worker-backed `OcrEngine`. It runs
-two Worker recognitions to verify warm-session reuse. It does not replace the
-interactive capture/confirmation/solve flow below, and its reported provider
+two Worker recognitions to verify warm-session reuse. It complements the full
+action-driven flow above, and its reported provider
 must be checked in the JSON output (a WebGPU initialization error is expected
 only in the separately forced-fallback profile).
 

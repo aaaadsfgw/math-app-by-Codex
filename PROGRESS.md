@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## Repository checkpoint
 
@@ -628,26 +628,46 @@ Last updated: 2026-09-07
   state. With `--disable-gpu --disable-webgpu`, WebGPU session creation failed
   with `OCR_SESSION_CREATE_FAILED`, the explicit WASM session returned `x + y`,
   and the Worker selected WASM for both warm requests.
+- Added a full action-driven OCR browser smoke using the Chrome DevTools
+  `Extensions.triggerAction` command. In isolated Chrome 152 it passed both
+  Study and Quick flows through real active-tab capture, a 290 x 121 PNG crop,
+  offscreen Blob preview, WebGPU recognition of `x + y`, trusted candidate
+  editing, explicit deterministic solving, mode-specific history behavior, and
+  final preview revocation. Recognition alone created neither a pending solve
+  nor a history item.
+- The full browser run exposed and fixed two capture-paint defects that the VM
+  harness could not model: Chromium does not permit a shadow root directly on
+  a native `dialog`, and a modal backdrop is part of `captureVisibleTab`.
+  The dialog now remains the top-layer container, a nested `div` owns the
+  closed shadow root, and screenshot preparation demotes the dialog to a
+  visible non-modal layer before the existing two-frame paint barrier.
+- Closed three asynchronous cleanup races found in final review: cancel intent
+  now invalidates a pending recognition result before awaiting the background,
+  a timed-out crop request always schedules preview discard even if its late
+  offscreen work eventually succeeds, and offscreen-document creation shares
+  the request's single overall deadline.
 
 ## Remaining validation
 
-- The deterministic Node suite and packaged runtime/provider smoke are green.
-  A full toolbar-driven range-selection through crop, confirmation-page edit,
-  and Quick/Study solve still needs an interactive Chrome surface that can
-  click the browser action; this environment can load the extension through
-  DevTools but cannot expose the browser toolbar. The implementation is kept
-  behind the same explicit confirmation and protocol tests until that manual
-  step is available.
+- The primary toolbar-driven capture/confirmation/solve release blocker is
+  closed by the reproducible browser smoke. Final release checking still needs
+  the manual adversarial UI cases in `docs/test-plan.md`, including tiny and
+  reverse drags, Esc/tab-switch/expiry cancellation, and a full capture flow in
+  a forced-WASM profile. Their individual protocol, cleanup, and provider paths
+  are already covered automatically.
 
 ## Last verified commands
 
-- `npm.cmd test` - 700 passed, 0 failed on 2026-09-07, including 5,500
+- `npm.cmd test` - 703 passed, 0 failed on 2026-09-08, including 5,500
   generated evaluation cases.
-- `npm.cmd run check` - passed for 245 files, 11 HTML, 185 JS/MJS, and 12 CSS
-  files on 2026-09-07.
+- `npm.cmd run check` - passed for 248 files, 12 HTML, 187 JS/MJS, and 12 CSS
+  files on 2026-09-08.
 - `node scripts/ocr-browser-smoke.mjs 9333` - Chrome for Testing 152 passed
   WebGPU, explicit WASM, Worker warm reuse, and forced-WASM fallback as
   recorded above.
+- `npm.cmd run test:browser:ocr-flow -- 9335 --allow-storage-reset` - isolated Chrome 152 passed
+  action-triggered Study and Quick capture, preview, WebGPU recognition, edit,
+  solve, history, and cleanup on 2026-09-08.
 
 ## Restart procedure
 

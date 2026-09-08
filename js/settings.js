@@ -33,7 +33,7 @@ function fillOcrInformation() {
   document.querySelector('#ocrBackendInfo').textContent = `${backend.name}（暫定候補）`;
   document.querySelector('#ocrModelInfo').textContent = `${model.family}、公開資産 約${model.publishedAssetSizeMb} MB。モデル重みは${model.assetsBundled ? '同梱済み' : '未同梱'}です。`;
   const providerLabels = { webgpu: 'WebGPU', wasm: 'WASM' };
-  document.querySelector('#ocrProviderInfo').textContent = `${providers.map((provider) => providerLabels[provider] ?? provider).join(' → ')} の順で試行する設計です。ブラウザ実測は未完了です。`;
+  document.querySelector('#ocrProviderInfo').textContent = `${providers.map((provider) => providerLabels[provider] ?? provider).join(' → ')} の順で試行します。WebGPUとWASMは同梱モデルで実測済みです。`;
 }
 
 form.addEventListener('submit', async (event) => {

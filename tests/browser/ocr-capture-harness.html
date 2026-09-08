@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OCR capture browser harness</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, sans-serif;
+      color: #172033;
+      background: #eef3f9;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      width: min(720px, calc(100vw - 64px));
+      padding: 32px;
+      border: 1px solid #c5d0df;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgb(23 32 51 / 12%);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
+
+    p {
+      margin: 0 0 28px;
+      color: #526071;
+    }
+
+    .target-frame {
+      display: inline-block;
+      padding: 20px;
+      border: 3px dashed #5577aa;
+      border-radius: 12px;
+      background: #ff00ff;
+    }
+
+    #ocrCaptureTarget {
+      display: block;
+      width: 290px;
+      height: 120px;
+      background: #fff;
+    }
+
+    small {
+      display: block;
+      margin-top: 18px;
+      color: #677487;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>OCR capture browser harness</h1>
+    <p>青い枠の内側にある白い数式画像だけを選択してください。</p>
+    <div class="target-frame">
+      <img
+        id="ocrCaptureTarget"
+        src="../../vendor/ocr/ibem-im2typst/smoke-formula.png"
+        width="290"
+        height="120"
+        alt="x plus y"
+      >
+    </div>
+    <small>Expected OCR candidate: x + y</small>
+  </main>
+</body>
+</html>

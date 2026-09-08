@@ -219,6 +219,7 @@
     state.phase = "submitted";
     state.selection = selection;
     state.host.dataset.phase = state.phase;
+    state.surface.dataset.phase = state.phase;
     showSelection(state, selection, "valid");
     setStatus(state, "範囲を確定しました。画像の準備中です…", "success");
     state.watchdogTimer = window.setTimeout(() => {
@@ -234,6 +235,21 @@
       if (activeOverlay !== state || state.cleaned || state.phase !== "submitted") return;
       cancelFromUser(state, "background-rejected");
     });
+  }
+
+  function removeModalBackdropForScreenshot(state) {
+    const { host } = state;
+    try {
+      if (typeof host.close === "function" && host.open) host.close();
+      if (typeof host.show === "function") {
+        host.show();
+      } else {
+        host.setAttribute("open", "");
+      }
+    } catch {
+      // Keeping the element visible is safer than leaving the page unguarded.
+      host.setAttribute("open", "");
+    }
   }
 
   function installInteractionGuards(state) {
@@ -363,7 +379,11 @@
     host.setAttribute("aria-modal", "true");
     applyHostStyles(host);
 
-    const shadow = host.attachShadow({ mode: "closed" });
+    // Native dialog elements cannot host a shadow root in Chromium. Keep the
+    // dialog as the top-layer container and isolate the actual UI inside a
+    // dedicated, shadow-capable surface.
+    const surface = document.createElement("div");
+    const shadow = surface.attachShadow({ mode: "closed" });
     const style = document.createElement("style");
     style.textContent = `
       :host {
@@ -461,6 +481,7 @@
     title.append(escape);
     panel.append(title, status);
     shadow.append(style, shield, selectionBox, panel);
+    host.append(surface);
 
     const captureId = beginMessage.captureId;
     const state = {
@@ -474,6 +495,7 @@
       selection: null,
       selectionBox,
       shield,
+      surface,
       startX: 0,
       startY: 0,
       status,
@@ -485,13 +507,20 @@
       if (event.isTrusted) cancelFromUser(state, "dialog-cancelled");
     });
     host.addEventListener("close", () => {
-      if (!state.cleaned) cancelFromUser(state, "dialog-closed");
+      if (
+        !state.cleaned
+        && state.phase !== "preparing-screenshot"
+        && state.phase !== "capture-ready"
+      ) {
+        cancelFromUser(state, "dialog-closed");
+      }
     });
     activeOverlay = state;
     state.expiryTimer = window.setTimeout(() => {
       cancelFromUser(state, "capture-expired");
     }, remainingMs);
     host.dataset.phase = state.phase;
+    surface.dataset.phase = state.phase;
     installInteractionGuards(state);
     document.documentElement.append(host);
 
@@ -529,11 +558,14 @@
 
     state.phase = "preparing-screenshot";
     state.host.dataset.phase = state.phase;
+    state.surface.dataset.phase = state.phase;
+    removeModalBackdropForScreenshot(state);
     if (state.watchdogTimer !== null) window.clearTimeout(state.watchdogTimer);
     state.watchdogTimer = window.setTimeout(() => {
       cancelFromUser(state, "screenshot-timeout");
     }, SCREENSHOT_WATCHDOG_MS);
     state.host.dataset.captureReady = "true";
+    state.surface.dataset.captureReady = "true";
     state.shield.style.setProperty("background", "transparent", "important");
 
     requestAnimationFrame(() => {
@@ -544,6 +576,7 @@
         }
         state.phase = "capture-ready";
         state.host.dataset.phase = state.phase;
+        state.surface.dataset.phase = state.phase;
         sendResponse({
           ok: true,
           protocolVersion: PROTOCOL_VERSION,

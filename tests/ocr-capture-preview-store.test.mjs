@@ -74,6 +74,36 @@ test("明示破棄はBlob URLを一度だけrevokeする", async () => {
   assert.equal(calls.cleared.length, 1);
 });
 
+test("作成中に予約された破棄は遅れて完成したBlobも残さない", async () => {
+  let releaseCrop;
+  const cropGate = new Promise((resolve) => { releaseCrop = resolve; });
+  const calls = { revoked: [] };
+  const store = createOcrCapturePreviewStore({
+    cropImage: async () => {
+      await cropGate;
+      return {
+        blob: new Blob(["test"], { type: "image/png" }),
+        blobUrl: "blob:late-preview",
+        revoke: () => calls.revoked.push("blob:late-preview"),
+        source: { width: 1600, height: 1200 },
+        crop: { width: 400, height: 200 },
+      };
+    },
+  });
+
+  const creation = store.create(createInput());
+  const discard = store.discard("capture-1");
+  releaseCrop();
+
+  assert.equal((await creation).previewId, "capture-1");
+  assert.equal(await discard, true);
+  await assert.rejects(
+    store.get("capture-1"),
+    (error) => error.code === "OCR_CAPTURE_PREVIEW_NOT_FOUND",
+  );
+  assert.deepEqual(calls.revoked, ["blob:late-preview"]);
+});
+
 test("期限切れpreviewは取得時にrevokeして型付きで拒否する", async () => {
   const { store, calls, setClock } = harness();
   await store.create(createInput());

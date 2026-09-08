@@ -818,3 +818,37 @@ captureVisibleTab pixels, offscreen Blob transfer, or toolbar-driven selection;
 those remain the only interactive validation item because this environment does
 not expose the browser toolbar. The no-auto-solve boundary is covered by the
 confirmation-page and learning-session tests.
+
+## 2026-09-08: action-driven OCR browser validation and race closure
+
+- Added a dependency-free Chrome DevTools Protocol smoke that loads the current
+  unpacked extension and uses `Extensions.triggerAction` to exercise the real
+  action popup. It performs trusted drag and keyboard input, verifies the PNG
+  screenshot/crop pixels and preview ownership, runs packaged WebGPU OCR,
+  confirms that recognition alone creates no solve or history state, edits the
+  candidate, explicitly solves it, distinguishes Study from Quick history, and
+  proves the old Blob URL and preview ID are unusable afterward.
+- Fixed the real-Chrome overlay failure discovered by that test. A native
+  `dialog` cannot directly host a shadow root in Chromium, so the modal remains
+  the top-layer container while an inner `div` owns the closed shadow tree.
+  Before screenshot paint, the dialog is reopened non-modally so its native
+  backdrop cannot darken the captured formula; the transparent interaction
+  shield and two-animation-frame barrier remain in place.
+- Closed three cleanup races: recognition cancellation increments its revision
+  before awaiting the cancellation response, late crop completion is always
+  followed by best-effort discard after host timeout/failure, and offscreen
+  creation plus message handling now consume one shared deadline. Added focused
+  runtime tests for late recognition, late preview creation, and creation-time
+  timeout behavior.
+- The isolated Chrome 152 run passed both modes with WebGPU and recognized
+  `x + y`. Each real screenshot was 1264 x 805 and produced a 290 x 121 crop;
+  Study history changed from zero to one while Quick remained at one, and both
+  preview resources were revoked. The CDP-only no-focused-window condition was
+  handled inside the harness by an exact, single-fixture-tab fallback without
+  changing product routing.
+
+`npm.cmd test` passes 703 tests including the 5,500-case generated corpus, and
+`npm.cmd run check` passes 248 files (12 HTML, 187 JS/MJS, and 12 CSS). The
+primary toolbar-driven capture-to-solve path is now browser-verified; the
+manual adversarial UI and forced-WASM full-flow items remain in the release
+checklist.

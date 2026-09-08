@@ -486,7 +486,7 @@ export function createOcrCaptureController({
       patch: { selection, viewport },
     });
 
-    let previewCreated = false;
+    let previewRequested = false;
     let confirmationTabId = null;
     try {
       const prepared = await sendDocumentMessage(session, PREPARE_OCR_SCREENSHOT);
@@ -521,6 +521,7 @@ export function createOcrCaptureController({
       } finally {
         activationMonitor.stop();
       }
+      previewRequested = true;
       const rawPreview = await offscreenRequest(
         CREATE_OCR_CAPTURE_PREVIEW,
         {
@@ -531,7 +532,6 @@ export function createOcrCaptureController({
         },
         { timeoutMs: 15_000, extensionApi },
       );
-      previewCreated = true;
       const preview = normalizePreviewMetadata(
         rawPreview,
         session.captureId,
@@ -582,7 +582,10 @@ export function createOcrCaptureController({
           console.warn("Could not close failed OCR confirmation tab", closeError);
         }
       }
-      if (previewCreated) await discardPreviewBestEffort(session.captureId);
+      // The host timeout does not cancel an already-dispatched offscreen
+      // request. Queue a discard even when CREATE has not returned yet so a
+      // late crop completion cannot leave an unreachable Blob preview behind.
+      if (previewRequested) await discardPreviewBestEffort(session.captureId);
       try {
         await cleanupSession(session, { discardPreview: false });
       } catch (cleanupError) {
