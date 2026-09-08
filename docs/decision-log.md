@@ -706,3 +706,42 @@ OCR cannot expand the deterministic solver's supported problem set. Release
 still requires unpacked-Chrome checks of capture pixels, extension CSP,
 WebGPU, forced WASM fallback, cancellation, timeout, disposal, warm reuse, and
 the no-auto-solve boundary.
+
+## D-030: Preserve web-selection math only from complete semantic DOM evidence
+
+**Status:** accepted
+**Date:** 2026-09-08
+
+Web selection is an acquisition boundary, not a license to repair ambiguous
+plain text. The on-demand isolated-world helper first preserves a literal
+selection from supported input or textarea controls and excludes password
+inputs. For a page Range it may serialize a complete presentation MathML tree,
+a complete HTML `sup` or `sub`, or the single MathML representation paired with
+a fully selected KaTeX/MathJax display in the same renderer container. A
+renderer mapping additionally requires its normalized visible text to equal
+the presentation MathML leaf text; a textless CSS/SVG glyph branch is not
+trusted merely because a hidden formula is nearby. It reads node names, text,
+classes, and bounded attributes only. It does not read or execute `innerHTML`,
+invoke page JavaScript, load a renderer library, or contact an external
+service. If both comparable display text and `Selection.toString()` are empty,
+the existing no-selection clipboard fallback remains in effect.
+
+The supported MathML subset is `math`/row/style wrappers, the presentation
+child of `semantics`, single-letter `mi`, `mn`, a restricted operator set,
+`mtext`, `msup`, `msub`, `msubsup`, `mfrac`, and `msqrt`. Fraction scopes are always
+parenthesized. An explicit coefficient multiplication marker is inserted only
+between separate MathML number and identifier-bearing nodes. Adjacent
+identifiers, number suffixes, layout spans, and other implicit products are not
+reinterpreted. In particular, plain `x2`, `x1`, `12`, and `log2(x)` are never
+converted from their characters alone.
+
+Any partial structured element, unsupported or malformed MathML, nth root,
+matrix, under/over construct, multiple semantic candidates, incomplete
+renderer display selection, traversal limit, or extraction exception discards
+the entire structured attempt. The exact trimmed `Selection.toString()` value
+then follows the pre-existing path; no selected fragment is combined with text
+from outside the Range. This conservative fallback can leave a visually clear
+but unsupported expression unsolved, which is preferable to manufacturing a
+different problem. Solver parsers and verification rules remain unchanged, and
+the clipboard is still written only after the existing workflow produces a
+verified presentation.

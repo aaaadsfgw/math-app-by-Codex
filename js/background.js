@@ -36,7 +36,7 @@ async function sendToTab(tabId, message) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ["js/content-script.js"]
+        files: ["js/selection-math-extractor.js", "js/content-script.js"]
       });
       return await chrome.tabs.sendMessage(tabId, message);
     } catch {

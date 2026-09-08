@@ -112,6 +112,28 @@ unsupported or invalid input leaves the original clipboard unchanged. Quick
 Mode never writes history; Study Mode records the input source and viewed
 stage.
 
+For a web-page selection, the extension preserves mathematical structure when
+the selected DOM proves it. Complete presentation MathML supports single-letter
+identifiers, numbers, operators, superscripts, subscripts, fractions, and
+square roots; complete HTML `sup`/`sub` elements are also retained. A KaTeX or
+MathJax-like
+rendering is mapped to MathML only when one semantic representation belongs to
+the same renderer container, the corresponding displayed formula is fully
+selected, and their normalized visible/presentation text agrees. The extractor
+reads DOM nodes only and never calls page JavaScript.
+
+This is intentionally not OCR or plain-text guessing. If the range cuts through
+a structured formula, the MathML form is unsupported or malformed, a renderer
+mapping is not one-to-one, or the only input is text such as `x2`, `x1`, `12`,
+or `log2(x)`, the extension keeps `Selection.toString()` unchanged. It never
+turns those strings into `x^2`, `x_1`, `1^2`, or `log_2(x)`. General nth roots,
+layout-only renderer spans, textless CSS/SVG glyph renderings without a
+comparable selected string, matrices, under/over scripts, and other unsupported
+MathML fall back for the same reason. Input and textarea selections remain
+literal, and password inputs remain excluded. If a textless rendering also
+produces an empty `Selection.toString()`, the shortcut treats it as no text
+selection and follows its pre-existing clipboard fallback.
+
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result.
 
@@ -289,7 +311,8 @@ The manifest requests only:
 
 - `storage` for settings and learning records;
 - `activeTab` and `scripting` for user-triggered text selection and bounded OCR
-  range capture;
+  range capture; structured selection only reads the already selected DOM and
+  adds no page script, host access, or external resource;
 - `clipboardRead` for the explicit keyboard-shortcut fallback when no page
   text is selected;
 - `clipboardWrite` for copying a verified output only after success;

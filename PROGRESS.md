@@ -654,6 +654,18 @@ Last updated: 2026-09-08
   OCR text remains separate from the editable normalized candidate. Digit
   suffixes, subscripts, valid underscore forms, and ambiguous adjacency remain
   unchanged.
+- Added an on-demand, DOM-read-only structured selection layer for popup and
+  `Ctrl+Shift+Y` input. Fully selected presentation MathML preserves supported
+  superscripts, subscripts, fractions, square roots, and operators; complete
+  HTML `sup`/`sub` and one-to-one KaTeX/MathJax semantic MathML with matching
+  visible/presentation text are handled without reconstructing layout spans.
+  Only separate MathML number/identifier nodes create an explicit coefficient
+  `*`. Partial ranges, textless renderer glyph branches, nth roots,
+  unsupported/malformed structures, ambiguous factor adjacency, and renderer
+  mappings without exactly one semantic formula fall back to the complete
+  unchanged `Selection.toString()` value. Literal controls remain literal,
+  passwords remain excluded, and the verified-only clipboard workflow is
+  unchanged.
 
 ## Remaining validation
 
@@ -666,10 +678,13 @@ Last updated: 2026-09-08
 
 ## Last verified commands
 
-- `npm.cmd test` - 708 passed, 0 failed on 2026-09-08, including 5,500
+- `npm.cmd test` - 736 passed, 0 failed on 2026-09-08, including 5,500
   generated evaluation cases.
-- `npm.cmd run check` - passed for 248 files, 12 HTML, 187 JS/MJS, and 12 CSS
+- `npm.cmd run check` - passed for 253 files, 13 HTML, 191 JS/MJS, and 12 CSS
   files on 2026-09-08.
+- `tests/browser/selection-structure-harness.html` - installed Chrome passed
+  9/9 native DOM/Range cases on 2026-09-08, including leaf-boundary
+  selections, renderer correspondence, and intentional textless fallback.
 - `node scripts/ocr-browser-smoke.mjs 9333` - Chrome for Testing 152 passed
   WebGPU, explicit WASM, Worker warm reuse, and forced-WASM fallback as
   recorded above.

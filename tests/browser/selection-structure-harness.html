@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Structured selection browser harness</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; color: #172033; }
+    table { border-collapse: collapse; width: min(100%, 960px); }
+    th, td { border: 1px solid #cbd3df; padding: .55rem; text-align: left; }
+    [data-status="passed"] { color: #087443; }
+    [data-status="failed"] { color: #b42318; }
+    .fixtures { position: absolute; left: -10000px; top: 0; }
+    .katex-mathml, mjx-assistive-mml {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  </style>
+</head>
+<body>
+  <h1>Structured selection browser harness</h1>
+  <p id="status" data-status="running">実行中</p>
+  <table>
+    <thead><tr><th>ケース</th><th>期待値</th><th>結果</th><th>判定</th></tr></thead>
+    <tbody id="results"></tbody>
+  </table>
+
+  <div class="fixtures" aria-hidden="true">
+    <p id="plain">x2 + 5x + 2 = 0</p>
+    <p id="html-sup">x<sup>2</sup></p>
+    <p id="html-sub">x<sub>1</sub> + x<sub>2</sub></p>
+    <math id="quadratic" xmlns="http://www.w3.org/1998/Math/MathML">
+      <mn>2</mn><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo>
+      <mn>5</mn><mi>x</mi><mo>+</mo><mn>2</mn><mo>=</mo><mn>0</mn>
+    </math>
+    <math id="rational" xmlns="http://www.w3.org/1998/Math/MathML">
+      <mfrac>
+        <mrow><mn>4</mn><mi>x</mi><mo>-</mo><mn>6</mn></mrow>
+        <mrow><msup><mi>x</mi><mn>2</mn></msup><mo>-</mo><mn>5</mn><mi>x</mi><mo>+</mo><mn>6</mn></mrow>
+      </mfrac><mo>=</mo><mn>1</mn>
+    </math>
+    <span id="katex" class="katex">
+      <span class="katex-mathml">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <semantics>
+            <mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><mn>1</mn><mo>=</mo><mn>0</mn></mrow>
+            <annotation encoding="application/x-tex">x^2+1=0</annotation>
+          </semantics>
+        </math>
+      </span>
+      <span class="katex-html" aria-hidden="true">x2+1=0</span>
+    </span>
+    <mjx-container id="mathjax" class="MathJax">
+      <mjx-math>x2-1=0</mjx-math>
+      <mjx-assistive-mml>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <msup><mi>x</mi><mn>2</mn></msup><mo>-</mo><mn>1</mn><mo>=</mo><mn>0</mn>
+        </math>
+      </mjx-assistive-mml>
+    </mjx-container>
+    <mjx-container id="mathjax-textless" class="MathJax">
+      <mjx-math>
+        <mjx-mi><mjx-c></mjx-c></mjx-mi>
+        <mjx-script><mjx-c></mjx-c></mjx-script>
+        <mjx-mo><mjx-c></mjx-c></mjx-mo>
+      </mjx-math>
+      <mjx-assistive-mml>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <msup><mi>x</mi><mn>2</mn></msup><mo>-</mo><mn>1</mn><mo>=</mo><mn>0</mn>
+        </math>
+      </mjx-assistive-mml>
+    </mjx-container>
+    <p id="partial">x<sup>12</sup>+1</p>
+  </div>
+
+  <script src="../../js/selection-math-extractor.js"></script>
+  <script>
+    const extractor = globalThis.__mathStudyLogSelectionMathExtractor;
+
+    function selectContents(element) {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return selection;
+    }
+
+    function selectBetween(startNode, startOffset, endNode, endOffset) {
+      const range = document.createRange();
+      range.setStart(startNode, startOffset);
+      range.setEnd(endNode, endOffset);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return selection;
+    }
+
+    function extractSelection(selection) {
+      return extractor.getSelectionText({ documentObject: document, selection });
+    }
+
+    const cases = [];
+    function record(name, expected, operation) {
+      try {
+        const actual = operation();
+        cases.push({ name, expected, actual, ok: actual === expected });
+      } catch (error) {
+        cases.push({ name, expected, actual: error.message, ok: false });
+      }
+    }
+
+    record("plain x2 is unchanged", "x2 + 5x + 2 = 0", () => (
+      extractSelection(selectContents(document.querySelector("#plain")))
+    ));
+    record("HTML sup", "x^2", () => {
+      const target = document.querySelector("#html-sup");
+      const exponent = target.querySelector("sup").firstChild;
+      return extractSelection(selectBetween(target.firstChild, 0, exponent, exponent.length));
+    });
+    record("HTML sub", "x_1 + x_2", () => (
+      extractSelection(selectContents(document.querySelector("#html-sub")))
+    ));
+    record("MathML quadratic", "2*x^2+5*x+2=0", () => {
+      const target = document.querySelector("#quadratic");
+      const leaves = [...target.querySelectorAll("mn,mi,mo")].map((node) => node.firstChild);
+      return extractSelection(selectBetween(leaves[0], 0, leaves.at(-1), leaves.at(-1).length));
+    });
+    record("MathML rational", "(4*x-6)/(x^2-5*x+6)=1", () => (
+      extractSelection(selectContents(document.querySelector("#rational")))
+    ));
+    record("KaTeX semantic MathML", "x^2+1=0", () => (
+      extractSelection(selectContents(document.querySelector("#katex .katex-html")))
+    ));
+    record("MathJax assistive MathML", "x^2-1=0", () => (
+      extractSelection(selectContents(document.querySelector("#mathjax mjx-math")))
+    ));
+    record("textless MathJax safely declines", "", () => (
+      extractSelection(selectContents(document.querySelector("#mathjax-textless mjx-math")))
+    ));
+    record("partial sup falls back", "x1", () => {
+      const target = document.querySelector("#partial");
+      return extractSelection(selectBetween(
+        target.firstChild,
+        0,
+        target.querySelector("sup").firstChild,
+        1,
+      ));
+    });
+    getSelection().removeAllRanges();
+    const body = document.querySelector("#results");
+    for (const result of cases) {
+      const row = document.createElement("tr");
+      for (const value of [result.name, result.expected, result.actual, result.ok ? "PASS" : "FAIL"]) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    const passed = cases.every((result) => result.ok);
+    const status = document.querySelector("#status");
+    status.dataset.status = passed ? "passed" : "failed";
+    status.textContent = passed ? `${cases.length}件すべて成功` : "失敗あり";
+    document.documentElement.dataset.testStatus = passed ? "passed" : "failed";
+  </script>
+</body>
+</html>

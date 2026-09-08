@@ -78,6 +78,10 @@ try {
 const expectedPages = ['popup.html', 'history.html', 'analytics.html', 'review.html', 'settings.html', 'examples.html', 'help.html', 'about.html', 'offscreen.html', 'ocr-confirm.html'];
 for (const page of expectedPages) assert(relativeFiles.has(page), `Missing HTML page: ${page}`);
 assert(relativeFiles.has('js/content-script.js'), 'Missing on-demand content script: js/content-script.js');
+assert(
+  relativeFiles.has('js/selection-math-extractor.js'),
+  'Missing structured selection helper: js/selection-math-extractor.js',
+);
 assert(!manifest.content_scripts, 'Declarative content scripts are not allowed; inject on demand with activeTab');
 
 const manifestRefs = [

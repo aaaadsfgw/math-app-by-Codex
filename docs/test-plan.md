@@ -24,6 +24,14 @@ The Digicon learning workflow additionally requires automated coverage for:
 - selection, clipboard, manual, review, and confirmed-OCR source metadata;
 - unsupported/invalid results never reaching presentation, history, or the
   clipboard;
+- structured web-selection extraction from complete HTML `sup`/`sub`, native
+  MathML, and one-to-one KaTeX/MathJax semantic MathML, including nested
+  fractions and square roots;
+- whole-selection plain-text fallback for partial/unknown/malformed math DOM,
+  plus negative cases proving `x2`, `x1`, `12`, and `log2(x)` are not inferred;
+- structured quadratic and rational-equation selections reaching their real
+  verified solvers while failed or ambiguous selections leave the clipboard
+  unchanged;
 - history failures preserving a verified displayed or copied result;
 - v2 UI selector, label, source, OCR-state, editable-candidate, explicit-solve,
   and staged-metric contracts;
@@ -72,10 +80,17 @@ covers that primary path.
    selection is used before the clipboard. Repeat with no selection and
    confirm the clipboard input is used. For unsupported input, confirm the
    original clipboard is unchanged.
-5. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
+5. On a page containing HTML `x<sup>2</sup>`, native MathML, KaTeX, and MathJax,
+   select the complete displayed formula `2x²+5x+2=0`. Confirm the shortcut
+   reaches the verified answer `x=-2,-1/2`. Select only part of an exponent or
+   fraction and confirm the range is not expanded. Select literal plain text
+   `x2+5x+2=0` and confirm it remains unsupported and the clipboard is not
+   replaced. `tests/browser/selection-structure-harness.html` provides nine
+   DOM/Range smoke cases for this boundary.
+6. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
    Steps, direct Answer rate, understanding, and review priority agree with the
    Study attempt. Confirm Quick interactions are absent.
-6. Use the popup OCR action on one tightly cropped printed formula. Confirm the
+7. Use the popup OCR action on one tightly cropped printed formula. Confirm the
    crop and editable candidate are shown together, no solver runs after
    recognition, and the solver starts only after the separate confirmation.
    In Study Mode confirm the saved source is OCR and confirmation is recorded

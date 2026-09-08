@@ -29,6 +29,16 @@
   }
 
   function getSelectionText() {
+    const extractor = globalThis.__mathStudyLogSelectionMathExtractor;
+    if (typeof extractor?.getSelectionText === "function") {
+      try {
+        return String(extractor.getSelectionText() || "").trim();
+      } catch {
+        // Keep the pre-existing selection path available if the isolated-world
+        // helper cannot inspect a page's unusual DOM.
+      }
+    }
+
     const active = document.activeElement;
     if (active instanceof HTMLInputElement && active.type === "password") return "";
     const controlSelection = getTextControlSelection();
