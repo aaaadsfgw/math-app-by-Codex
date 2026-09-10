@@ -18,6 +18,17 @@ const ocrCaptureController = createOcrCaptureController({
   runOffscreenRequest,
 });
 
+async function configureSidePanel() {
+  if (typeof chrome.sidePanel?.setPanelBehavior !== "function") return;
+  try {
+    await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  } catch (error) {
+    // Keep the rest of the extension available if an older or restricted
+    // Chrome build exposes the namespace but not the action behavior.
+    console.warn("Could not configure the Math Study Log side panel", error);
+  }
+}
+
 function isWebPage(url) {
   return /^https?:\/\//i.test(String(url || ""));
 }
@@ -120,7 +131,10 @@ async function handleShortcut() {
 
 chrome.runtime.onInstalled.addListener(() => {
   void getSettings().catch((error) => console.warn("Could not initialize settings", error));
+  void configureSidePanel();
 });
+
+void configureSidePanel();
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === SOLVE_SELECTION_COMMAND) void handleShortcut();

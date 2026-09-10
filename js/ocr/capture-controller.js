@@ -81,6 +81,27 @@ function normalizeHttpUrl(value) {
   }
 }
 
+async function resolveActivePageUrl(tab, scripting) {
+  const directUrl = normalizeHttpUrl(tab?.url);
+  if (directUrl) return directUrl;
+  if (typeof tab?.url === "string" && tab.url.length > 0) return null;
+  if (!Number.isSafeInteger(tab?.id) || typeof scripting?.executeScript !== "function") return null;
+
+  // Side Panel contexts can receive an activeTab grant while Chrome redacts
+  // tab.url from the extension API. Read only the page location as a routing
+  // check; mathematical content is never obtained through this fallback.
+  try {
+    const results = await scripting.executeScript({
+      target: { tabId: tab.id, frameIds: [0] },
+      func: () => globalThis.location?.href || "",
+    });
+    const pageUrl = results?.find((result) => typeof result?.result === "string")?.result;
+    return normalizeHttpUrl(pageUrl);
+  } catch {
+    return null;
+  }
+}
+
 function sameJsonValue(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
@@ -410,7 +431,7 @@ export function createOcrCaptureController({
     const [tab] = await tabs.query({ active: true, currentWindow: true });
     const tabId = requireRoutingId(tab?.id, "アクティブなタブID");
     const windowId = requireRoutingId(tab?.windowId, "ウィンドウID");
-    const sourceUrl = normalizeHttpUrl(tab?.url);
+    const sourceUrl = await resolveActivePageUrl(tab, scripting);
     if (!sourceUrl) {
       throw controllerError(
         "このページでは画像範囲を選択できません。HTTP(S)ページで使用してください。",

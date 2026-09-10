@@ -128,7 +128,7 @@ let manifest;
 try {
   manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
   assert(manifest.manifest_version === 3, 'manifest_version must be 3');
-  assert(Number(manifest.minimum_chrome_version) >= 109, 'minimum_chrome_version must support offscreen documents');
+  assert(Number(manifest.minimum_chrome_version) >= 114, 'minimum_chrome_version must support the side panel and offscreen documents');
   assert(manifest.incognito === 'not_allowed', 'incognito must remain disabled for the shared offscreen preview boundary');
   assert(
     manifest.content_security_policy?.extension_pages === "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
@@ -150,6 +150,7 @@ assert(!manifest.content_scripts, 'Declarative content scripts are not allowed; 
 
 const manifestRefs = [
   manifest.action?.default_popup,
+  manifest.side_panel?.default_path,
   manifest.background?.service_worker,
   manifest.options_page,
   ...(manifest.content_scripts ?? []).flatMap((item) => item.js ?? [])
@@ -157,7 +158,7 @@ const manifestRefs = [
 for (const ref of manifestRefs) assert(relativeFiles.has(ref), `Manifest reference is missing: ${ref}`);
 
 const permissions = new Set(manifest.permissions ?? []);
-const allowedPermissions = new Set(['storage', 'activeTab', 'scripting', 'clipboardRead', 'clipboardWrite', 'offscreen']);
+const allowedPermissions = new Set(['storage', 'activeTab', 'scripting', 'clipboardRead', 'clipboardWrite', 'offscreen', 'sidePanel']);
 for (const permission of allowedPermissions) {
   assert(permissions.has(permission), `Required permission is missing: ${permission}`);
 }

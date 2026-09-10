@@ -1,5 +1,23 @@
 # Development log
 
+## 2026-09-10: persistent Side Panel workspace and digicon UI pass
+
+- Moved the main learning workspace from the short-lived action popup to the
+  Chrome Side Panel. The toolbar action now opens `popup.html` beside the
+  active page, keeping page selection and the learning flow in one view.
+- Reworked the workspace layout into compact input, guide, and verified-result
+  sections. Optional metadata and utility links are collapsed, while Quick /
+  Study, input source, OCR status, staged output, and verification remain
+  visible.
+- Removed the obsolete OCR confirmation wording that described only one
+  formula and now explain the supported mixed Japanese-instruction/formula
+  crop boundary.
+- Added a narrow active-page URL fallback for Side Panel contexts where Chrome
+  hides `tab.url`; only routing metadata is read and mathematical content is
+  untouched.
+- Added manifest, UI-contract, OCR-routing, documentation, and headless-flow
+  harness updates for the new host.
+
 ## 2026-07-30: non-AI migration begins
 
 - Confirmed the physical repository and created branch

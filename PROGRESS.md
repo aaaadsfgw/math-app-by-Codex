@@ -10,6 +10,26 @@ Last updated: 2026-09-10
 - Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
 - Working milestone: problem acquisition, staged learning records, and analytics
 
+## 2026-09-10: persistent Side Panel learning workspace
+
+- Replaced the short-lived toolbar popup host with Chrome's persistent Side
+  Panel (`popup.html`) so the current web page remains visible during page
+  selection, OCR confirmation, staged hints, and verified answers.
+- Reorganized the workspace into a compact three-step flow: input, staged
+  guidance, and verified result. Optional problem number/instruction fields and
+  utility navigation are collapsed until needed.
+- Added a stronger visual hierarchy for source badges, Quick/Study state,
+  primary actions, loading/error states, verification, and result copying while
+  preserving the existing ProblemInput and learning-session selectors.
+- Kept OCR candidates editable and updated the confirmation copy to describe
+  supported mixed Japanese-instruction/formula crops instead of the obsolete
+  single-formula-only message.
+- Added a Side Panel routing fallback that reads only the active page URL when
+  Chrome redacts `tab.url`; it never obtains mathematical content through that
+  path.
+- Updated the Side Panel manifest contract, user-facing docs, static checks,
+  UI contracts, and the OCR controller regression suite.
+
 ## Completed
 
 - Confirmed repository identity, branch, remote, clean starting state, and

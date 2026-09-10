@@ -1,68 +1,171 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Math Study Log</title>
-  <link rel="stylesheet" href="css/base.css"><link rel="stylesheet" href="css/layout.css"><link rel="stylesheet" href="css/components.css"><link rel="stylesheet" href="css/popup.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
   <main class="popup-shell">
-    <header class="popup-header"><div><p class="muted">検証と学習記録をひとつに</p><h1 class="popup-title">Math Study Log</h1></div><span id="appStateBadge" class="badge">準備完了</span></header>
-    <section class="learning-mode-panel" aria-labelledby="learningModeHeading">
-      <div class="spread"><h2 id="learningModeHeading">利用モード</h2><span id="learningModeStatus" class="muted" aria-live="polite"></span></div>
-      <fieldset class="segmented-control"><legend class="sr-only">Quick ModeまたはStudy Modeを選択</legend>
-        <label><input type="radio" name="learningMode" value="quick"><span><strong>Quick</strong><small>記録しない</small></span></label>
-        <label><input type="radio" name="learningMode" value="study" checked><span><strong>Study</strong><small>学習を記録</small></span></label>
-      </fieldset>
-    </section>
-    <nav class="popup-nav" aria-label="画面ナビゲーション">
-      <a href="history.html" target="_blank" rel="noopener">履歴</a><a href="analytics.html" target="_blank" rel="noopener">分析</a><a href="review.html" target="_blank" rel="noopener">復習</a><a href="examples.html" target="_blank" rel="noopener">例題</a><a href="settings.html" target="_blank" rel="noopener">設定</a><a href="help.html" target="_blank" rel="noopener">ヘルプ</a><a href="about.html" target="_blank" rel="noopener">情報</a>
-    </nav>
-    <section class="card compact-card stack" aria-labelledby="questionHeading">
-      <div class="spread"><h2 id="questionHeading">問題文</h2><span id="charCount" class="muted" aria-live="polite">0文字</span></div>
-      <div class="problem-optional-fields">
-        <div class="field">
-          <label for="questionLabelInput">問題番号 <span class="muted">（任意）</span></label>
-          <input id="questionLabelInput" type="text" maxlength="32" autocomplete="off" spellcheck="false" aria-describedby="questionLabelHelp" placeholder="例: (1)、問1">
-          <p id="questionLabelHelp" class="field-help">番号は解答処理へ混ぜず、問題の見分け方として保持します。</p>
-        </div>
-        <div class="field">
-          <label for="instructionInput">指示 <span class="muted">（任意）</span></label>
-          <textarea id="instructionInput" rows="2" maxlength="512" autocomplete="off" spellcheck="false" aria-describedby="instructionHelp" placeholder="例: 次の方程式を解け"></textarea>
-          <p id="instructionHelp" class="field-help">何を求めるかが書かれている場合だけ入力してください。曖昧な指示から処理を推測しません。</p>
+    <header class="workspace-header">
+      <div class="workspace-brand">
+        <span class="brand-mark" aria-hidden="true">∑</span>
+        <div>
+          <p class="eyebrow">WEB問題をその場で解く</p>
+          <h1 class="popup-title">Math Study Log</h1>
         </div>
       </div>
+      <span id="appStateBadge" class="badge">準備完了</span>
+    </header>
+
+    <ol class="workflow-steps" aria-label="解答の流れ">
+      <li data-workflow-step="input"><span>1</span><strong>入力</strong></li>
+      <li data-workflow-step="guide"><span>2</span><strong>ヒント</strong></li>
+      <li data-workflow-step="verify"><span>3</span><strong>検証済み回答</strong></li>
+    </ol>
+
+    <section class="mode-toolbar" aria-labelledby="learningModeHeading">
+      <div class="mode-toolbar-copy">
+        <p class="section-kicker">WORKSPACE</p>
+        <h2 id="learningModeHeading">学び方を選ぶ</h2>
+        <span id="learningModeStatus" class="muted" aria-live="polite"></span>
+      </div>
+      <fieldset class="segmented-control">
+        <legend class="sr-only">Quick ModeまたはStudy Modeを選択</legend>
+        <label>
+          <input type="radio" name="learningMode" value="quick">
+          <span><strong>Quick</strong><small>記録しない</small></span>
+        </label>
+        <label>
+          <input type="radio" name="learningMode" value="study" checked>
+          <span><strong>Study</strong><small>学習を記録</small></span>
+        </label>
+      </fieldset>
+    </section>
+
+    <section class="card input-card stack" aria-labelledby="questionHeading">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">STEP 1 · INPUT</p>
+          <h2 id="questionHeading">問題を取り込む</h2>
+          <p class="section-description">手入力、ページ上の選択、画像読み取りから始められます。</p>
+        </div>
+        <div class="input-badges" aria-label="入力の状態">
+          <span id="inputSourceStatus" class="badge" data-source="manual">手入力</span>
+          <span id="categoryStatus" class="badge">未分類</span>
+        </div>
+      </div>
+
+      <div class="input-actions" aria-label="問題の取得方法">
+        <button id="selectionButton" class="button source-button" type="button">
+          <span aria-hidden="true">↖</span> ページから取得
+        </button>
+        <button id="ocrButton" class="button source-button" type="button" aria-describedby="ocrStatus">
+          <span aria-hidden="true">▧</span> 画像を取り込む
+        </button>
+      </div>
+
       <div class="field problem-main-field">
         <label for="questionInput">数式・問題文</label>
         <textarea id="questionInput" aria-label="数学の数式または従来形式の問題文" aria-describedby="questionInputHelp" placeholder="例: 2x + 3 = 11"></textarea>
-        <p id="questionInputHelp" class="field-help">従来どおり、指示を含む問題全文をこの欄だけに入力することもできます。</p>
+        <div class="field-footer">
+          <p id="questionInputHelp" class="field-help">指示を含む問題全文も、この欄だけに入力できます。</p>
+          <span id="charCount" class="muted" aria-live="polite">0文字</span>
+        </div>
       </div>
-      <div class="input-actions"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><button id="ocrButton" class="button ghost" type="button" aria-describedby="ocrStatus">画像から読み取る</button></div>
-      <div class="input-meta"><span id="categoryStatus" class="badge">未分類</span><span id="inputSourceStatus" class="badge">手入力</span></div>
-      <div id="ocrStatus" class="muted" role="status" aria-live="polite">ページ上で、印刷された数式1つが収まる範囲を選択します。</div>
+
+      <details id="problemMetaDetails" class="optional-details">
+        <summary>問題番号・指示を追加 <span>（任意）</span></summary>
+        <div class="problem-optional-fields">
+          <div class="field">
+            <label for="questionLabelInput">問題番号</label>
+            <input id="questionLabelInput" type="text" maxlength="32" autocomplete="off" spellcheck="false" aria-describedby="questionLabelHelp" placeholder="例: (1)、問1">
+            <p id="questionLabelHelp" class="field-help">解答処理には混ぜず、問題の見分け方として保持します。</p>
+          </div>
+          <div class="field">
+            <label for="instructionInput">指示</label>
+            <textarea id="instructionInput" rows="2" maxlength="512" autocomplete="off" spellcheck="false" aria-describedby="instructionHelp" placeholder="例: 次の方程式を解け"></textarea>
+            <p id="instructionHelp" class="field-help">書かれている指示だけを使い、曖昧な推測はしません。</p>
+          </div>
+        </div>
+      </details>
+
+      <div class="input-meta">
+        <span id="ocrStatus" class="status-line" role="status" aria-live="polite">ページ上で問題の範囲を選択します。文章と数式の混在にも対応しています。</span>
+      </div>
     </section>
-    <section class="card compact-card stack" aria-labelledby="actionHeading">
-      <div><h2 id="actionHeading">必要なところだけ見る</h2><p class="muted action-help">同じ問題では再計算せず、段階を切り替えます。</p></div>
+
+    <section class="card action-card stack" aria-labelledby="actionHeading">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="section-kicker">STEP 2 · GUIDE</p>
+          <h2 id="actionHeading">必要な段階を表示</h2>
+          <p class="section-description">同じ問題は再計算せず、Hint・Steps・Answerを切り替えます。</p>
+        </div>
+      </div>
       <div id="outputActions" class="output-action-grid" role="group" aria-label="表示内容を選択">
         <button class="button output-action" type="button" data-output-mode="hint1">Hint 1</button>
         <button class="button output-action" type="button" data-output-mode="hint2">Hint 2</button>
         <button class="button output-action" type="button" data-output-mode="steps">Steps</button>
-        <button id="runButton" class="button primary output-action" type="button" data-output-mode="answer">Answer</button>
-        <button class="button ghost output-action explain-action" type="button" data-output-mode="explain">解説</button>
+        <button id="runButton" class="button primary output-action answer-action" type="button" data-output-mode="answer">Answer</button>
+        <button class="button ghost output-action explain-action" type="button" data-output-mode="explain">解説を見る</button>
       </div>
       <div id="processStatus" class="notice loading-dot" role="status" aria-live="polite" hidden>解析中です</div>
       <div id="errorMessage" class="notice error" role="alert" hidden></div>
     </section>
-    <section id="resultPanel" class="card compact-card stack" aria-labelledby="resultHeading" hidden>
-      <div class="result-heading"><h2 id="resultHeading">結果</h2><span id="verificationBadge" class="badge"></span></div>
-      <div id="verificationMessage" class="muted"></div><div id="resultOutput" class="result-output" tabindex="0"></div>
-      <div class="button-row"><button id="copyButton" class="button primary" type="button">結果をコピー</button></div>
+
+    <section id="resultPanel" class="card result-card stack" aria-labelledby="resultHeading" hidden>
+      <div class="result-heading">
+        <div>
+          <p class="section-kicker">STEP 3 · VERIFIED</p>
+          <h2 id="resultHeading">検証済みの回答</h2>
+        </div>
+        <span id="verificationBadge" class="badge success"></span>
+      </div>
+      <div id="verificationMessage" class="verification-message muted"></div>
+      <div id="resultOutput" class="result-output" tabindex="0"></div>
+      <div class="button-row result-actions">
+        <button id="copyButton" class="button primary" type="button">結果をコピー</button>
+      </div>
     </section>
-    <section id="assessmentPanel" class="card compact-card stack" aria-labelledby="assessmentHeading" hidden>
+
+    <section id="assessmentPanel" class="card assessment-card stack" aria-labelledby="assessmentHeading" hidden>
       <h2 id="assessmentHeading">どの段階で解けましたか？</h2>
-      <div class="field"><label for="assessmentSelect">自己評価</label><select id="assessmentSelect"><option value="unassessed">未評価</option><option value="self_solved">自力で解けた（100）</option><option value="hint1_solved">ヒント1で解けた（80）</option><option value="hint2_solved">ヒント2で解けた（60）</option><option value="steps_solved">途中式で解けた（40）</option><option value="explain_understood">解説を見て理解した（30）</option><option value="answer_seen">答えを見た（0）</option><option value="unsolved">解けなかった（0）</option></select></div>
-      <button id="assessmentSaveButton" class="button" type="button">評価を保存</button><p id="saveStatus" class="muted" aria-live="polite"></p>
+      <div class="field">
+        <label for="assessmentSelect">自己評価</label>
+        <select id="assessmentSelect">
+          <option value="unassessed">未評価</option>
+          <option value="self_solved">自力で解けた（100）</option>
+          <option value="hint1_solved">ヒント1で解けた（80）</option>
+          <option value="hint2_solved">ヒント2で解けた（60）</option>
+          <option value="steps_solved">途中式で解けた（40）</option>
+          <option value="explain_understood">解説を見て理解した（30）</option>
+          <option value="answer_seen">答えを見た（0）</option>
+          <option value="unsolved">解けなかった（0）</option>
+        </select>
+      </div>
+      <div class="button-row">
+        <button id="assessmentSaveButton" class="button" type="button">評価を保存</button>
+        <p id="saveStatus" class="muted" aria-live="polite"></p>
+      </div>
     </section>
+
+    <details class="utility-details">
+      <summary>履歴・分析・設定など</summary>
+      <nav class="popup-nav" aria-label="画面ナビゲーション">
+        <a href="history.html" target="_blank" rel="noopener">履歴</a>
+        <a href="analytics.html" target="_blank" rel="noopener">分析</a>
+        <a href="review.html" target="_blank" rel="noopener">復習</a>
+        <a href="examples.html" target="_blank" rel="noopener">例題</a>
+        <a href="settings.html" target="_blank" rel="noopener">設定</a>
+        <a href="help.html" target="_blank" rel="noopener">ヘルプ</a>
+        <a href="about.html" target="_blank" rel="noopener">情報</a>
+      </nav>
+    </details>
   </main>
   <script type="module" src="js/popup.js"></script>
 </body>

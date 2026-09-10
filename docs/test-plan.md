@@ -62,7 +62,7 @@ The Digicon learning workflow additionally requires automated coverage for:
   regions above exactly one formula, Japanese-evidence gating before IBEM,
   formula-only preservation, region/output limits, cancellation, and raw OCR
   retention alongside normalized editable fields;
-- manifest checks that Chrome 109 is the minimum and incognito use stays
+- manifest checks that Chrome 114 is the minimum for the Side Panel and incognito use stays
   disabled for the shared offscreen-preview boundary, while the extension CSP
   permits only the packaged WASM runtime and no remote script or host access.
 
@@ -76,7 +76,7 @@ covers that primary path.
 
 ## Digicon workflow smoke test
 
-1. In the popup, switch to Quick Mode, solve `2x+3=11` as Hint 1 and then
+1. In the Side Panel, switch to Quick Mode, solve `2x+3=11` as Hint 1 and then
    Answer, and confirm no history record is created.
 2. Switch to Study Mode, use Hint 1, Hint 2, Steps, then Answer for the same
    problem, and confirm one history item contains all four viewed stages.
@@ -97,7 +97,7 @@ covers that primary path.
 6. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
    Steps, direct Answer rate, understanding, and review priority agree with the
    Study attempt. Confirm Quick interactions are absent.
-7. Use the popup OCR action first on one tightly cropped printed formula and
+7. Use the Side Panel OCR action first on one tightly cropped printed formula and
    then on a supported problem-number/instruction/formula stack. Confirm the
    crop and four editable fields are shown together, no solver runs after
    recognition, and the solver starts only after the separate confirmation. In
@@ -157,10 +157,10 @@ action-driven flow above, and its reported provider
 must be checked in the JSON output (a WebGPU initialization error is expected
 only in the separately forced-fallback profile).
 
-1. Load the unpacked extension in Chrome 109 or newer. Confirm no model, script,
+1. Load the unpacked extension in Chrome 114 or newer. Confirm no model, script,
    or data request leaves the extension.
 2. Open an ordinary HTTP/HTTPS page with a clear, machine-printed single
-   formula, start OCR from the popup, and drag a close crop around that formula.
+   formula, open the Side Panel, start OCR, and drag a close crop around that formula.
 3. Drag in both directions and confirm a range smaller than 24 CSS px is kept
    selectable, while Esc removes the overlay immediately.
 4. Select a valid range. Confirm the overlay is absent from the captured image

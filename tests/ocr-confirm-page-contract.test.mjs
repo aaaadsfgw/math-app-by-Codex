@@ -72,7 +72,8 @@ test("OCR確認ページのDOM契約とアクセシブルな状態領域を固�
   assert.match(html, /id=["']solveButton["'][^>]*\btype=["']button["']/u);
   assert.match(html, /id=["']discardButton["'][^>]*\btype=["']button["']/u);
   assert.match(html, /「この内容で解く」を押すまで、解答処理は始まりません/u);
-  assert.match(html, /手書き・図・文章全体の読み取りには対応しません/u);
+  assert.match(html, /日本語の指示と数式が混在する画像にも対応/u);
+  assert.match(html, /手書き・図・ページ全体の読み取りは対象外/u);
   assert.match(html, /画像は履歴や保存領域へ残しません/u);
 });
 

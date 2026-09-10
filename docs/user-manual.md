@@ -2,7 +2,8 @@
 
 ## Solve a problem
 
-1. Open the extension popup.
+1. Click the Math Study Log toolbar icon to open the Side Panel. It remains
+   visible while you inspect the current web page.
 2. Type a textual mathematics question, or capture selected text from a normal
    web page.
 3. Choose answer, hint 1, hint 2, working, or explanation.
@@ -178,7 +179,7 @@ clipboard unchanged.
 
 ## Printed math image input
 
-Use the popup OCR action only for a tightly cropped machine-printed formula, or
+Use the Side Panel OCR action only for a tightly cropped machine-printed formula, or
 for the supported compact layout with one or two short Japanese problem-number
 or instruction lines directly above exactly one formula:
 

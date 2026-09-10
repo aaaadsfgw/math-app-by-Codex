@@ -737,7 +737,17 @@ async function solveCandidate() {
       requestedMode: "answer",
       autoSolve: true,
     });
-    globalThis.location.replace("popup.html");
+    await Promise.resolve(
+      globalThis.chrome?.runtime?.sendMessage?.({ type: "OCR_PENDING_READY" }),
+    ).catch(() => undefined);
+    try {
+      globalThis.close();
+    } catch {
+      // The fallback below keeps direct extension-page navigation usable.
+    }
+    globalThis.setTimeout(() => {
+      if (!globalThis.closed) globalThis.location.replace("popup.html");
+    }, 80);
   } catch (error) {
     submitting = false;
     elements.solveHelp.textContent = previewDiscarded

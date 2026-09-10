@@ -29,8 +29,8 @@ solver router -> deterministic solver -> mathematical verification
                 Quick: ephemeral | Study: one local attempt
 ```
 
-The popup and keyboard shortcut use the same asynchronous solver router. The
-popup runs a solver once for the same input metadata and derives later display
+The Side Panel and keyboard shortcut use the same asynchronous solver router. The
+Side Panel runs a solver once for the same input metadata and derives later display
 stages from the cached verified result. The shortcut prefers selected page text
 and falls back to the clipboard only when the selection is empty.
 Symbolic requests from a visible extension page run in a fresh module worker.
@@ -130,6 +130,17 @@ popup START (explicit user action)
   -> pending confirmed ProblemInput -> existing deterministic solve workflow
 ```
 
+## Persistent learning workspace
+
+The toolbar action opens `popup.html` as the Chrome Side Panel rather than a
+short-lived action popup. This keeps the same page visible while the learner
+selects a web problem, checks OCR, chooses a hint, and reaches the verified
+answer. The page keeps the historical popup selectors and the existing
+learning-session coordinator, so this is a presentation and hosting change,
+not a second solver path. Optional problem metadata and utility navigation are
+collapsed until needed; the input, staged output actions, and result remain in
+one compact vertical flow. Chrome 114 or newer is required for this host.
+
 The session record contains routing metadata, a capture ID, phase, expiry,
 CSS-pixel selection, and viewport dimensions. It cannot contain a screenshot,
 Blob, Data URL, decoded bytes, or pixels. Selection messages are bound to the
@@ -209,7 +220,7 @@ instruction/formula values still come from OCR or were manually changed.
 Recognition alone cannot set `ocrConfirmed`, solve, write history, or change
 the clipboard.
 
-Chrome 109 is the minimum version for the offscreen boundary, and incognito use
+Chrome 114 is the minimum version for the Side Panel and offscreen boundaries, and incognito use
 is disabled while the offscreen preview is shared by the regular extension
 profile. Real unpacked-Chrome checks remain mandatory for capture pixels,
 offscreen Blob sharing, WebGPU, WASM fallback, cancellation, and extension CSP.

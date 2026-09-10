@@ -109,6 +109,9 @@ function fakeEnvironment({
     scripting: {
       async executeScript(options) {
         calls.injections.push(options);
+        if (typeof options.func === "function") {
+          return [{ frameId: 0, result: activeUrl === null ? PAGE_URL : "" }];
+        }
         return [{ frameId: 0, documentId: "document-1" }];
       },
     },
@@ -271,6 +274,26 @@ test("外部ページsenderとHTTP(S)以外のactive tabを拒否する", async 
     (error) => error.code === "OCR_CAPTURE_PAGE_UNSUPPORTED",
   );
   assert.equal(unsupported.calls.injections.length, 0);
+});
+
+test("Side Panelでtab.urlが隠れていても、ルーティング用URLだけを安全に取得する", async () => {
+  const environment = fakeEnvironment({ activeUrl: null });
+  const result = await start(environment);
+
+  assert.equal(result.phase, "selecting");
+  assert.equal(environment.calls.injections.length, 2);
+  assert.equal(typeof environment.calls.injections[0].func, "function");
+  assert.deepEqual(await environment.store.get(), {
+    protocolVersion: 1,
+    captureId: "capture-1",
+    phase: "selecting",
+    expiresAt: "2026-09-02T00:10:00.000Z",
+    tabId: 12,
+    windowId: 4,
+    frameId: 0,
+    documentId: "document-1",
+    sourceUrl: PAGE_URL,
+  });
 });
 
 test("未対応ページからの開始失敗では既存previewを先に破棄しない", async () => {

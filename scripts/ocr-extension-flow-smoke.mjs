@@ -711,6 +711,10 @@ async function runFlowUnsafe({
     return true;
   })()`);
 
+  // A real Side Panel does not steal the active page tab. Headless Chromium
+  // exposes the panel document as an extension page target, so restore the
+  // fixture tab as active before exercising page-scoped OCR routing.
+  await browser.send("Target.activateTarget", { targetId: tabTarget.targetId });
   await clickElement(popupProtocol, "#ocrButton");
   const selectingSession = await waitFor(async () => {
     const sessionData = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);

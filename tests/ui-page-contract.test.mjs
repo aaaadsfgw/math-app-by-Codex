@@ -92,3 +92,20 @@ test("v2 learning controls and metadata regions remain wired", async () => {
   assert.match(analytics, /id=["']categoryAnalytics["'][^>]*role=["']list["']/u);
   for (const script of scripts) assert.doesNotMatch(script, /\.innerHTML\b/u);
 });
+
+test("workspace action opens the persistent Side Panel and keeps the compact flow visible", async () => {
+  const [manifest, background, popup] = await Promise.all([
+    source("manifest.json"),
+    source("js/background.js"),
+    source("popup.html"),
+  ]);
+  const parsedManifest = JSON.parse(manifest);
+  assert.equal(parsedManifest.side_panel?.default_path, "popup.html");
+  assert.equal(parsedManifest.action?.default_popup, undefined);
+  assert.ok(Number(parsedManifest.minimum_chrome_version) >= 114);
+  assert.ok(parsedManifest.permissions.includes("sidePanel"));
+  assert.match(background, /setPanelBehavior\(\{ openPanelOnActionClick: true \}\)/u);
+  assert.match(popup, /class=["'][^"']*workflow-steps/u);
+  assert.match(popup, /id=["']problemMetaDetails["'][^>]*\bclass=["'][^"']*optional-details/u);
+  assert.match(popup, /文章と数式の混在にも対応/u);
+});

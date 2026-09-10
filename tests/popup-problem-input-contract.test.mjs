@@ -78,3 +78,15 @@ test("selectionは強い行構造だけ分離し、plain textのx2を推測変�
   assert.match(selection, /hasSelectionStructure\(parsedProblemInput\)/u);
   assert.doesNotMatch(selection, /x2|replace\([^)]*\^/u);
 });
+
+test("Side Panelの選択取得は秘匿されたtab.urlでもrouting URLだけを確認する", async () => {
+  const script = await source("js/popup.js");
+  const resolver = script.match(/async function resolveActivePageUrl\([\s\S]*?\n\}/u)?.[0] ?? "";
+  const selection = script.match(/async function loadSelection\(\)[\s\S]*?\n\}/u)?.[0] ?? "";
+
+  assert.match(resolver, /chrome\.scripting\.executeScript\([\s\S]*?location\?\.href/u);
+  assert.match(resolver, /isWebPage\(pageUrl\)/u);
+  assert.doesNotMatch(resolver, /innerHTML|textContent/u);
+  assert.match(selection, /resolveActivePageUrl\(tab\)/u);
+  assert.doesNotMatch(selection, /isWebPage\(tab\.url\)/u);
+});

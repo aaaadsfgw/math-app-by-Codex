@@ -65,12 +65,12 @@ The current migration checkpoint supports:
 - answer, two hint levels, working, and explanation output;
 - Quick Mode for ephemeral answers and Study Mode for one-record learning
   attempts across Hint 1, Hint 2, Steps, Answer, and explanation;
-- popup manual input, selected-text input, and a selection-first shortcut that
+- Side Panel manual input, selected-text input, and a selection-first shortcut that
   falls back to the clipboard and only replaces it after a verified result;
 - a common `ProblemInput` boundary that keeps a problem number, instruction,
   formula, conditions, source, and per-field provenance separate while keeping
   legacy one-string questions compatible;
-- optional problem-number and instruction fields in the popup, with Japanese
+- optional problem-number and instruction fields in the Side Panel, with Japanese
   instructions normalized to one of 13 closed intents only when the wording is
   unambiguous;
 - experimental browser-local OCR for either one tightly cropped
@@ -109,11 +109,13 @@ No companion process or model download is required.
 
 ## Use
 
-Choose Quick Mode when no learning record should be created, or Study Mode when
-the viewed stages should be collected into one attempt. Enter a question in the
-popup or select a question on a normal HTTP/HTTPS page, then choose only the
-stage you need. Switching stages for the same input reuses the verified solver
-result instead of recalculating it.
+Click the Math Study Log toolbar icon to open its Side Panel. It stays visible
+while you inspect the web page, so you can select, correct, and solve a problem
+without reopening a popup. Choose Quick Mode when no learning record should be
+created, or Study Mode when the viewed stages should be collected into one
+attempt. Enter a question in the Side Panel or select a question on a normal
+HTTP/HTTPS page, then choose only the stage you need. Switching stages for the
+same input reuses the verified solver result instead of recalculating it.
 
 The shortcut `Ctrl+Shift+Y` (`Command+Shift+Y` on macOS) first uses selected
 page text and otherwise reads the clipboard. It copies the configured verified
@@ -122,7 +124,7 @@ unsupported or invalid input leaves the original clipboard unchanged. Quick
 Mode never writes history; Study Mode records the input source and viewed
 stage.
 
-The popup can keep a problem number and an optional instruction separate from
+The Side Panel can keep a problem number and an optional instruction separate from
 the formula. Supported instructions normalize to the closed intents
 `simplify`, `expand`, `factor`, `solve_equation`, `differentiate`, `integrate`,
 `definite_integral`, `limit`, `tangent`, `normal`, `monotonicity`, `extrema`,
@@ -165,7 +167,7 @@ selection and follows its pre-existing clipboard fallback.
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result.
 
-For image input, choose the OCR action and drag around either one printed
+For image input, choose the OCR action in the Side Panel and drag around either one printed
 formula or the supported compact layout of one or two short horizontal
 Japanese instruction lines above one formula. Strong horizontal whitespace is
 used only to create regions; pixels alone never declare a region to be Japanese
@@ -340,7 +342,8 @@ bounds themselves contain `pi`.
 
 Requirements: Node.js 20 or newer.
 
-The unpacked extension requires Chrome 109 or newer.
+The unpacked extension requires Chrome 114 or newer because the main workspace
+uses the Chrome Side Panel API.
 
 ```powershell
 npm.cmd test
@@ -368,6 +371,8 @@ The manifest requests only:
 - `offscreen` for clipboard access, shortcut-triggered symbolic work in a
   disposable time-limited Web Worker, bounded in-memory image cropping, and
   locally orchestrated printed-formula recognition.
+- `sidePanel` for the persistent workspace that remains alongside the active
+  web page while a problem is selected, checked, and solved.
 
 It does not request any host permission. Questions and history remain on the
 device, and no local or cloud answer-generation service is contacted. The IBEM

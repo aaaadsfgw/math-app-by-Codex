@@ -41,6 +41,7 @@ const elements = {
   learningModeInputs: [...document.querySelectorAll('input[name="learningMode"]')],
   questionLabelInput: document.querySelector("#questionLabelInput"),
   instructionInput: document.querySelector("#instructionInput"),
+  problemMetaDetails: document.querySelector("#problemMetaDetails"),
   questionInput: document.querySelector("#questionInput"),
   charCount: document.querySelector("#charCount"),
   selectionButton: document.querySelector("#selectionButton"),
@@ -101,6 +102,7 @@ function clearStructuredInputState(question, source) {
   formulaSource = normalizedFieldSource(source, "manual");
   elements.questionLabelInput.value = "";
   elements.instructionInput.value = "";
+  if (elements.problemMetaDetails) elements.problemMetaDetails.open = false;
 }
 
 function restoreStructuredInput(problemInput, fallbackQuestion, source) {
@@ -114,6 +116,9 @@ function restoreStructuredInput(problemInput, fallbackQuestion, source) {
   elements.questionLabelInput.value = normalized.questionLabel;
   elements.instructionInput.value = normalized.instructionText;
   elements.questionInput.value = normalized.formulaText;
+  if (elements.problemMetaDetails) {
+    elements.problemMetaDetails.open = Boolean(normalized.questionLabel || normalized.instructionText);
+  }
   return normalized;
 }
 
@@ -163,6 +168,7 @@ function currentLearningMode() {
 function setAppState(text, state = "") {
   elements.appStateBadge.textContent = text;
   elements.appStateBadge.dataset.state = state;
+  document.body.dataset.appState = state;
 }
 
 function showError(message) {
@@ -245,7 +251,7 @@ function setInputSource(source, { ocrConfirmed = false } = {}) {
       ? "読み取り結果を確認済みです。"
       : "読み取り結果を確認してから解析してください。";
   } else {
-    elements.ocrStatus.textContent = "ページ上で、印刷された数式1つが収まる範囲を選択します。";
+    elements.ocrStatus.textContent = "ページ上で問題の範囲を選択します。文章と数式の混在にも対応しています。";
   }
 }
 
@@ -257,6 +263,7 @@ function setActiveOutputMode(mode) {
       String(button.dataset.outputMode === activeOutputMode),
     );
   });
+  document.body.dataset.workflowStep = activeOutputMode === "answer" ? "verify" : "guide";
 }
 
 function hideAttemptOutput() {
@@ -468,6 +475,29 @@ function isWebPage(url) {
   return /^https?:\/\//iu.test(String(url || ""));
 }
 
+async function resolveActivePageUrl(tab) {
+  const directUrl = String(tab?.url || "");
+  if (isWebPage(directUrl)) return directUrl;
+  if (directUrl) return null;
+  if (!Number.isSafeInteger(tab?.id) || typeof chrome.scripting?.executeScript !== "function") {
+    return null;
+  }
+
+  // Side Panel contexts can receive an activeTab grant while Chrome redacts
+  // tab.url. Read only location for the HTTP(S) guard; selection content is
+  // still obtained through the existing content-script path below.
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id, frameIds: [0] },
+      func: () => globalThis.location?.href || "",
+    });
+    const pageUrl = results?.find((result) => typeof result?.result === "string")?.result;
+    return isWebPage(pageUrl) ? pageUrl : null;
+  } catch {
+    return null;
+  }
+}
+
 async function sendToTab(tab, message) {
   try {
     return await chrome.tabs.sendMessage(tab.id, message);
@@ -495,7 +525,8 @@ async function loadSelection() {
 
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id || !isWebPage(tab.url)) {
+    const pageUrl = await resolveActivePageUrl(tab);
+    if (!tab?.id || !pageUrl) {
       throw new Error("このページからは選択中の文章を取得できません。");
     }
 
@@ -541,7 +572,6 @@ async function startOcrCapture() {
     }
     elements.ocrStatus.textContent = "ページ上で数式を囲んでください。選択後に確認画面が開きます。";
     setAppState("範囲を選択中", "success");
-    globalThis.close();
   } catch (error) {
     showError(errorMessage(error, "画像の範囲選択を開始できませんでした。"));
     elements.ocrStatus.textContent = "画像読み取りを開始できませんでした。もう一度お試しください。";
@@ -658,6 +688,18 @@ async function loadPendingQuestion() {
   }
 }
 
+function listenForPendingQuestion() {
+  const messageEvent = globalThis.chrome?.runtime?.onMessage;
+  if (typeof messageEvent?.addListener !== "function") return;
+  messageEvent.addListener((message) => {
+    if (message?.type !== "OCR_PENDING_READY") return undefined;
+    void loadPendingQuestion().catch((error) => {
+      showError(`確認済みOCRを読み込めませんでした: ${errorMessage(error)}`);
+    });
+    return undefined;
+  });
+}
+
 function handleManualInput(event) {
   const target = event?.currentTarget ?? event?.target ?? null;
   if (target === elements.questionInput) {
@@ -688,10 +730,12 @@ async function initialize() {
   settings.learningMode = settings.learningMode === "quick" ? "quick" : "study";
   setActiveOutputMode(normalizeOutputMode(settings.defaultMode));
   setInputSource("manual");
+  document.body.dataset.workflowStep = "input";
   updateLearningModeUi();
   updateCharacterCount();
   updateClassification();
   setAppState("オフライン数式エンジン");
+  listenForPendingQuestion();
 
   elements.questionLabelInput.addEventListener("input", handleManualInput);
   elements.instructionInput.addEventListener("input", handleManualInput);
