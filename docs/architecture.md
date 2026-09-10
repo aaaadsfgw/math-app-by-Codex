@@ -132,14 +132,18 @@ popup START (explicit user action)
 
 ## Persistent learning workspace
 
-The toolbar action opens `popup.html` as the Chrome Side Panel rather than a
-short-lived action popup. This keeps the same page visible while the learner
-selects a web problem, checks OCR, chooses a hint, and reaches the verified
-answer. The page keeps the historical popup selectors and the existing
-learning-session coordinator, so this is a presentation and hosting change,
-not a second solver path. Optional problem metadata and utility navigation are
-collapsed until needed; the input, staged output actions, and result remain in
-one compact vertical flow. Chrome 114 or newer is required for this host.
+The toolbar action first opens a small `panel-launcher.html` popup. Its explicit
+button opens `popup.html` as the Chrome Side Panel. This two-step launcher is
+intentional: the action popup is the documented user gesture that grants the
+temporary `activeTab` page permission, while the long-lived Side Panel can then
+read the selected page without requesting broad host permissions. The Side
+Panel keeps the same page visible while the learner selects a web problem,
+checks OCR, chooses a hint, and reaches the verified answer. It keeps the
+historical popup selectors and learning-session coordinator, so this is a
+presentation and hosting change, not a second solver path. Optional problem
+metadata and utility navigation are collapsed until needed; the input, staged
+output actions, and result remain in one compact vertical flow. Chrome 114 or
+newer is required for this host.
 
 The session record contains routing metadata, a capture ID, phase, expiry,
 CSS-pixel selection, and viewport dimensions. It cannot contain a screenshot,

@@ -76,7 +76,8 @@ covers that primary path.
 
 ## Digicon workflow smoke test
 
-1. In the Side Panel, switch to Quick Mode, solve `2x+3=11` as Hint 1 and then
+1. Open the toolbar launcher, choose `Side Panelを開く`, switch to Quick Mode,
+   solve `2x+3=11` as Hint 1 and then
    Answer, and confirm no history record is created.
 2. Switch to Study Mode, use Hint 1, Hint 2, Steps, then Answer for the same
    problem, and confirm one history item contains all four viewed stages.

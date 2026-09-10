@@ -5,6 +5,7 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 const pageContracts = [
   ["popup.html", "js/popup.js"],
+  ["panel-launcher.html", "js/panel-launcher.js"],
   ["analytics.html", "js/analytics.js"],
   ["history.html", "js/history.js"],
   ["settings.html", "js/settings.js"],
@@ -101,11 +102,16 @@ test("workspace action opens the persistent Side Panel and keeps the compact flo
   ]);
   const parsedManifest = JSON.parse(manifest);
   assert.equal(parsedManifest.side_panel?.default_path, "popup.html");
-  assert.equal(parsedManifest.action?.default_popup, undefined);
+  assert.equal(parsedManifest.action?.default_popup, "panel-launcher.html");
   assert.ok(Number(parsedManifest.minimum_chrome_version) >= 114);
   assert.ok(parsedManifest.permissions.includes("sidePanel"));
-  assert.match(background, /setPanelBehavior\(\{ openPanelOnActionClick: true \}\)/u);
+  assert.doesNotMatch(background, /setPanelBehavior\(/u);
   assert.match(popup, /class=["'][^"']*workflow-steps/u);
+  const launcher = await source("panel-launcher.html");
+  const launcherScript = await source("js/panel-launcher.js");
+  assert.match(launcher, /id=["']openPanelButton["']/u);
+  assert.match(launcherScript, /chrome\.sidePanel\.open/u);
+  assert.match(launcherScript, /chrome\.tabs\.query/u);
   assert.match(popup, /id=["']problemMetaDetails["'][^>]*\bclass=["'][^"']*optional-details/u);
   assert.match(popup, /文章と数式の混在にも対応/u);
 });

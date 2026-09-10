@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Math Study Log を開く</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/launcher.css">
+</head>
+<body>
+  <main class="launcher-shell">
+    <div class="launcher-mark" aria-hidden="true">∑</div>
+    <p class="launcher-eyebrow">MATH STUDY LOG</p>
+    <h1>学習ワークスペースを開く</h1>
+    <p id="launcherStatus" class="muted" role="status" aria-live="polite">
+      ページを見ながら使えるSide Panelを準備しています。
+    </p>
+    <button id="openPanelButton" class="button primary" type="button">Side Panelを開く</button>
+    <p id="launcherHelp" class="launcher-help muted" hidden>
+      ボタンを押すと、現在のページの横にワークスペースが開きます。
+    </p>
+  </main>
+  <script type="module" src="js/panel-launcher.js"></script>
+</body>
+</html>

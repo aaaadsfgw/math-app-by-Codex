@@ -44,6 +44,7 @@ if (
 
 const devtoolsBase = `${loopbackHttpBase}:${devtoolsPort}`;
 const OCR_SESSION_KEY = "ocrCaptureSessionV1";
+const LAUNCHER_PATH = "/panel-launcher.html";
 const POPUP_PATH = "/popup.html";
 const CONFIRM_PATH = "/ocr-confirm.html";
 const TEST_QUESTIONS = Object.freeze({
@@ -613,9 +614,6 @@ async function runFlowUnsafe({
   });
   await sourceProtocol.send("Log.enable").catch(() => undefined);
   await sourceProtocol.send("Page.bringToFront");
-  const geometry = await fixtureGeometry(sourceProtocol);
-  assert.equal(geometry.width, geometry.expectedWidth);
-  assert.equal(geometry.height, geometry.expectedHeight);
   const tabTarget = await waitFor(async () => {
     const targetInfos = (await browser.send("Target.getTargets", {
       // The default CDP filter intentionally excludes outer tab targets.
@@ -631,10 +629,27 @@ async function runFlowUnsafe({
     id: extensionId,
     targetId: tabTarget.targetId,
   });
-  const popupTarget = await waitForTarget(
+  const launcherTarget = await waitForTarget(
     (target) => !targetsBeforeAction.has(target.id)
+      && target.url === extensionPageUrl(extensionId, LAUNCHER_PATH),
+    { timeoutMs: 10_000, label: "action launcher popup" },
+  );
+  flowTargetIds.add(launcherTarget.id);
+  const launcherProtocol = await connectTarget(launcherTarget);
+  openedProtocols.push(launcherProtocol);
+  await waitFor(
+    async () => evaluate(launcherProtocol, `(() => {
+      const button = document.querySelector("#openPanelButton");
+      return document.readyState !== "loading" && Boolean(button) && button.disabled === false;
+    })()`),
+    { label: "Side Panel launcher button" },
+  );
+  const targetsBeforePanel = new Set((await listTargets()).map(({ id }) => id));
+  await clickElement(launcherProtocol, "#openPanelButton");
+  const popupTarget = await waitForTarget(
+    (target) => !targetsBeforePanel.has(target.id)
       && target.url === extensionPageUrl(extensionId, POPUP_PATH),
-    { timeoutMs: 10_000, label: "action popup" },
+    { timeoutMs: 10_000, label: "Side Panel workspace" },
   );
   flowTargetIds.add(popupTarget.id);
   const popupProtocol = await connectTarget(popupTarget);
@@ -651,6 +666,12 @@ async function runFlowUnsafe({
     { label: "OCR action button" },
   );
   await delay(100);
+  // Opening the Side Panel narrows the source page viewport. Measure the
+  // fixture after that resize so the synthetic drag stays inside the visible
+  // page area in headless Chromium as it does for a real user.
+  const geometry = await fixtureGeometry(sourceProtocol);
+  assert.equal(geometry.width, geometry.expectedWidth);
+  assert.equal(geometry.height, geometry.expectedHeight);
 
   let workerTarget = await waitForTarget(
     (target) => target.type === "service_worker"

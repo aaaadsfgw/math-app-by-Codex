@@ -2,8 +2,9 @@
 
 ## Solve a problem
 
-1. Click the Math Study Log toolbar icon to open the Side Panel. It remains
-   visible while you inspect the current web page.
+1. Click the Math Study Log toolbar icon, then choose `Side Panelを開く` in the
+   small launcher. The Side Panel remains visible while you inspect the current
+   web page.
 2. Type a textual mathematics question, or capture selected text from a normal
    web page.
 3. Choose answer, hint 1, hint 2, working, or explanation.

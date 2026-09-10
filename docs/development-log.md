@@ -3,8 +3,9 @@
 ## 2026-09-10: persistent Side Panel workspace and digicon UI pass
 
 - Moved the main learning workspace from the short-lived action popup to the
-  Chrome Side Panel. The toolbar action now opens `popup.html` beside the
-  active page, keeping page selection and the learning flow in one view.
+  Chrome Side Panel. The toolbar action opens a small launcher first, then
+  `popup.html` beside the active page, keeping page selection and the learning
+  flow in one view while preserving the `activeTab` user gesture.
 - Reworked the workspace layout into compact input, guide, and verified-result
   sections. Optional metadata and utility links are collapsed, while Quick /
   Study, input source, OCR status, staged output, and verification remain

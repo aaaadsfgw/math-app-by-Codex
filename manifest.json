@@ -15,7 +15,8 @@
     "sidePanel"
   ],
   "action": {
-    "default_title": "Math Study Log — Side Panel"
+    "default_title": "Math Study Log — Side Panel",
+    "default_popup": "panel-launcher.html"
   },
   "side_panel": {
     "default_path": "popup.html"

@@ -109,13 +109,16 @@ No companion process or model download is required.
 
 ## Use
 
-Click the Math Study Log toolbar icon to open its Side Panel. It stays visible
-while you inspect the web page, so you can select, correct, and solve a problem
-without reopening a popup. Choose Quick Mode when no learning record should be
-created, or Study Mode when the viewed stages should be collected into one
-attempt. Enter a question in the Side Panel or select a question on a normal
-HTTP/HTTPS page, then choose only the stage you need. Switching stages for the
-same input reuses the verified solver result instead of recalculating it.
+Click the Math Study Log toolbar icon, then choose `Side Panelを開く` in the
+small launcher. The launcher is intentional: opening an extension popup is the
+user gesture that grants temporary access to the current page without asking
+for broad host permissions. The Side Panel then stays visible while you inspect
+the web page, so you can select, correct, and solve a problem without reopening
+the workspace. Choose Quick Mode when no learning record should be created, or
+Study Mode when the viewed stages should be collected into one attempt. Enter a
+question in the Side Panel or select a question on a normal HTTP/HTTPS page,
+then choose only the stage you need. Switching stages for the same input reuses
+the verified solver result instead of recalculating it.
 
 The shortcut `Ctrl+Shift+Y` (`Command+Shift+Y` on macOS) first uses selected
 page text and otherwise reads the clipboard. It copies the configured verified

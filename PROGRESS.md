@@ -13,8 +13,10 @@ Last updated: 2026-09-10
 ## 2026-09-10: persistent Side Panel learning workspace
 
 - Replaced the short-lived toolbar popup host with Chrome's persistent Side
-  Panel (`popup.html`) so the current web page remains visible during page
-  selection, OCR confirmation, staged hints, and verified answers.
+  Panel (`popup.html`), reached through a small action launcher so page-scoped
+  `activeTab` access remains available without broad host permissions. The
+  current web page remains visible during selection, OCR confirmation, staged
+  hints, and verified answers.
 - Reorganized the workspace into a compact three-step flow: input, staged
   guidance, and verified result. Optional problem number/instruction fields and
   utility navigation are collapsed until needed.
