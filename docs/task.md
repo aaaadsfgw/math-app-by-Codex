@@ -5,9 +5,10 @@ mathematics engine while keeping the study-log product useful.
 
 Acceptance requires:
 
-- no answer-generation model or network dependency; the only model exception
-  is packaged local transcription of one tightly cropped machine-printed
-  formula into editable, explicitly confirmed input text;
+- no answer-generation model or network dependency; model use is limited to
+  packaged local transcription of one tightly cropped machine-printed formula
+  and, optionally, one or two short Japanese problem-number/instruction lines
+  above it into editable, explicitly confirmed structured input;
 - no diagram editor or geometry solver;
 - safe parser and common expression representation;
 - solver, verification, hint, working, and explanation coverage for the agreed

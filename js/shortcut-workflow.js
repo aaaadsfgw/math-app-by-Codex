@@ -2,6 +2,7 @@ import {
   createHistoryRecordPayload,
   solveWorkflow,
 } from "./solve-workflow.js";
+import { parseCombinedProblemText } from "./problem/problem-input.js";
 
 const SHORTCUT_ACTIONS = new Set(["answer", "hint1", "hint2", "steps"]);
 
@@ -20,6 +21,12 @@ function cleanText(value) {
 
 function normalizeAction(value) {
   return SHORTCUT_ACTIONS.has(value) ? value : "answer";
+}
+
+function structuredSelectionInput(selection) {
+  const problemInput = parseCombinedProblemText(selection, { source: "selection" });
+  if (!problemInput.questionLabel && !problemInput.instructionText) return null;
+  return problemInput;
 }
 
 function failureMessage(workflow) {
@@ -41,7 +48,14 @@ export async function getShortcutInput({
   }
 
   const selection = cleanText(await getSelectionText());
-  if (selection) return Object.freeze({ question: selection, source: "selection" });
+  if (selection) {
+    const problemInput = structuredSelectionInput(selection);
+    return Object.freeze({
+      question: selection,
+      source: "selection",
+      ...(problemInput ? { problemInput } : {}),
+    });
+  }
 
   const clipboard = cleanText(await readClipboardText());
   if (!clipboard) {
@@ -77,7 +91,7 @@ export async function runShortcutWorkflow({
 
   const input = await getShortcutInput({ getSelectionText, readClipboardText });
   const action = normalizeAction(settings.shortcutAction);
-  const workflow = await solve(input.question, {
+  const workflow = await solve(input.problemInput ?? input.question, {
     mode: action,
     symbolicOperations,
   });

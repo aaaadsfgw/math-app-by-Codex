@@ -8,6 +8,10 @@ import {
   normalizeOcrCaptureMessage,
 } from "./ocr/capture-contract.js";
 import {
+  normalizeProblemInput,
+  parseCombinedProblemText,
+} from "./problem/problem-input.js";
+import {
   getSettings,
   saveSettings,
   takePendingQuestion,
@@ -15,6 +19,14 @@ import {
 } from "./storage.js";
 
 const OUTPUT_MODES = new Set(["hint1", "hint2", "steps", "answer", "explain"]);
+const PROBLEM_FIELD_SOURCES = new Set([
+  "none",
+  "manual",
+  "selection",
+  "clipboard",
+  "ocr",
+  "review",
+]);
 const SOURCE_LABELS = Object.freeze({
   manual: "手入力",
   selection: "選択範囲",
@@ -27,6 +39,8 @@ const elements = {
   appStateBadge: document.querySelector("#appStateBadge"),
   learningModeStatus: document.querySelector("#learningModeStatus"),
   learningModeInputs: [...document.querySelectorAll('input[name="learningMode"]')],
+  questionLabelInput: document.querySelector("#questionLabelInput"),
+  instructionInput: document.querySelector("#instructionInput"),
   questionInput: document.querySelector("#questionInput"),
   charCount: document.querySelector("#charCount"),
   selectionButton: document.querySelector("#selectionButton"),
@@ -62,9 +76,74 @@ let analysisRunning = false;
 let selectionLoading = false;
 let learningModeSaving = false;
 let questionRevision = 0;
+let structuredInputActive = false;
+let originalProblemText = "";
+let preservedConditions = [];
+let preservedInstructionIntent = null;
+let instructionSource = "none";
+let formulaSource = "manual";
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizedFieldSource(value, fallback = "manual") {
+  if (PROBLEM_FIELD_SOURCES.has(value)) return value;
+  return PROBLEM_FIELD_SOURCES.has(fallback) ? fallback : "manual";
+}
+
+function clearStructuredInputState(question, source) {
+  structuredInputActive = false;
+  originalProblemText = String(question ?? "").trim();
+  preservedConditions = [];
+  preservedInstructionIntent = null;
+  instructionSource = "none";
+  formulaSource = normalizedFieldSource(source, "manual");
+  elements.questionLabelInput.value = "";
+  elements.instructionInput.value = "";
+}
+
+function restoreStructuredInput(problemInput, fallbackQuestion, source) {
+  const normalized = normalizeProblemInput(problemInput, { source });
+  structuredInputActive = true;
+  originalProblemText = normalized.rawText || String(fallbackQuestion ?? "").trim();
+  preservedConditions = [...normalized.conditions];
+  preservedInstructionIntent = normalized.instructionIntent;
+  instructionSource = normalized.instructionSource;
+  formulaSource = normalized.formulaSource;
+  elements.questionLabelInput.value = normalized.questionLabel;
+  elements.instructionInput.value = normalized.instructionText;
+  elements.questionInput.value = normalized.formulaText;
+  return normalized;
+}
+
+function currentStructuredProblemInput() {
+  const questionLabel = cleanText(elements.questionLabelInput.value);
+  const instructionText = cleanText(elements.instructionInput.value);
+  if (
+    !structuredInputActive
+    && !questionLabel
+    && !instructionText
+    && preservedConditions.length === 0
+  ) return null;
+
+  return normalizeProblemInput({
+    rawText: originalProblemText || elements.questionInput.value,
+    questionLabel,
+    instructionText,
+    instructionIntent: preservedInstructionIntent,
+    formulaText: elements.questionInput.value,
+    conditions: [...preservedConditions],
+    source: currentInputSource,
+    instructionSource: instructionText
+      ? normalizedFieldSource(instructionSource, "manual")
+      : "none",
+    formulaSource: normalizedFieldSource(formulaSource, currentInputSource),
+  });
+}
+
+function hasSelectionStructure(problemInput) {
+  return Boolean(problemInput.questionLabel || problemInput.instructionText);
 }
 
 function errorMessage(error, fallback = "不明なエラーが発生しました。") {
@@ -108,6 +187,8 @@ function canSaveAssessment() {
 
 function syncControlStates() {
   const controlsLocked = analysisRunning || selectionLoading || learningModeSaving;
+  elements.questionLabelInput.disabled = analysisRunning || selectionLoading;
+  elements.instructionInput.disabled = analysisRunning || selectionLoading;
   elements.questionInput.disabled = analysisRunning || selectionLoading;
   elements.selectionButton.disabled = controlsLocked;
   elements.outputActionButtons.forEach((button) => {
@@ -201,9 +282,15 @@ function setQuestion(
     source = "manual",
     parentHistoryId = null,
     ocrConfirmed = false,
+    problemInput = null,
   } = {},
 ) {
-  elements.questionInput.value = String(value ?? "");
+  if (problemInput && typeof problemInput === "object") {
+    restoreStructuredInput(problemInput, value, source);
+  } else {
+    elements.questionInput.value = String(value ?? "");
+    clearStructuredInputState(value, source);
+  }
   pendingParentHistoryId = cleanText(parentHistoryId) || null;
   setInputSource(source, { ocrConfirmed });
   resetAttempt();
@@ -315,8 +402,10 @@ async function runOutputMode(requestedMode) {
   }
 
   const mode = normalizeOutputMode(requestedMode);
+  const problemInput = currentStructuredProblemInput();
   const inputChanged = learningSession.setInput({
     question,
+    ...(problemInput ? { problemInput } : {}),
     source: currentInputSource,
     parentHistoryId: pendingParentHistoryId,
     ocrUsed: currentInputSource === "ocr",
@@ -414,7 +503,14 @@ async function loadSelection() {
     const text = cleanText(response?.text);
     if (!text) throw new Error("ページ上で問題文を選択してください。");
 
-    setQuestion(text, { source: "selection" });
+    const parsedProblemInput = parseCombinedProblemText(text, { source: "selection" });
+    const problemInput = hasSelectionStructure(parsedProblemInput)
+      ? parsedProblemInput
+      : null;
+    setQuestion(problemInput ? problemInput.formulaText : text, {
+      source: "selection",
+      problemInput,
+    });
     setAppState("選択を取得", "success");
   } catch (error) {
     showError(errorMessage(error, "選択中の文章を取得できませんでした。"));
@@ -529,7 +625,13 @@ async function loadPendingQuestion() {
   const pending = await takePendingQuestion();
   if (!pending) return;
 
-  const question = typeof pending === "string" ? pending : pending.question;
+  const problemInput = typeof pending === "object"
+    && pending.problemInput
+    && typeof pending.problemInput === "object"
+      ? pending.problemInput
+      : null;
+  const question = problemInput?.formulaText
+    ?? (typeof pending === "string" ? pending : pending.question);
   if (cleanText(question)) {
     const source = typeof pending === "object" && Object.hasOwn(SOURCE_LABELS, pending.source)
       ? pending.source
@@ -541,16 +643,37 @@ async function loadPendingQuestion() {
       source,
       parentHistoryId: typeof pending === "object" ? pending.parentHistoryId : null,
       ocrConfirmed: typeof pending === "object" && pending.ocrConfirmed === true,
+      problemInput,
     });
     setActiveOutputMode(requestedMode);
     setAppState(source === "ocr" ? "画像読み取りを確認済み" : "復習問題を読込", "success");
-    if (typeof pending === "object" && pending.autoSolve === true) {
+    if (
+      typeof pending === "object"
+      && pending.autoSolve === true
+      && source === "ocr"
+      && pending.ocrConfirmed === true
+    ) {
       await runOutputMode(requestedMode);
     }
   }
 }
 
-function handleManualInput() {
+function handleManualInput(event) {
+  const target = event?.currentTarget ?? event?.target ?? null;
+  if (target === elements.questionInput) {
+    formulaSource = "manual";
+  } else if (target === elements.instructionInput) {
+    instructionSource = cleanText(elements.instructionInput.value) ? "manual" : "none";
+    preservedInstructionIntent = null;
+    structuredInputActive = true;
+  } else if (target === elements.questionLabelInput) {
+    structuredInputActive = true;
+  }
+  if (
+    cleanText(elements.questionLabelInput.value)
+    || cleanText(elements.instructionInput.value)
+    || preservedConditions.length > 0
+  ) structuredInputActive = true;
   pendingParentHistoryId = null;
   setInputSource("manual");
   resetAttempt();
@@ -570,6 +693,8 @@ async function initialize() {
   updateClassification();
   setAppState("オフライン数式エンジン");
 
+  elements.questionLabelInput.addEventListener("input", handleManualInput);
+  elements.instructionInput.addEventListener("input", handleManualInput);
   elements.questionInput.addEventListener("input", handleManualInput);
   elements.selectionButton.addEventListener("click", () => void loadSelection());
   elements.ocrButton.addEventListener("click", () => void startOcrCapture());

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 
 const rawArguments = process.argv.slice(2);
-const supportedFlags = new Set(["--allow-storage-reset"]);
+const supportedFlags = new Set(["--allow-storage-reset", "--mixed"]);
 const unknownFlags = rawArguments.filter(
   (argument) => argument.startsWith("--") && !supportedFlags.has(argument),
 );
@@ -10,6 +10,7 @@ if (unknownFlags.length > 0) {
   throw new TypeError(`Unknown option: ${unknownFlags.join(", ")}`);
 }
 const allowStorageReset = rawArguments.includes("--allow-storage-reset");
+const useMixedFixture = rawArguments.includes("--mixed");
 if (!allowStorageReset) {
   throw new Error(
     "Refusing to clear extension test storage without --allow-storage-reset. "
@@ -29,7 +30,9 @@ if (!new Set(["either", "webgpu", "wasm"]).has(providerExpectation)) {
 const loopbackHttpBase = ["http:", "//127.0.0.1"].join("");
 const fixtureUrl = String(
   positionalArguments[3]
-  || `${loopbackHttpBase}:8765/tests/browser/ocr-capture-harness.html`,
+  || `${loopbackHttpBase}:8765/tests/browser/${
+    useMixedFixture ? "mixed-ocr-capture-harness.html" : "ocr-capture-harness.html"
+  }`,
 );
 const parsedFixtureUrl = new URL(fixtureUrl);
 if (
@@ -480,11 +483,19 @@ async function installCaptureTrace(workerProtocol, expectedSourceUrl) {
 async function fixtureGeometry(sourceProtocol) {
   return waitFor(
     async () => evaluate(sourceProtocol, `(async () => {
-      const image = document.querySelector("#ocrCaptureTarget");
-      if (!image) return null;
+      const target = document.querySelector("#ocrCaptureTarget");
+      if (!target) return null;
+      const image = target instanceof HTMLImageElement ? target : target.querySelector("img");
+      if (!(image instanceof HTMLImageElement)) return null;
       try { await image.decode(); } catch { return null; }
-      const rect = image.getBoundingClientRect();
-      if (!image.complete || image.naturalWidth !== 145 || image.naturalHeight !== 60) return null;
+      const rect = target.getBoundingClientRect();
+      const expectedNaturalWidth = Number(target.dataset.naturalWidth || 145);
+      const expectedNaturalHeight = Number(target.dataset.naturalHeight || 60);
+      if (
+        !image.complete
+        || image.naturalWidth !== expectedNaturalWidth
+        || image.naturalHeight !== expectedNaturalHeight
+      ) return null;
       return {
         left: rect.left,
         top: rect.top,
@@ -495,6 +506,14 @@ async function fixtureGeometry(sourceProtocol) {
         viewportWidth: innerWidth,
         viewportHeight: innerHeight,
         devicePixelRatio,
+        expectedWidth: Number(target.dataset.captureWidth || 290),
+        expectedHeight: Number(target.dataset.captureHeight || 120),
+        expectedKind: String(target.dataset.expectedKind || "formula-only"),
+        expectedQuestionLabel: String(target.dataset.expectedQuestionLabel || ""),
+        expectedInstruction: String(target.dataset.expectedInstruction || ""),
+        expectedFormula: String(target.dataset.expectedFormula || "x+y"),
+        expectedIntent: String(target.dataset.expectedIntent || ""),
+        expectedAnswer: String(target.dataset.expectedAnswer || ""),
       };
     })()`),
     { timeoutMs: 10_000, label: "fixture image" },
@@ -595,8 +614,8 @@ async function runFlowUnsafe({
   await sourceProtocol.send("Log.enable").catch(() => undefined);
   await sourceProtocol.send("Page.bringToFront");
   const geometry = await fixtureGeometry(sourceProtocol);
-  assert.equal(geometry.width, 290);
-  assert.equal(geometry.height, 120);
+  assert.equal(geometry.width, geometry.expectedWidth);
+  assert.equal(geometry.height, geometry.expectedHeight);
   const tabTarget = await waitFor(async () => {
     const targetInfos = (await browser.send("Target.getTargets", {
       // The default CDP filter intentionally excludes outer tab targets.
@@ -821,6 +840,8 @@ async function runFlowUnsafe({
     async () => {
       const state = await evaluate(confirmProtocol, `(() => ({
         candidate: document.querySelector("#candidateInput")?.value || "",
+        questionLabel: document.querySelector("#questionLabelInput")?.value || "",
+        instruction: document.querySelector("#instructionInput")?.value || "",
         panelHidden: document.querySelector("#candidatePanel")?.hidden,
         errorHidden: document.querySelector("#recognitionError")?.hidden,
         error: document.querySelector("#recognitionError")?.textContent || "",
@@ -833,7 +854,13 @@ async function runFlowUnsafe({
     },
     { timeoutMs: 150_000, intervalMs: 250, label: "local OCR candidate" },
   );
-  assert.equal(recognition.candidate.replaceAll(" ", ""), "x+y");
+  assert.equal(recognition.candidate.replaceAll(" ", ""), geometry.expectedFormula.replaceAll(" ", ""));
+  assert.equal(recognition.questionLabel, geometry.expectedQuestionLabel);
+  if (geometry.expectedInstruction) {
+    assert.equal(recognition.instruction, geometry.expectedInstruction);
+  } else {
+    assert.equal(recognition.instruction, "");
+  }
   const provider = recognition.provider === "WebGPU"
     ? "webgpu"
     : recognition.provider === "WASM"
@@ -853,8 +880,20 @@ async function runFlowUnsafe({
   const recognitionSession = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
   assert.equal(recognitionSession[OCR_SESSION_KEY]?.phase, "preview");
 
-  const testQuestion = TEST_QUESTIONS[learningMode];
-  await replaceInput(confirmProtocol, "#candidateInput", testQuestion.question);
+  const testQuestion = geometry.expectedAnswer
+    ? Object.freeze({ question: geometry.expectedFormula, expectedAnswer: geometry.expectedAnswer })
+    : TEST_QUESTIONS[learningMode];
+  const candidateMatchesSolveInput = recognition.candidate.replaceAll(" ", "")
+    === testQuestion.question.replaceAll(" ", "");
+  if (!candidateMatchesSolveInput) {
+    await replaceInput(confirmProtocol, "#candidateInput", testQuestion.question);
+  }
+  const solveInstruction = geometry.expectedKind === "mixed"
+    ? "方程式を解きなさい"
+    : geometry.expectedInstruction;
+  if (recognition.instruction !== solveInstruction) {
+    await replaceInput(confirmProtocol, "#instructionInput", solveInstruction);
+  }
   await clickElement(confirmProtocol, "#solveButton");
   await waitFor(
     async () => evaluate(confirmProtocol, `location.pathname === ${JSON.stringify(POPUP_PATH)}`),
@@ -864,6 +903,8 @@ async function runFlowUnsafe({
     async () => {
       const state = await evaluate(confirmProtocol, `(() => ({
         question: document.querySelector("#questionInput")?.value || "",
+        questionLabel: document.querySelector("#questionLabelInput")?.value || "",
+        instruction: document.querySelector("#instructionInput")?.value || "",
         source: document.querySelector("#inputSourceStatus")?.textContent || "",
         resultHidden: document.querySelector("#resultPanel")?.hidden,
         result: document.querySelector("#resultOutput")?.textContent || "",
@@ -875,6 +916,8 @@ async function runFlowUnsafe({
     { timeoutMs: 30_000, intervalMs: 150, label: "deterministic solve result" },
   );
   assert.equal(solved.question, testQuestion.question);
+  assert.equal(solved.questionLabel, geometry.expectedQuestionLabel);
+  assert.equal(solved.instruction, solveInstruction);
   assert.equal(solved.source, "画像読み取り");
   assert.ok(solved.result.replaceAll(" ", "").includes(testQuestion.expectedAnswer));
   assert.equal(solved.verification, "自作ソルバーで検証済み");
@@ -897,6 +940,14 @@ async function runFlowUnsafe({
     assert.equal(record.verified, true);
     assert.equal(record.verificationType, "solver");
     assert.ok(String(record.finalAnswer || "").replaceAll(" ", "").includes(testQuestion.expectedAnswer));
+    if (geometry.expectedKind === "mixed") {
+      assert.equal(record.problemInput?.questionLabel, geometry.expectedQuestionLabel);
+      assert.equal(record.problemInput?.instructionText, solveInstruction.replace(/[。．.!！?？]+$/u, ""));
+      assert.equal(record.problemInput?.instructionIntent, geometry.expectedIntent || "solve_equation");
+      assert.equal(record.problemInput?.formulaText, testQuestion.question);
+      assert.equal(record.problemInput?.instructionSource, "manual");
+      assert.equal(record.problemInput?.formulaSource, candidateMatchesSolveInput ? "ocr" : "manual");
+    }
     assert.deepEqual(finalLocal.history.slice(1), historySnapshot);
   } else {
     assert.deepEqual(finalLocal.history, historySnapshot);
@@ -933,6 +984,10 @@ async function runFlowUnsafe({
     learningMode,
     provider,
     recognized: recognition.candidate,
+    recognitionKind: geometry.expectedKind,
+    questionLabel: recognition.questionLabel,
+    instruction: recognition.instruction,
+    editedInstruction: solveInstruction,
     editedQuestion: testQuestion.question,
     answerMatched: true,
     devtoolsWindowRouteFallback,

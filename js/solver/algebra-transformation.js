@@ -1,6 +1,6 @@
 import {
   MathParseError,
-  collectNonzeroDomainConditions,
+  collectExactNonzeroDomainConditions,
   parseMathExpression,
 } from "../math-core/expression-parser.js";
 import {
@@ -92,7 +92,7 @@ export async function solveAlgebraTransformation(
       return failedResult(ALGEBRA_TRANSFORMATION_SOLVER_ID, "元の式との同値性を確認できませんでした");
     }
     const label = ACTION_LABELS[request.action];
-    const conditions = collectNonzeroDomainConditions(parsed.ast);
+    const conditions = collectExactNonzeroDomainConditions(parsed.ast);
     const displayAnswer = conditions.length
       ? `${answer}（ただし ${conditions.join("、")}）`
       : answer;

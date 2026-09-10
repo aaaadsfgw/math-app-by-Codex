@@ -20,7 +20,23 @@
     </nav>
     <section class="card compact-card stack" aria-labelledby="questionHeading">
       <div class="spread"><h2 id="questionHeading">問題文</h2><span id="charCount" class="muted" aria-live="polite">0文字</span></div>
-      <textarea id="questionInput" aria-label="数学の問題文" placeholder="例: 2x + 3 = 11"></textarea>
+      <div class="problem-optional-fields">
+        <div class="field">
+          <label for="questionLabelInput">問題番号 <span class="muted">（任意）</span></label>
+          <input id="questionLabelInput" type="text" maxlength="32" autocomplete="off" spellcheck="false" aria-describedby="questionLabelHelp" placeholder="例: (1)、問1">
+          <p id="questionLabelHelp" class="field-help">番号は解答処理へ混ぜず、問題の見分け方として保持します。</p>
+        </div>
+        <div class="field">
+          <label for="instructionInput">指示 <span class="muted">（任意）</span></label>
+          <textarea id="instructionInput" rows="2" maxlength="512" autocomplete="off" spellcheck="false" aria-describedby="instructionHelp" placeholder="例: 次の方程式を解け"></textarea>
+          <p id="instructionHelp" class="field-help">何を求めるかが書かれている場合だけ入力してください。曖昧な指示から処理を推測しません。</p>
+        </div>
+      </div>
+      <div class="field problem-main-field">
+        <label for="questionInput">数式・問題文</label>
+        <textarea id="questionInput" aria-label="数学の数式または従来形式の問題文" aria-describedby="questionInputHelp" placeholder="例: 2x + 3 = 11"></textarea>
+        <p id="questionInputHelp" class="field-help">従来どおり、指示を含む問題全文をこの欄だけに入力することもできます。</p>
+      </div>
       <div class="input-actions"><button id="selectionButton" class="button ghost" type="button">選択中の文章を取得</button><button id="ocrButton" class="button ghost" type="button" aria-describedby="ocrStatus">画像から読み取る</button></div>
       <div class="input-meta"><span id="categoryStatus" class="badge">未分類</span><span id="inputSourceStatus" class="badge">手入力</span></div>
       <div id="ocrStatus" class="muted" role="status" aria-live="polite">ページ上で、印刷された数式1つが収まる範囲を選択します。</div>

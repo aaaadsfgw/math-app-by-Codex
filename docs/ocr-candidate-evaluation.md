@@ -1,6 +1,7 @@
 # Printed Math OCR Candidate Evaluation
 
-Status: implementation decision, experimental local feature, 2026-09-07
+Status: implemented formula-OCR decision, experimental local feature,
+2026-09-07; the bounded Japanese acquisition extension is recorded in D-032
 
 ## Decision
 
@@ -132,10 +133,11 @@ MIT grant for the identified weights. Its INT8 graph pair is about 18.6 MB and
 is substantially smaller than the previously evaluated Rapid, PP-FormulaNet,
 and Nougat-style packages.
 
-Tesseract.js remains unsuitable for this path: general word OCR does not define
-the structural formula-recognition objective, vocabulary, or decoding required
-to preserve fractions, radicals, scripts, matrices, and operator layout. It is
-not a safe fallback for failed formula OCR.
+Tesseract.js remains unsuitable as a fallback for this formula-recognition path:
+general word OCR does not define the structural objective, vocabulary, or
+decoding required to preserve fractions, radicals, scripts, matrices, and
+operator layout. D-032 uses it separately only for bounded upper Japanese
+instruction/label regions; it never receives the formula as a fallback.
 
 ## Packaged runtime design
 
@@ -201,9 +203,16 @@ Until both providers and the confirmation boundary pass in the supported Chrome
 version, documentation must describe the feature as experimental and the
 unpacked-Chrome path remains a release blocker.
 
+Status update (2026-09-10): isolated Chrome 152 passed explicit WebGPU and WASM
+formula recognition, the extension CSP/Worker path, warm reuse, and the visible
+confirmation boundary, closing that base blocker. Automated tests cover
+cancellation, timeout, disposal, and late results. Manual adversarial UI cases,
+exact rendered-fraction evidence, and Worker/WASM peak-memory measurement remain
+tracked release-evidence gaps, so the feature remains experimental.
+
 ## Unsupported OCR scope
 
-The OCR path supports only one tightly cropped, machine-printed formula whose
+The IBEM formula path supports only one tightly cropped, machine-printed formula whose
 meaning is fully present in the crop. It does not support:
 
 - handwriting or mixed printed/handwritten notation;

@@ -1,4 +1,5 @@
 import { classifyCategory } from "../category-classifier.js";
+import { INSTRUCTION_INTENTS } from "../problem/instruction-normalizer.js";
 import { solveAlgebraTransformation } from "./algebra-transformation.js";
 import { solveBaseConversion } from "./base-conversion.js";
 import {
@@ -46,6 +47,8 @@ import { solveQuadraticInequality } from "./quadratic-inequality.js";
 import { solveRationalEquation } from "./rational-equation.js";
 import { solveRationalInequality } from "./rational-inequality.js";
 import { failedResult, unsupportedResult } from "./utils.js";
+
+const INSTRUCTION_INTENT_SET = new Set(INSTRUCTION_INTENTS);
 
 export {
   solveAlgebraTransformation,
@@ -221,6 +224,76 @@ function runApplicationPreflights(input) {
   );
 }
 
+function equationIntentSolvers(input) {
+  const category = normalizedCategory(null, input);
+  if (category === "連立方程式") return [solveLinearSystem];
+  if (category === "指数・対数") {
+    return [solveLogarithmicEquation, solveExponentialEquation];
+  }
+  return [solveRationalEquation, solveQuadraticEquation, solveLinearEquation];
+}
+
+function instructionRouterFailure(message) {
+  return Object.freeze({
+    ...failedResult("instruction-router", message),
+    solverId: "instruction-router",
+    recognized: true,
+  });
+}
+
+function terminalResult(result) {
+  return result?.recognized === true
+    ? result
+    : Object.freeze({ ...result, recognized: true });
+}
+
+function solveSynchronousInstructionIntent(input, intent) {
+  if (intent === "solve_equation") {
+    return terminalResult(runSolvers(input, equationIntentSolvers(input), {
+      preserveRecognizedFailure: true,
+    }));
+  }
+  if (intent === "limit") return terminalResult(runApplicationPreflight(input, solveFiniteLimit, FINITE_LIMIT_SOLVER_ID));
+  if (intent === "tangent") return terminalResult(runApplicationPreflight(input, solvePolynomialTangent, POLYNOMIAL_TANGENT_SOLVER_ID));
+  if (intent === "normal") return terminalResult(runApplicationPreflight(input, solvePolynomialNormal, POLYNOMIAL_NORMAL_SOLVER_ID));
+  if (["monotonicity", "extrema", "monotonicity_extrema"].includes(intent)) {
+    return terminalResult(runApplicationPreflight(input, solvePolynomialVariation, POLYNOMIAL_VARIATION_SOLVER_ID));
+  }
+  return terminalResult(unsupportedResult(
+    "このinstruction intentは非同期solver入口でのみ実行できます。",
+  ));
+}
+
+async function solveInstructionIntent(input, intent, options) {
+  try {
+    if (["simplify", "expand", "factor"].includes(intent)) {
+      return terminalResult(await solveAlgebraTransformation(input, {
+        symbolicOperations: options.symbolicOperations,
+      }));
+    }
+    if (intent === "differentiate") {
+      return terminalResult(await solveDerivative(input, {
+        symbolicOperations: options.symbolicOperations,
+      }));
+    }
+    if (intent === "integrate") {
+      return terminalResult(await solveIndefiniteIntegral(input, {
+        symbolicOperations: options.symbolicOperations,
+      }));
+    }
+    if (intent === "definite_integral") {
+      return terminalResult(await solveDefiniteIntegral(input, {
+        symbolicOperations: options.symbolicOperations,
+      }));
+    }
+    return solveSynchronousInstructionIntent(input, intent);
+  } catch (error) {
+    return instructionRouterFailure(
+      `instruction solver処理中にエラーが発生しました: ${safeThrownReason(error)}`,
+    );
+  }
+}
+
 function prepareQuestionInput(value) {
   if (typeof value === "string") {
     return Object.freeze({ input: value, failure: null });
@@ -245,6 +318,12 @@ export function solveQuestion(question, options = {}) {
   const prepared = prepareQuestionInput(question);
   if (prepared.failure) return prepared.failure;
   const input = prepared.input;
+  if (options.instructionIntent !== undefined && options.instructionIntent !== null) {
+    if (!INSTRUCTION_INTENT_SET.has(options.instructionIntent)) {
+      return instructionRouterFailure("instructionIntentが対応一覧にありません。");
+    }
+    return solveSynchronousInstructionIntent(input, options.instructionIntent);
+  }
   const application = runApplicationPreflights(input);
   if (application.supported || application.recognized === true) return application;
   const category = normalizedCategory(options.category, input);
@@ -267,6 +346,12 @@ export async function solveQuestionAsync(question, options = {}) {
   const prepared = prepareQuestionInput(question);
   if (prepared.failure) return prepared.failure;
   const input = prepared.input;
+  if (options.instructionIntent !== undefined && options.instructionIntent !== null) {
+    if (!INSTRUCTION_INTENT_SET.has(options.instructionIntent)) {
+      return instructionRouterFailure("instructionIntentが対応一覧にありません。");
+    }
+    return solveInstructionIntent(input, options.instructionIntent, options);
+  }
   const application = runApplicationPreflights(input);
   if (application.supported || application.recognized === true) return application;
   const category = normalizedCategory(options.category, input);

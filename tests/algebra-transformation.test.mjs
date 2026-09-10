@@ -86,7 +86,19 @@ test("約分で消える分母条件を保持し、条件付き結果として�
   });
   assert.equal(result.verified, true);
   assert.equal(result.resultKind, "conditional");
-  assert.deepEqual(result.conditions, ["(x-1)≠0"]);
-  assert.equal(result.answer, "x+1（ただし (x-1)≠0）");
+  assert.deepEqual(result.conditions, ["x≠1"]);
+  assert.equal(result.answer, "x+1（ただし x≠1）");
   assert.match(result.verification, /定義域/);
+});
+
+test("簡約前の一次・二次分母を厳密な除外値として保持する", async () => {
+  const first = await solveAlgebraTransformation("1/x+2/(x+1)を簡約せよ", {
+    symbolicOperations: fakeOperations({ simplify: async () => "(3*x+1)/(x*(x+1))" }),
+  });
+  assert.deepEqual(first.conditions, ["x≠0", "x≠-1"]);
+
+  const second = await solveAlgebraTransformation("1/(x^2-1)-1/(x-1)を簡約せよ", {
+    symbolicOperations: fakeOperations({ simplify: async () => "-x/(x^2-1)" }),
+  });
+  assert.deepEqual(second.conditions, ["x≠-1", "x≠1"]);
 });

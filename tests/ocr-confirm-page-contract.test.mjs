@@ -34,8 +34,14 @@ test("OCR確認ページのDOM契約とアクセシブルな状態領域を固�
     "recognitionProgress",
     "recognitionError",
     "candidatePanel",
+    "questionLabelInput",
+    "questionLabelHelp",
+    "instructionInput",
+    "instructionHelp",
     "candidateInput",
     "candidateHelp",
+    "conditionsInput",
+    "conditionsHelp",
     "providerInfo",
     "backendInfo",
     "modelInfo",
@@ -57,6 +63,10 @@ test("OCR確認ページのDOM契約とアクセシブルな状態領域を固�
   assert.match(html, /id=["']captureStatus["'][^>]*\brole=["']status["']/u);
   assert.match(html, /id=["']pageMessage["'][^>]*\brole=["']status["'][^>]*\baria-live=["']polite["']/u);
   assert.match(html, /id=["']candidateInput["'][^>]*\bmaxlength=["']4096["']/u);
+  assert.match(html, /id=["']questionLabelInput["'][^>]*\bmaxlength=["']32["']/u);
+  assert.match(html, /id=["']instructionInput["'][^>]*\bmaxlength=["']512["']/u);
+  assert.match(html, /id=["']conditionsInput["'][^>]*\bmaxlength=["']4096["']/u);
+  assert.match(html, /画像に明記された条件だけを1行ずつ入力/u);
   assert.match(html, /id=["']recognizeButton["'][^>]*\btype=["']button["']/u);
   assert.match(html, /id=["']cancelRecognitionButton["'][^>]*\btype=["']button["']/u);
   assert.match(html, /id=["']solveButton["'][^>]*\btype=["']button["']/u);
@@ -108,9 +118,32 @@ test("認識だけでは保存も解答開始もせず、明示操作だけが�
   assert.ok(recognition, "startRecognition body must be inspectable");
   assert.ok(submission, "solveCandidate body must be inspectable");
   assert.doesNotMatch(recognition, /setPendingQuestion|location\.replace/u);
+  assert.match(recognition, /showRecognitionResult\(normalizeRecognitionResponse\(response\)\)/u);
   assert.match(submission, /setPendingQuestion\(\{[\s\S]*?source:\s*["']ocr["'][\s\S]*?ocrConfirmed:\s*true[\s\S]*?requestedMode:\s*["']answer["'][\s\S]*?autoSolve:\s*true/u);
+  assert.match(submission, /setPendingQuestion\(\{[\s\S]*?question,[\s\S]*?problemInput,[\s\S]*?source:\s*["']ocr["']/u);
   assert.match(submission, /location\.replace\(["']popup\.html["']\)/u);
   assert.match(submission, /await discardPreview\(\)[\s\S]*?await setPendingQuestion/u);
+});
+
+test("数式OCRと手修正の由来を分離し、4項目をProblemInputへ渡す", async () => {
+  const script = await source("js/ocr/ocr-confirm.js");
+
+  assert.match(script, /candidateInput\.value\s*=\s*candidate\.formulaText/u);
+  assert.doesNotMatch(script, /instructionInput\.value\s*=\s*result\.candidateText/u);
+  assert.match(script, /rawOcrText\s*=\s*\[candidate\.rawInstructionText, candidate\.rawFormulaText \|\| result\.rawText\]/u);
+  assert.match(script, /fieldProvenance\.formulaSource\s*=\s*candidate\.formulaSource/u);
+  assert.match(script, /if \(field === ["']formula["']\) fieldProvenance\.formulaSource = ["']manual["']/u);
+  assert.match(script, /fieldProvenance\.instructionSource\s*=\s*cleanText\(elements\.instructionInput\.value\)/u);
+  assert.match(script, /questionLabel:\s*cleanText\(elements\.questionLabelInput\.value\)/u);
+  assert.match(script, /instructionText,/u);
+  assert.match(script, /formulaText,/u);
+  assert.match(script, /conditions:\s*conditionLines\(elements\.conditionsInput\.value\)/u);
+  assert.match(script, /source:\s*["']ocr["']/u);
+  assert.match(script, /instructionSource:\s*instructionText/u);
+  assert.match(script, /formulaSource:\s*fieldProvenance\.formulaSource === ["']ocr["'] \? ["']ocr["'] : ["']manual["']/u);
+  for (const id of ["questionLabelInput", "instructionInput", "candidateInput", "conditionsInput"]) {
+    assert.match(script, new RegExp(`elements\\.${id}\\.addEventListener\\(["']input["']`, "u"));
+  }
 });
 
 test("応答を文字列挿入せず、外部画像URLをfail closedにする", async () => {
@@ -151,6 +184,8 @@ test("専用CSSは狭い画面と状態表示を扱う", async () => {
   assert.match(css, /\.preview-frame\[data-state=["']error["']\]/u);
   assert.match(css, /\.capture-details\b/u);
   assert.match(css, /\.candidate-panel\b/u);
+  assert.match(css, /\.candidate-fields\b/u);
+  assert.match(css, /\.candidate-formula-field\b/u);
   assert.match(css, /\.runtime-details\b/u);
   assert.match(css, /@media\s*\(max-width:\s*640px\)/u);
   assert.doesNotMatch(css, /url\s*\(/iu);

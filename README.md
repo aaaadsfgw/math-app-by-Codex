@@ -6,9 +6,9 @@ independently the learner reached the solution.
 
 The application uses deterministic JavaScript solvers and has no
 answer-generation AI, API key, external server, network host permission, remote
-script, or CDN. Its only model runtime is a packaged local printed-formula
-transcriber whose editable output requires explicit user confirmation before
-the deterministic solver can see it.
+script, or CDN. Its packaged OCR runtimes only transcribe machine-printed input;
+their editable output requires explicit user confirmation before the
+deterministic solver can see it.
 
 ## Current state
 
@@ -67,21 +67,31 @@ The current migration checkpoint supports:
   attempts across Hint 1, Hint 2, Steps, Answer, and explanation;
 - popup manual input, selected-text input, and a selection-first shortcut that
   falls back to the clipboard and only replaces it after a verified result;
-- experimental browser-local OCR for one tightly cropped machine-printed
-  formula, producing editable text that requires a separate explicit solve
-  action;
+- a common `ProblemInput` boundary that keeps a problem number, instruction,
+  formula, conditions, source, and per-field provenance separate while keeping
+  legacy one-string questions compatible;
+- optional problem-number and instruction fields in the popup, with Japanese
+  instructions normalized to one of 13 closed intents only when the wording is
+  unambiguous;
+- experimental browser-local OCR for either one tightly cropped
+  machine-printed formula or one to two short horizontal Japanese instruction
+  regions followed by exactly one formula region, producing four separately
+  editable confirmation fields and requiring a separate explicit solve action;
 - source-aware history, staged-output usage, analytics, and review.
 
 The long-term target is text/formula input from junior-high mathematics through
-Japanese Mathematics III. Printed-formula OCR is a narrow, untrusted input
-method: it locally transcribes one tightly cropped machine-printed formula into
-editable candidate text. The crop and candidate remain visible together, and
-the existing deterministic solver receives the text only after the user presses
-the separate confirmation action. OCR never answers, explains, validates, or
-marks mathematics as verified. Diagram understanding, diagram-dependent
-geometry, construction problems, handwriting, full-page OCR, photographs,
-surrounding prose, and proof interpretation are intentionally out of scope. An
-unsupported input returns an explicit error instead of a guessed answer.
+Japanese Mathematics III. OCR is a narrow, untrusted input method: the
+formula-only path retains IBEM, while a mixed crop is split at strong horizontal
+whitespace and sends only its final formula crop to IBEM. Short Japanese
+instruction crops use the separately packaged Tesseract.js runtime. The crop
+and structured candidate remain visible together, and the existing
+deterministic solver receives the edited fields only after the user presses the
+separate confirmation action. OCR never answers, explains, validates, or marks
+mathematics as verified. Diagram understanding, diagram-dependent geometry,
+construction problems, handwriting, vertical Japanese text, general/full-page
+layout, photographs, multiple formulas, and proof interpretation are
+intentionally out of scope. An unsupported input returns an explicit error
+instead of a guessed answer.
 
 See [PLAN.md](PLAN.md), [PROGRESS.md](PROGRESS.md), and
 [docs/supported-problems.md](docs/supported-problems.md) for the exact migration
@@ -112,6 +122,24 @@ unsupported or invalid input leaves the original clipboard unchanged. Quick
 Mode never writes history; Study Mode records the input source and viewed
 stage.
 
+The popup can keep a problem number and an optional instruction separate from
+the formula. Supported instructions normalize to the closed intents
+`simplify`, `expand`, `factor`, `solve_equation`, `differentiate`, `integrate`,
+`definite_integral`, `limit`, `tangent`, `normal`, `monotonicity`, `extrema`,
+and `monotonicity_extrema`. A generic instruction such as `計算せよ` is not
+enough to choose an operation; `分数式を計算せよ` is the narrow supported
+simplification alias. Conflicting instructions or an instruction incompatible
+with the formula stop before another solver can be tried. Leaving the
+instruction blank preserves the established formula-only routing.
+
+Question labels are removed from solver input only with structural evidence.
+`問1`, `問題1`, and circled numbers are strong labels; `(1)`, `（1）`, and
+`1.` additionally need their own line or a following recognized instruction.
+An expression such as `(1+x)(1-x)` is never stripped. A page selection is split
+into instruction and formula only when it contains one or two complete
+instruction lines followed by exactly one formula line. Otherwise its original
+plain text follows the legacy route without reconstructing lost notation.
+
 For a web-page selection, the extension preserves mathematical structure when
 the selected DOM proves it. Complete presentation MathML supports single-letter
 identifiers, numbers, operators, superscripts, subscripts, fractions, and
@@ -137,14 +165,35 @@ selection and follows its pre-existing clipboard fallback.
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result.
 
-For image input, choose the OCR action and drag around one printed formula only.
-Recognition runs entirely in the extension, preferring WebGPU and falling back
-to WASM. Review and edit every returned character, then explicitly choose to
-solve the transcription. Recognition by itself does not run the solver or save
-a verified result. The first OCR use can be slower while the packaged model is
-loaded; later recognition can reuse the warm local session. Recognition has a
-120-second deadline, and the crop/confirmation session expires after ten
-minutes.
+For image input, choose the OCR action and drag around either one printed
+formula or the supported compact layout of one or two short horizontal
+Japanese instruction lines above one formula. Strong horizontal whitespace is
+used only to create regions; pixels alone never declare a region to be Japanese
+or mathematical. Tesseract.js 7.0.0 with the Apache-2.0
+`tessdata_fast` 4.1.0 `jpn` data reads the upper regions. Only the final,
+separately cropped formula region reaches the existing MIT-licensed IBEM
+formula OCR. The confirmation page exposes problem number, instruction,
+formula, and conditions as separate editable fields and retains raw OCR text
+and OCR/manual provenance internally. Review every field, then explicitly
+choose to solve. Recognition by itself does not run the solver or save a
+verified result.
+
+The packaged Japanese OCR assets are pinned by SHA-256 in
+`vendor/ocr/tesseract-japanese/ASSET_MANIFEST.json`; the language model hash is
+`1f5de9236d2e85f5fdf4b3c500f2d4926f8d9449f28f5394472d9e8d83b91b4d`.
+The runtime, three local WASM feature builds, Japanese data, licenses, retained
+MIT/BSD bundle dependency notices, and asset manifest total 14,385,195 bytes
+(about 14.4 MB decimal / 13.7 MiB). No asset is downloaded at runtime. Japanese
+recognition is WASM-only; formula recognition
+continues to prefer WebGPU and fall back to WASM. In the latest isolated
+headless Chrome 152 check, the packaged Japanese path transcribed
+`次の方程式を解け。`, the mixed path separated `(1)`, the instruction, and
+`x+y`, and the full confirmation flow passed in both Study and Quick modes.
+A fresh Japanese run took about 283 ms and a warm rerun about 30--35 ms in
+that fixture. The available page-heap delta is only a partial measurement and
+does not include the Worker/WASM peak, so no precise peak-memory claim is made.
+Exact recognition of a rendered fraction image has not been established; the
+candidate must still be reviewed and corrected before solving.
 
 For logarithmic equations, write an explicit integer base as `log_2(x)` or
 `log₂(x)`. Bare `log(x)` and `ln(x)` both mean the natural logarithm, matching
@@ -321,9 +370,10 @@ The manifest requests only:
   locally orchestrated printed-formula recognition.
 
 It does not request any host permission. Questions and history remain on the
-device, and no local or cloud answer-generation service is contacted. The OCR
-model and ONNX Runtime Web are packaged with the extension; recognition makes
-no network request. OCR screenshots and cropped previews are never written to
+device, and no local or cloud answer-generation service is contacted. The IBEM
+model, ONNX Runtime Web, Tesseract.js, its core WASM builds, and Japanese
+trained data are packaged with the extension; recognition makes no network
+request. OCR screenshots and cropped previews are never written to
 `storage.local` or `storage.session`; a preview Blob URL is revoked on discard,
 replacement, confirmation-tab closure, or expiry. The confirmation page also
 removes its loaded image source at expiry before discarding and closing.

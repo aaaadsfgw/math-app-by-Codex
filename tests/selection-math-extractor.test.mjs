@@ -430,6 +430,62 @@ test("mixed Japanese and complete MathML preserve order without duplicating rend
   );
 });
 
+test("selected block boundaries preserve label, instruction, and MathML as separate lines", () => {
+  const label = text("(1)");
+  const instruction = text("次の方程式を解け");
+  const root = html(
+    "section",
+    {},
+    html("div", {}, text("選択外の前文")),
+    html("div", {}, label),
+    html("p", {}, instruction),
+    html("div", {}, polynomial("quadratic")),
+    html("div", {}, text("選択外の後文")),
+  );
+  const formulaLeaves = textLeaves(root.childNodes[3]);
+  const lastFormulaLeaf = formulaLeaves.at(-1);
+  const selection = selectionBetween(
+    root,
+    label,
+    0,
+    lastFormulaLeaf,
+    lastFormulaLeaf.data.length,
+    "(1)\n次の方程式を解け\n2x2+5x+2=0",
+  );
+
+  assert.equal(
+    extract(root, "unused", selection),
+    "(1)\n次の方程式を解け\n2*x^2+5*x+2=0",
+  );
+});
+
+test("block-structured Japanese and MathML reach ProblemInput and a verified shortcut", async () => {
+  const root = html(
+    "section",
+    {},
+    html("div", {}, text("(1)")),
+    html("p", {}, text("次の方程式を解け")),
+    html("div", {}, polynomial("quadratic")),
+  );
+  const question = extract(root, "(1)\n次の方程式を解け\n2x2+5x+2=0");
+  const writes = [];
+  const result = await runShortcutWorkflow({
+    getSelectionText: async () => question,
+    readClipboardText: async () => "original clipboard",
+    writeClipboardText: async (value) => writes.push(value),
+    settings: { learningMode: "quick", shortcutAction: "answer" },
+  });
+
+  assert.equal(result.input.problemInput.questionLabel, "(1)");
+  assert.equal(result.input.problemInput.instructionText, "次の方程式を解け");
+  assert.equal(result.input.problemInput.instructionIntent, "solve_equation");
+  assert.equal(result.input.problemInput.formulaText, "2*x^2+5*x+2=0");
+  assert.equal(result.workflow.solverResult.solverId, "quadratic-equation");
+  assert.equal(result.workflow.solverResult.verified, true);
+  assert.equal(result.clipboardOutput, "x=-2,-1/2");
+  assert.deepEqual(writes, ["x=-2,-1/2"]);
+});
+
 test("partial structured selections never expand to the complete formula", () => {
   const exponent = text("12");
   const htmlRoot = html("span", {}, text("x"), html("sup", {}, exponent), text("+1"));

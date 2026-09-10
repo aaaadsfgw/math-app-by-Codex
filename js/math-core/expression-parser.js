@@ -1,4 +1,9 @@
 import { normalizeMathNotation } from "./notation.js";
+import {
+  exactPolynomialDegree,
+  exactPolynomialFromAst,
+} from "./exact-polynomial.js";
+import { analyzeExactQuadraticRoots } from "./exact-quadratic-roots.js";
 
 const MAX_EXPRESSION_LENGTH = 2_000;
 const MAX_AST_NODES = 512;
@@ -371,6 +376,70 @@ export function collectNonzeroDomainConditions(node, conditions = new Set()) {
   if (node.type === "unary") collectNonzeroDomainConditions(node.argument, conditions);
   if (node.type === "call") {
     node.args.forEach((argument) => collectNonzeroDomainConditions(argument, conditions));
+  }
+  return Object.freeze([...conditions]);
+}
+
+function exactExcludedValues(node) {
+  let polynomial;
+  try {
+    polynomial = exactPolynomialFromAst(node, { maxIntermediateDegree: 2 });
+  } catch {
+    return null;
+  }
+
+  const degree = exactPolynomialDegree(polynomial);
+  if (degree === 1) {
+    const [constant, coefficient] = polynomial;
+    return Object.freeze([constant.negate().divide(coefficient).toString()]);
+  }
+  if (degree !== 2) return null;
+
+  try {
+    const analysis = analyzeExactQuadraticRoots(polynomial);
+    return analysis.roots.length
+      ? Object.freeze(analysis.roots.map(({ exact }) => exact))
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function addExactNonzeroCondition(node, conditions) {
+  const excludedValues = exactExcludedValues(node);
+  if (excludedValues) {
+    excludedValues.forEach((value) => conditions.add(`x≠${value}`));
+    return;
+  }
+  conditions.add(`${serializeExpressionAst(node)}≠0`);
+}
+
+/**
+ * Collects original-domain restrictions while converting only exactly solved
+ * linear and quadratic denominator zeros to user-facing excluded x values.
+ * Unsupported or higher-degree denominators retain the lossless `expression≠0`
+ * form, so this helper never estimates or guesses roots.
+ */
+export function collectExactNonzeroDomainConditions(node, conditions = new Set()) {
+  if (!node || typeof node !== "object") return Object.freeze([...conditions]);
+  if (node.type === "binary") {
+    if (node.operator === "/") addExactNonzeroCondition(node.right, conditions);
+    if (node.operator === "^") {
+      const exponent = numericAstValue(node.right);
+      if (exponent !== null && exponent < 0) {
+        addExactNonzeroCondition(node.left, conditions);
+      }
+    }
+    collectExactNonzeroDomainConditions(node.left, conditions);
+    collectExactNonzeroDomainConditions(node.right, conditions);
+  }
+  if (node.type === "unary") {
+    collectExactNonzeroDomainConditions(node.argument, conditions);
+  }
+  if (node.type === "call") {
+    node.args.forEach((argument) => (
+      collectExactNonzeroDomainConditions(argument, conditions)
+    ));
   }
   return Object.freeze([...conditions]);
 }

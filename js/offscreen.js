@@ -11,9 +11,16 @@ import {
 import { createOcrCapturePreviewStore } from "./ocr/capture-preview-store.js";
 import { createOcrEngine } from "./ocr/ocr-engine.js";
 import { createIbemOcrBackendSession } from "./ocr/ocr-worker-client.js";
+import { createJapaneseOcrRecognizer } from "./ocr/japanese-ocr.js";
+import { createMixedOcrEngine } from "./ocr/mixed-ocr-engine.js";
 
 const ocrCapturePreviews = createOcrCapturePreviewStore();
-const localOcrEngine = createOcrEngine({ backendFactory: createIbemOcrBackendSession });
+const localFormulaOcrEngine = createOcrEngine({ backendFactory: createIbemOcrBackendSession });
+const localJapaneseOcr = createJapaneseOcrRecognizer();
+const localOcrEngine = createMixedOcrEngine({
+  formulaEngine: localFormulaOcrEngine,
+  japaneseRecognizer: localJapaneseOcr,
+});
 
 export function createOffscreenMessageDispatcher({
   symbolicOperation = runSymbolicOperation,

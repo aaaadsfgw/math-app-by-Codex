@@ -869,3 +869,35 @@ checklist.
 - The regression passes from raw OCR through normalization and existing solver
   routing to an exact, verified quadratic result `x=-2,-1/2`. The full suite
   passes 708 tests, and the static project check passes 248 files.
+
+## 2026-09-10: structured ProblemInput and mixed Japanese/formula acquisition
+
+- Added schema-v1 `ProblemInput` across popup, structured page selection,
+  shortcut, confirmed OCR, review, solve workflow, storage, and history. It
+  preserves legacy string input while separating label, instruction, one
+  formula, conditions, source, and instruction/formula provenance.
+- Added conservative problem-label extraction and a closed normalizer for 13
+  Japanese instruction intents. Generic `計算せよ` stays ambiguous. Conflicts,
+  unsupported conditions, and explicit-intent solver failure stop terminally;
+  no different solver is tried as a fallback.
+- Added DOM-read-only selection extraction for complete HTML `sup`/`sub`, the
+  supported presentation MathML subset, and one-to-one KaTeX/MathJax semantic
+  MathML. Partial or ambiguous structures use the unchanged selection, and
+  plain `x2` or `x1` is never repaired from characters alone.
+- Added strong-whitespace mixed-image segmentation and a separately packaged
+  Japanese recognizer using Tesseract.js/core 7.0.0 with `tessdata_fast` 4.1.0
+  `jpn`. At most two Japanese instruction/label regions may precede one
+  formula; only that final crop reaches IBEM. All assets, primary licenses, and
+  generated-bundle dependency notices are local and hash-pinned. OCR remains
+  editable, untrusted, and explicitly confirmed.
+- Isolated headless Chrome 152 passed the ten-case structured-selection smoke,
+  formula-only Study/Quick flow, mixed Study/Quick flow, explicit WebGPU/WASM
+  formula recognition, Japanese instruction recognition, region separation,
+  warm reuse, provenance, history, and preview cleanup. A fresh Japanese
+  fixture took about 283 ms and a warm rerun about 30--35 ms. The measured page
+  heap excludes Worker/WASM peak memory, and exact OCR of a rendered fraction
+  was not established; those remain known evidence gaps.
+- `npm.cmd test` passed 801/801, including the 5,500-case generated corpus and
+  structured-input/OCR safety regressions. `npm.cmd run check` passed 282 files
+  (14 HTML, 212 JS/MJS, and 12 CSS) after documentation and asset-manifest
+  integration.

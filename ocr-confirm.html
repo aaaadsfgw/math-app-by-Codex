@@ -71,10 +71,27 @@
       <div id="recognitionError" class="notice error" role="alert" hidden></div>
 
       <div id="candidatePanel" class="candidate-panel stack" hidden>
-        <div class="field">
-          <label for="candidateInput">読み取り候補</label>
-          <textarea id="candidateInput" maxlength="4096" spellcheck="false" autocomplete="off" aria-describedby="candidateHelp" placeholder="認識した数式がここに表示されます"></textarea>
-          <p id="candidateHelp" class="field-help">候補は未確認です。記号・指数・分数・括弧を見直し、必要なら直接修正してください。</p>
+        <div class="candidate-fields" aria-label="確認する問題の構造">
+          <div class="field candidate-label-field">
+            <label for="questionLabelInput">問題番号 <span class="muted">（任意）</span></label>
+            <input id="questionLabelInput" type="text" maxlength="32" spellcheck="false" autocomplete="off" aria-describedby="questionLabelHelp" placeholder="例: (1)、問1">
+            <p id="questionLabelHelp" class="field-help">番号は数式へ混ぜず、問題を見分ける情報として保持します。</p>
+          </div>
+          <div class="field candidate-instruction-field">
+            <label for="instructionInput">指示 <span class="muted">（任意）</span></label>
+            <textarea id="instructionInput" rows="2" maxlength="512" spellcheck="false" autocomplete="off" aria-describedby="instructionHelp" placeholder="例: 次の方程式を解け"></textarea>
+            <p id="instructionHelp" class="field-help">画像に書かれた操作だけを入力してください。曖昧な指示から処理を推測しません。</p>
+          </div>
+          <div class="field candidate-formula-field">
+            <label for="candidateInput">数式</label>
+            <textarea id="candidateInput" maxlength="4096" spellcheck="false" autocomplete="off" aria-describedby="candidateHelp" placeholder="認識した数式がここに表示されます"></textarea>
+            <p id="candidateHelp" class="field-help">数式候補は未確認です。記号・指数・分数・括弧を見直し、必要なら直接修正してください。</p>
+          </div>
+          <div class="field candidate-conditions-field">
+            <label for="conditionsInput">条件 <span class="muted">（任意・1行に1つ）</span></label>
+            <textarea id="conditionsInput" rows="2" maxlength="4096" spellcheck="false" autocomplete="off" aria-describedby="conditionsHelp" placeholder="例: x≠0"></textarea>
+            <p id="conditionsHelp" class="field-help">画像に明記された条件だけを1行ずつ入力してください。入力条件を安全に検証できない場合は解答を停止します。</p>
+          </div>
         </div>
         <dl class="runtime-details" aria-label="文字認識の実行情報">
           <div><dt>実行方式</dt><dd id="providerInfo">未実行</dd></div>

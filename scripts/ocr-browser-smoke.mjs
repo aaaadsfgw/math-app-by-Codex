@@ -135,6 +135,101 @@ try {
       } finally {
         await engine.dispose();
       }
+
+      const japaneseModule = await import(chrome.runtime.getURL("js/ocr/japanese-ocr.js"));
+      const mixedModule = await import(chrome.runtime.getURL("js/ocr/mixed-ocr-engine.js"));
+      const japaneseRecognizer = japaneseModule.createJapaneseOcrRecognizer();
+      const formulaEngine = engineModule.createOcrEngine({
+        backendFactory: clientModule.createIbemOcrBackendSession,
+      });
+      const mixedEngine = mixedModule.createMixedOcrEngine({
+        formulaEngine,
+        japaneseRecognizer,
+      });
+      const toPng = (canvas) => new Promise((resolve, reject) => {
+        if (typeof canvas.convertToBlob === "function") {
+          canvas.convertToBlob({ type: "image/png" }).then(resolve, reject);
+          return;
+        }
+        canvas.toBlob((value) => value ? resolve(value) : reject(new Error("PNG encoding failed")), "image/png");
+      });
+      try {
+        const compositeFormula = await mixedEngine.recognize(blob);
+        outcomes.compositeFormula = {
+          ok: true,
+          recognitionKind: compositeFormula.recognitionKind,
+          text: compositeFormula.text,
+          matchesExpected: compositeFormula.text.replaceAll(" ", "") === "x+y",
+        };
+
+        const instructionCanvas = new OffscreenCanvas(900, 150);
+        const instructionContext = instructionCanvas.getContext("2d");
+        instructionContext.fillStyle = "white";
+        instructionContext.fillRect(0, 0, instructionCanvas.width, instructionCanvas.height);
+        instructionContext.fillStyle = "black";
+        instructionContext.font = '48px "Yu Gothic UI", "Meiryo", sans-serif';
+        instructionContext.textBaseline = "middle";
+        instructionContext.fillText("次の方程式を解け。", 28, 75);
+        const instructionBlob = await toPng(instructionCanvas);
+        const heapBefore = performance.memory?.usedJSHeapSize ?? null;
+        const japaneseFirst = await japaneseRecognizer.recognize(instructionBlob);
+        const japaneseSecond = await japaneseRecognizer.recognize(instructionBlob);
+        const heapAfter = performance.memory?.usedJSHeapSize ?? null;
+        outcomes.japanese = {
+          ok: true,
+          firstText: japaneseFirst.text,
+          secondText: japaneseSecond.text,
+          recognizedCommand: japaneseSecond.text.includes("方程式") && japaneseSecond.text.includes("解"),
+          coldMilliseconds: japaneseFirst.timings.totalMilliseconds,
+          warmMilliseconds: japaneseSecond.timings.totalMilliseconds,
+          heapDeltaBytes: heapBefore === null || heapAfter === null ? null : heapAfter - heapBefore,
+          modelBytes: japaneseFirst.model.bytes,
+          provider: japaneseFirst.provider,
+        };
+
+        const formulaBitmap = await createImageBitmap(blob);
+        const mixedCanvas = new OffscreenCanvas(900, 400);
+        const mixedContext = mixedCanvas.getContext("2d");
+        mixedContext.fillStyle = "white";
+        mixedContext.fillRect(0, 0, mixedCanvas.width, mixedCanvas.height);
+        mixedContext.fillStyle = "black";
+        mixedContext.font = '48px "Yu Gothic UI", "Meiryo", sans-serif';
+        mixedContext.textBaseline = "middle";
+        mixedContext.fillText("(1) 次の方程式を解け。", 28, 65);
+        mixedContext.drawImage(formulaBitmap, 305, 250, 290, 120);
+        formulaBitmap.close();
+        const mixedResult = await mixedEngine.recognize(await toPng(mixedCanvas));
+        outcomes.mixed = {
+          ok: true,
+          recognitionKind: mixedResult.recognitionKind,
+          questionLabel: mixedResult.structuredCandidate.questionLabel,
+          instructionText: mixedResult.structuredCandidate.instructionText,
+          instructionIntent: mixedResult.structuredCandidate.instructionIntent,
+          formulaText: mixedResult.structuredCandidate.formulaText,
+          formulaMatchesExpected: mixedResult.structuredCandidate.formulaText.replaceAll(" ", "") === "x+y",
+          confirmationRequired: mixedResult.confirmationRequired,
+          verified: mixedResult.verified,
+        };
+
+      } catch (error) {
+        outcomes.compositeFormula = outcomes.compositeFormula ?? {
+          ok: false,
+          code: String(error?.code || "ERROR"),
+          message: String(error?.message || error),
+        };
+        outcomes.japanese = outcomes.japanese ?? {
+          ok: false,
+          code: String(error?.code || "ERROR"),
+          message: String(error?.message || error),
+        };
+        outcomes.mixed = outcomes.mixed ?? {
+          ok: false,
+          code: String(error?.code || "ERROR"),
+          message: String(error?.message || error),
+        };
+      } finally {
+        await mixedEngine.dispose();
+      }
       return outcomes;
     })()
   `;
@@ -164,16 +259,41 @@ try {
     || (expectation === "wasm-fallback"
       && outcomes.webgpu?.ok === false
       && outcomes.workerEngine?.provider === "wasm");
+  const japanesePassed = Boolean(
+    outcomes?.japanese?.ok
+    && outcomes.japanese.recognizedCommand
+    && outcomes.japanese.provider === "wasm"
+    && outcomes.japanese.modelBytes === 2_471_260,
+  );
+  const compositeFormulaPassed = Boolean(
+    outcomes?.compositeFormula?.ok
+    && outcomes.compositeFormula.recognitionKind === "formula-only"
+    && outcomes.compositeFormula.matchesExpected,
+  );
+  const mixedPassed = Boolean(
+    outcomes?.mixed?.ok
+    && outcomes.mixed.recognitionKind === "mixed"
+    && outcomes.mixed.instructionIntent === "solve_equation"
+    && outcomes.mixed.formulaMatchesExpected
+    && outcomes.mixed.confirmationRequired === true
+    && outcomes.mixed.verified === false,
+  );
   if (
     !outcomes?.wasm?.ok
     || !outcomes.wasm.matchesExpected
     || !explicitWebGpuPassed
     || !providerExpectationPassed
     || !workerPassed
+    || !compositeFormulaPassed
+    || !japanesePassed
+    || !mixedPassed
   ) {
     process.exitCode = 1;
   }
 } finally {
-  await protocol.send("Page.close").catch(() => undefined);
+  await Promise.race([
+    protocol.send("Page.close").catch(() => undefined),
+    new Promise((resolve) => setTimeout(resolve, 1_000)),
+  ]);
   protocol.close();
 }

@@ -22,6 +22,9 @@ The Digicon learning workflow additionally requires automated coverage for:
 - new attempts after question, source, or review-parent changes, while a
   Quick/Study round trip resumes the same Study record without Quick stages;
 - selection, clipboard, manual, review, and confirmed-OCR source metadata;
+- schema-v1 `ProblemInput` normalization, legacy-string compatibility,
+  problem-label evidence, per-field provenance, all 13 instruction intents,
+  conflict detection, and terminal intent dispatch with no solver fallback;
 - unsupported/invalid results never reaching presentation, history, or the
   clipboard;
 - structured web-selection extraction from complete HTML `sup`/`sub`, native
@@ -55,6 +58,10 @@ The Digicon learning workflow additionally requires automated coverage for:
 - recognition alone causing no solver call, pending question, history record,
   or clipboard change; only separately confirmed editable text may enter the
   solver with `source: "ocr"` and `ocrConfirmed: true`;
+- mixed-layout segmentation into at most two short Japanese instruction/label
+  regions above exactly one formula, Japanese-evidence gating before IBEM,
+  formula-only preservation, region/output limits, cancellation, and raw OCR
+  retention alongside normalized editable fields;
 - manifest checks that Chrome 109 is the minimum and incognito use stays
   disabled for the shared offscreen-preview boundary, while the extension CSP
   permits only the packaged WASM runtime and no remote script or host access.
@@ -85,15 +92,16 @@ covers that primary path.
    reaches the verified answer `x=-2,-1/2`. Select only part of an exponent or
    fraction and confirm the range is not expanded. Select literal plain text
    `x2+5x+2=0` and confirm it remains unsupported and the clipboard is not
-   replaced. `tests/browser/selection-structure-harness.html` provides nine
+    replaced. `tests/browser/selection-structure-harness.html` provides ten
    DOM/Range smoke cases for this boundary.
 6. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
    Steps, direct Answer rate, understanding, and review priority agree with the
    Study attempt. Confirm Quick interactions are absent.
-7. Use the popup OCR action on one tightly cropped printed formula. Confirm the
-   crop and editable candidate are shown together, no solver runs after
-   recognition, and the solver starts only after the separate confirmation.
-   In Study Mode confirm the saved source is OCR and confirmation is recorded
+7. Use the popup OCR action first on one tightly cropped printed formula and
+   then on a supported problem-number/instruction/formula stack. Confirm the
+   crop and four editable fields are shown together, no solver runs after
+   recognition, and the solver starts only after the separate confirmation. In
+   Study Mode confirm the saved source is OCR and confirmation is recorded
    separately from solver verification.
 
 ## Unpacked-Chrome printed-formula OCR smoke test
@@ -112,6 +120,8 @@ second terminal:
 ```powershell
 npm.cmd run test:browser:serve
 npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset
+npm.cmd run test:browser:ocr-mixed-flow -- 9333 --allow-storage-reset
+npm.cmd run test:browser:selection -- 9333
 ```
 
 The flow loads the current unpacked directory, triggers the real browser action,
@@ -122,6 +132,18 @@ tab whose URL exactly matches its loopback fixture. Product routing code is not
 changed. On 2026-09-08, isolated Chrome 152 selected WebGPU, recognized `x + y`
 in both modes, used a 290 x 121 crop, saved one Study record, saved no Quick
 record, and revoked both previews.
+
+The mixed flow uses a compact `(1)` / `次の方程式を解け` / formula fixture
+and verifies separation, four editable fields, OCR/manual provenance, explicit
+solve, Study/Quick history behavior, and cleanup. The selection smoke runs ten
+real DOM/Range cases covering literal text, HTML `sup`/`sub`, native MathML,
+KaTeX/MathJax correspondence, block-structured Japanese plus MathML, and safe
+fallback. The matching integration test connects the structured result to the
+verified shortcut solver. On
+2026-09-10, all three scripts passed in isolated headless Chrome 152. The same run's
+engine smoke recognized the Japanese instruction and `x+y` mixed fixture and
+separately exercised explicit WebGPU and WASM formula OCR. This is not evidence
+that arbitrary fonts/layouts or a rendered fraction image transcribe exactly.
 
 For the reproducible provider/runtime check, launch an isolated Chrome for
 Testing profile with remote debugging and the unpacked extension, then run

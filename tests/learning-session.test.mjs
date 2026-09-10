@@ -71,6 +71,7 @@ test("同じ入力ではsolverを一度だけ実行しStudy履歴を一件にま
   assert.equal(first.solvedFresh, true);
   assert.equal(second.solvedFresh, false);
   assert.equal(calls.solves.length, 1);
+  assert.equal(calls.solves[0].question, "2x=4");
   assert.deepEqual(calls.presents.map(({ mode }) => mode), ["hint2", "answer"]);
   assert.equal(calls.adds.length, 1);
   assert.equal(calls.adds[0].source, "selection");
@@ -146,6 +147,78 @@ test("未確認のOCR入力はsolver呼び出し前に拒否する", async () =>
   assert.equal(calls.solves.length, 0);
   assert.equal(calls.adds.length, 0);
   assert.equal(session.snapshot.hasCachedResult, false);
+});
+
+test("構造化ProblemInputをsolver・snapshot・Study履歴へ保ったまま渡す", async () => {
+  let solverInput = null;
+  let historyPayload = null;
+  const session = createLearningSession({
+    solve: async (input, { mode }) => {
+      solverInput = input;
+      return {
+        ...workflow(mode),
+        question: input.formulaText,
+        problemInput: input,
+      };
+    },
+    addHistoryRecord: async (payload) => {
+      historyPayload = payload;
+      return { ...payload, id: "history-structured" };
+    },
+    recordView: async () => null,
+  });
+
+  session.setInput({
+    question: "この文字列ではなく構造化数式を使う",
+    source: "selection",
+    problemInput: {
+      questionLabel: "(1)",
+      formulaText: "2x=4",
+      source: "selection",
+      formulaSource: "selection",
+    },
+  });
+  const result = await session.view("answer", { learningMode: "study" });
+
+  assert.equal(solverInput.formulaText, "2x=4");
+  assert.equal(solverInput.questionLabel, "(1)");
+  assert.equal(session.snapshot.input.question, "2x=4");
+  assert.equal(session.snapshot.input.problemInput.formulaSource, "selection");
+  assert.equal(historyPayload.problemInput.questionLabel, "(1)");
+  assert.equal(historyPayload.problemInput.formulaText, "2x=4");
+  assert.equal(result.historyRecord.id, "history-structured");
+});
+
+test("ProblemInputのsourceまたはfield provenanceがOCRなら明示確認を必須にする", async () => {
+  for (const provenance of [
+    { source: "ocr", instructionSource: "manual", formulaSource: "manual" },
+    { source: "manual", instructionSource: "ocr", formulaSource: "manual" },
+    { source: "manual", instructionSource: "none", formulaSource: "ocr" },
+  ]) {
+    const { session, calls } = fixture();
+    const input = {
+      question: "2x=4",
+      source: "manual",
+      problemInput: {
+        instructionText: provenance.instructionSource === "none" ? "" : "方程式を解け",
+        formulaText: "2x=4",
+        ...provenance,
+      },
+      ocrConfirmed: false,
+    };
+    session.setInput(input);
+    await assert.rejects(
+      session.view("answer", { learningMode: "quick" }),
+      (error) => error.code === "OCR_CONFIRMATION_REQUIRED",
+    );
+    assert.equal(calls.solves.length, 0);
+    assert.equal(session.snapshot.input.ocrUsed, true);
+
+    session.setInput({ ...input, ocrConfirmed: true });
+    await session.view("answer", { learningMode: "quick" });
+    assert.equal(calls.solves.length, 1);
+    assert.equal(typeof calls.solves[0].question, "object");
+  }
 });
 
 test("unsupportedは表示も履歴も作らず同じ入力で再実行しない", async () => {

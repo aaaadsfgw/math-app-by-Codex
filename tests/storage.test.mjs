@@ -282,6 +282,74 @@ test("history add enforces newest-first max count and supports update/delete", a
   assert.equal(await deleteHistory("second"), false);
 });
 
+test("historyは構造化ProblemInputとprovenanceを正規化して保持する", () => {
+  const record = createHistoryRecord(historyInput({
+    question: "別の問題文",
+    source: "manual",
+    ocrConfirmed: true,
+    problemInput: {
+      rawText: "次の方程式を解け\n2x=4",
+      questionLabel: "(1)",
+      instructionText: "次の方程式を解け",
+      formulaText: "2x=4",
+      source: "manual",
+      instructionSource: "manual",
+      formulaSource: "ocr",
+    },
+  }));
+
+  assert.equal(record.question, "2x=4");
+  assert.equal(record.ocrUsed, true);
+  assert.equal(record.ocrConfirmed, true);
+  assert.deepEqual(record.problemInput, {
+    schemaVersion: 1,
+    rawText: "次の方程式を解け\n2x=4",
+    questionLabel: "(1)",
+    instructionText: "次の方程式を解け",
+    instructionIntent: "solve_equation",
+    formulaText: "2x=4",
+    conditions: [],
+    source: "manual",
+    instructionSource: "manual",
+    formulaSource: "ocr",
+  });
+});
+
+test("storageは未知のProblemInput schemaVersionを保存・復元しない", async () => {
+  assert.throws(
+    () => createHistoryRecord(historyInput({
+      problemInput: { schemaVersion: 2, formulaText: "2x=4" },
+    })),
+    /schemaVersion/u,
+  );
+
+  fixture.localStorage.setItem("history", JSON.stringify([
+    historyInput({ id: "known-schema" , problemInput: { schemaVersion: 1, formulaText: "2x=4" } }),
+    historyInput({ id: "unknown-schema", problemInput: { schemaVersion: 99, formulaText: "3x=6" } }),
+  ]));
+  assert.deepEqual((await getHistory()).map(({ id }) => id), ["known-schema"]);
+
+  const imported = await importData({
+    history: [
+      historyInput({ id: "import-known", problemInput: { formulaText: "4x=8" } }),
+      historyInput({ id: "import-unknown", problemInput: { schemaVersion: 2, formulaText: "5x=10" } }),
+    ],
+  });
+  assert.equal(imported.importedHistoryCount, 1);
+  assert.equal(imported.skippedHistoryCount, 1);
+  assert.deepEqual((await getHistory()).map(({ id }) => id), ["import-known"]);
+
+  await assert.rejects(
+    () => importData({
+      pendingQuestion: {
+        question: "6x=12",
+        problemInput: { schemaVersion: 2, formulaText: "6x=12" },
+      },
+    }),
+    /再実行問題データ/u,
+  );
+});
+
 test("recordOutputView appends unique output usage atomically without changing the first mode", async () => {
   await addHistory(historyInput({
     id: "session",
@@ -465,6 +533,42 @@ test("confirmed OCR pending questions retain only text workflow metadata", async
   assert.equal(Object.hasOwn(pending, "blob"), false);
 });
 
+test("pending questionはProblemInputを保持しfield provenance由来OCRにも確認を要求する", async () => {
+  const problemInput = {
+    rawText: "次の方程式を解け\n2x=4",
+    instructionText: "次の方程式を解け",
+    formulaText: "2x=4",
+    source: "manual",
+    instructionSource: "manual",
+    formulaSource: "ocr",
+  };
+  const unconfirmed = await setPendingQuestion({
+    question: "different",
+    source: "manual",
+    problemInput,
+    ocrConfirmed: false,
+    requestedMode: "answer",
+    autoSolve: true,
+  });
+  assert.equal(unconfirmed.question, "2x=4");
+  assert.equal(unconfirmed.ocrConfirmed, false);
+  assert.equal(unconfirmed.autoSolve, false);
+  assert.equal(unconfirmed.problemInput.instructionIntent, "solve_equation");
+  assert.equal(unconfirmed.problemInput.formulaSource, "ocr");
+  assert.deepEqual(await getPendingQuestion(), unconfirmed);
+
+  const confirmed = await setPendingQuestion({
+    source: "manual",
+    problemInput,
+    ocrConfirmed: true,
+    requestedMode: "answer",
+    autoSolve: true,
+  });
+  assert.equal(confirmed.ocrConfirmed, true);
+  assert.equal(confirmed.autoSolve, true);
+  assert.deepEqual(await takePendingQuestion(), confirmed);
+});
+
 test("unconfirmed or non-OCR pending questions cannot request automatic solving", async () => {
   const unconfirmed = await setPendingQuestion({
     question: "x=1",
@@ -496,6 +600,14 @@ test("imported pending text cannot restore OCR confirmation or automatic solving
       ocrConfirmed: true,
       requestedMode: "answer",
       autoSolve: true,
+      problemInput: {
+        rawText: "画像の生OCR",
+        instructionText: "方程式を解け",
+        formulaText: "x^2 = 4",
+        source: "ocr",
+        instructionSource: "ocr",
+        formulaSource: "ocr",
+      },
     },
   });
 
@@ -505,6 +617,32 @@ test("imported pending text cannot restore OCR confirmation or automatic solving
   assert.equal(pending.ocrConfirmed, false);
   assert.equal(pending.requestedMode, "answer");
   assert.equal(pending.autoSolve, false);
+  assert.equal(pending.problemInput.rawText, "画像の生OCR");
+  assert.equal(pending.problemInput.instructionSource, "ocr");
+  assert.equal(pending.problemInput.formulaSource, "ocr");
+});
+
+test("imported OCR history keeps provenance but cannot retain confirmation", async () => {
+  await importData({
+    history: [historyInput({
+      id: "imported-ocr-structured",
+      source: "ocr",
+      ocrConfirmed: true,
+      problemInput: {
+        instructionText: "方程式を解け",
+        formulaText: "2x=4",
+        source: "ocr",
+        instructionSource: "ocr",
+        formulaSource: "ocr",
+      },
+    })],
+  });
+
+  const [record] = await getHistory();
+  assert.equal(record.ocrUsed, true);
+  assert.equal(record.ocrConfirmed, false);
+  assert.equal(record.problemInput.formulaText, "2x=4");
+  assert.equal(record.problemInput.formulaSource, "ocr");
 });
 
 test("export/import are JSON-safe, validate structure, and merge without duplicate IDs", async () => {

@@ -135,7 +135,7 @@ function runEngine(command) {
 
 export function simplifySymbolic(expression, options = {}) {
   const safeExpression = assertSafeSymbolicExpression(expression, options);
-  return runEngine(`simplify(${safeExpression})`);
+  return runEngine(`simplify(rationalize(${safeExpression}))`);
 }
 
 export function expandSymbolic(expression, options = {}) {

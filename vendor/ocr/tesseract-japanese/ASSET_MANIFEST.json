@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Offline recognition of one or two short machine-printed Japanese instruction lines",
+  "runtime": {
+    "name": "tesseract.js",
+    "version": "7.0.0",
+    "source": "https://registry.npmjs.org/tesseract.js/-/tesseract.js-7.0.0.tgz",
+    "npmIntegrity": "sha512-exPBkd+z+wM1BuMkx/Bjv43OeLBxhL5kKWsz/9JY+DXcXdiBjiAch0V49QR3oAJqCaL5qURE0vx9Eo+G5YE7mA==",
+    "license": "Apache-2.0"
+  },
+  "core": {
+    "name": "tesseract.js-core",
+    "version": "7.0.0",
+    "source": "https://registry.npmjs.org/tesseract.js-core/-/tesseract.js-core-7.0.0.tgz",
+    "npmIntegrity": "sha512-WnNH518NzmbSq9zgTPeoF8c+xmilS8rFIl1YKbk/ptuuc7p6cLNELNuPAzcmsYw450ca6bLa8j3t0VAtq435Vw==",
+    "license": "Apache-2.0",
+    "bundledBuilds": ["lstm", "simd-lstm", "relaxedsimd-lstm"]
+  },
+  "languageData": {
+    "name": "tessdata_fast Japanese",
+    "revision": "4.1.0",
+    "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/4.1.0/jpn.traineddata",
+    "license": "Apache-2.0",
+    "orientation": "horizontal"
+  },
+  "assets": [
+    { "path": "tesseract.esm.min.js", "bytes": 63177, "sha256": "1DB05D68D722D3F11C6EFE4851A4018D382353804CC59EC53C40976887E2FCF2", "modified": "Removed the inert CDN default and the regenerator Function-constructor fallback; callers must provide a packaged worker URL." },
+    { "path": "worker.min.js", "bytes": 111219, "sha256": "387D326C59BB327D4F41DC45019570CB7ECAAF8ADED195D50672EC531FF59B4A", "modified": "Removed CDN fallbacks and the regenerator Function-constructor global fallback for MV3 CSP." },
+    { "path": "tesseract.min.js.LICENSE.txt", "bytes": 149, "sha256": "CDF963CED7D25A0F98901A547647B4D6E2DBE0197FD78C87A059A87B0E542FE2" },
+    { "path": "worker.min.js.LICENSE.txt", "bytes": 466, "sha256": "45F54171AEAA1D10C0C1A66F374B7BBA1F02472B1487FBE892EEC04F840002AC" },
+    { "path": "core/tesseract-core-lstm.wasm.js", "bytes": 3896484, "sha256": "EEF5F8B2F8E20E150680B20ADAEC4A60BABAFEE3ADBE8A94583C81FEE46E8680" },
+    { "path": "core/tesseract-core-simd-lstm.wasm.js", "bytes": 3899472, "sha256": "C58B46A4C796C0B8AFCCF77591D5B875B6896B45D402BBCE8CAA6F5362447B38" },
+    { "path": "core/tesseract-core-relaxedsimd-lstm.wasm.js", "bytes": 3905767, "sha256": "861A536CF9EF8E63CB644D57BAB39C388F37F7D6B6F60024B741C5F6B39A59B3" },
+    { "path": "lang/jpn.traineddata", "bytes": 2471260, "sha256": "1F5DE9236D2E85F5FDF4B3C500F2D4926F8D9449F28F5394472D9E8D83B91B4D" },
+    { "path": "LICENSE-TESSERACT-JS.txt", "bytes": 11357, "sha256": "B40930BBCF80744C86C46A12BC9DA056641D722716C378F5659B9E555EF833E1" },
+    { "path": "LICENSE-TESSERACT-CORE.txt", "bytes": 11357, "sha256": "B40930BBCF80744C86C46A12BC9DA056641D722716C378F5659B9E555EF833E1" },
+    { "path": "LICENSE-TESSDATA-FAST.txt", "bytes": 11358, "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30" }
+  ],
+  "runtimePolicy": {
+    "network": "forbidden",
+    "dynamicCode": "forbidden",
+    "workerBlobUrl": false,
+    "cacheMethod": "none",
+    "gzip": false,
+    "pageSegmentationMode": "single-block",
+    "solverTrust": "untrusted-editable-candidate-only"
+  }
+}

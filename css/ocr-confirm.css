@@ -125,10 +125,34 @@
   display: none;
 }
 
-.candidate-panel textarea {
+.candidate-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: 0.9rem;
+}
+
+.candidate-fields > .field {
+  min-width: 0;
+}
+
+.candidate-formula-field,
+.candidate-conditions-field {
+  grid-column: 1 / -1;
+}
+
+.candidate-formula-field textarea {
   min-height: 8rem;
   font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
   line-height: 1.55;
+}
+
+.candidate-instruction-field textarea,
+.candidate-conditions-field textarea {
+  min-height: 4.5rem;
+}
+
+.candidate-conditions-field textarea {
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
 }
 
 .runtime-details {
@@ -198,8 +222,14 @@
   }
 
   .capture-details,
-  .runtime-details {
+  .runtime-details,
+  .candidate-fields {
     grid-template-columns: 1fr;
+  }
+
+  .candidate-formula-field,
+  .candidate-conditions-field {
+    grid-column: auto;
   }
 
   .recognition-controls,

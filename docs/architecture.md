@@ -3,7 +3,10 @@
 ## Runtime flow
 
 ```text
-typed / selected / clipboard / confirmed-OCR question
+typed / selected / clipboard / confirmed-OCR input
+          |
+          v
+bounded ProblemInput normalization and intent compilation
           |
           v
 volume -> area -> tangent -> normal -> variation -> rational-limit preflights
@@ -68,9 +71,40 @@ verified-history creation.
   explicitly confirmed transcription may enter the solver, and only the solver
   can create the verified label. Recognition alone cannot write a learning
   attempt or touch the clipboard.
-- The OCR path is limited to one tightly cropped machine-printed formula. It
-  cannot use a diagram, graph, table, surrounding prose, handwriting, page
+- The OCR path accepts either one tightly cropped machine-printed formula or a
+  compact top-to-bottom layout containing one or two short horizontal Japanese
+  instruction regions and exactly one formula region. It cannot use a diagram,
+  graph, table, arbitrary prose, handwriting, vertical text, general page
   layout, or spatial relationships to complete a question.
+
+## Structured problem-input boundary
+
+Every new structured entry point snapshots schema-v1 `ProblemInput` fields:
+`questionLabel`, `instructionText`, `instructionIntent`, `formulaText`,
+`conditions`, `source`, `instructionSource`, and `formulaSource`, plus bounded
+raw/status metadata. A legacy string remains one formula string and is not
+reinterpreted as Japanese prose. This preserves all pre-existing solver entry
+points.
+
+The instruction normalizer is independent of formula parsing. It emits only
+`simplify`, `expand`, `factor`, `solve_equation`, `differentiate`, `integrate`,
+`definite_integral`, `limit`, `tangent`, `normal`, `monotonicity`, `extrema`, or
+`monotonicity_extrema`. It normalizes bounded Japanese surface variations but
+does not infer an intent from generic `計算せよ`. Multiple semantic candidates
+produce a conflict. Compilation then validates the intent/formula combination
+and dispatches only to the matching solver family; failure is terminal instead
+of falling through the ordinary router. Explicit external conditions are kept
+in the structure but currently stop as unsupported because they are not yet
+integrated into every solver verifier.
+
+Question-label separation examines only the first non-empty line. `問`/`問題`
+forms and circled numbers are strong evidence. Parenthesized and dotted numbers
+require either an otherwise empty line or a following recognized instruction,
+so `(1+x)(1-x)` remains formula text. Combined page selection is split only
+when one or two complete instruction lines precede exactly one formula line;
+otherwise the unchanged legacy selection is used. These decisions mirror the
+semantic-DOM rule: structure is recovered only from structural evidence, never
+from character guesses such as `x2 -> x^2`.
 
 ## Local printed-formula OCR boundary
 
@@ -88,10 +122,12 @@ popup START (explicit user action)
   -> offscreen PNG decode and crop using actual bitmap dimensions
   -> expiring in-memory Blob -> tracked extension confirmation tab
   -> explicit RECOGNIZE action
-  -> dedicated Worker: packaged ONNX model, WebGPU then WASM fallback
-  -> untrusted normalized candidate beside the original crop
-  -> user edits and explicitly chooses SOLVE
-  -> pending confirmed-OCR text -> existing deterministic solve workflow
+  -> strong horizontal-whitespace segmentation (one to three regions)
+  -> upper region(s): packaged Japanese Tesseract.js WASM
+  -> final formula region only: packaged IBEM Worker, WebGPU then WASM fallback
+  -> untrusted problem-number / instruction / formula / conditions fields
+  -> user reviews or edits every field and explicitly chooses SOLVE
+  -> pending confirmed ProblemInput -> existing deterministic solve workflow
 ```
 
 The session record contains routing metadata, a capture ID, phase, expiry,
@@ -128,6 +164,38 @@ active inference. A successful worker may reuse its sessions for later crops;
 cancellation, timeout, invalid output, terminal failure, or disposal tears it
 down.
 
+Before formula recognition, the mixed engine decodes the crop once and computes
+row ink against a border-derived background luminance. Only a sufficiently
+large horizontal whitespace gap divides regions; close numerator, fraction
+bar, denominator, and superscript runs remain grouped. More than three
+independent regions, an empty/tiny region, or invalid pixels fail closed. The
+segmenter never labels a region as prose or formula from pixels. For two or
+three regions, all upper crops must independently produce Japanese/label
+evidence before the final crop is passed to IBEM. If Japanese recognition
+fails or an upper crop instead looks like another formula, IBEM is not run.
+For one region, Japanese recognition is a preflight: a Japanese-only result is
+shown with an empty formula field, while a non-Japanese result uses the
+established formula-only IBEM path.
+
+The Japanese recognizer is packaged Tesseract.js 7.0.0 with Tesseract.js core
+7.0.0 and horizontal `tessdata_fast` 4.1.0 `jpn`. Those primary packages and
+data are Apache-2.0; retained generated-bundle sidecars preserve their MIT and
+BSD-3-Clause dependency notices. It runs
+LSTM-only, single-block page segmentation in WASM, requires every runtime URL
+to use the current `chrome-extension:` origin, disables Blob workers and cache
+downloads, and terminates after cancellation, failure, disposal, or 60 seconds
+idle. `jpn.traineddata` is 2,471,260 bytes with SHA-256
+`1f5de9236d2e85f5fdf4b3c500f2d4926f8d9449f28f5394472d9e8d83b91b4d`.
+Every packaged asset hash is pinned in
+`vendor/ocr/tesseract-japanese/ASSET_MANIFEST.json`; the directory totals
+14,385,195 bytes (about 14.4 MB decimal / 13.7 MiB), including three local WASM
+feature builds, license files, and bundle dependency notices. No runtime network source or CDN fallback is
+permitted. The packaged Tesseract API and worker have no `eval` or direct
+`Function(...)` fallback; the project check enforces that CSP boundary. A
+worker-generation token also terminates a worker that finishes initialization
+after cancellation or disposal, including requests already waiting in the
+serialized queue.
+
 Image byte, decoded-pixel, dimension, crop, token, and output limits apply
 before or during recognition. Model output is checked against the bundled
 output policy and converted conservatively to the solver's text notation.
@@ -135,12 +203,26 @@ Ambiguous glyphs are never guessed. A provider error, missing end token,
 repetition guard, malformed/unbalanced output, unsupported symbol, timeout, or
 user cancellation produces no pending question and no solver call. Even a
 well-formed candidate remains visibly experimental and untrusted until the user
-reviews and confirms it.
+reviews and confirms it. The confirmation page keeps raw instruction and
+formula OCR separately from normalized editable fields and tracks whether
+instruction/formula values still come from OCR or were manually changed.
+Recognition alone cannot set `ocrConfirmed`, solve, write history, or change
+the clipboard.
 
 Chrome 109 is the minimum version for the offscreen boundary, and incognito use
 is disabled while the offscreen preview is shared by the regular extension
 profile. Real unpacked-Chrome checks remain mandatory for capture pixels,
 offscreen Blob sharing, WebGPU, WASM fallback, cancellation, and extension CSP.
+The 2026-09-10 isolated headless Chrome 152 checks qualified the packaged
+Japanese recognizer, mixed-region separation, four-field confirmation UI,
+instruction/formula edit provenance, explicit solve, Study/Quick persistence
+behavior, preview cleanup,
+and the established formula-only WebGPU/WASM routes. The Japanese fixture was
+observed at about 283 ms on a fresh run and about 30--35 ms warm. The measured
+page heap does not include the Worker/WASM peak, so a precise peak-memory value
+is still unknown. A rendered fraction image has not been recognized exactly in
+this browser evidence; deterministic fraction integration tests do not replace
+that acquisition test, and manual candidate correction remains required.
 
 ## Polynomial-tangent verification
 

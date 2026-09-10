@@ -3,6 +3,7 @@ import {
   presentWorkflowResult,
   solveWorkflow,
 } from "./solve-workflow.js";
+import { normalizeProblemInput } from "./problem/problem-input.js";
 import {
   addHistory,
   recordOutputView,
@@ -12,18 +13,70 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function normalizedStructuredInput(value, source) {
+  if (value === undefined || value === null) return null;
+  const problemInput = normalizeProblemInput(value, { source });
+  if (!problemInput.formulaText) {
+    throw new TypeError(problemInput.error || "数式が空です。");
+  }
+  return problemInput;
+}
+
+function isOcrProblemInput(problemInput) {
+  return Boolean(
+    problemInput
+      && (
+        problemInput.source === "ocr"
+        || problemInput.instructionSource === "ocr"
+        || problemInput.formulaSource === "ocr"
+      ),
+  );
+}
+
 function normalizeInput(input = {}) {
-  const question = cleanText(input.question);
+  const requestedSource = cleanText(input.source);
+  const problemInput = normalizedStructuredInput(
+    input.problemInput,
+    requestedSource || "manual",
+  );
+  const question = problemInput?.formulaText || cleanText(input.question);
   if (!question) throw new TypeError("問題文が空です。");
-  const source = cleanText(input.source) || "manual";
+  const source = requestedSource || problemInput?.source || "manual";
+  const ocrUsed = (
+    source === "ocr"
+    || input.ocrUsed === true
+    || isOcrProblemInput(problemInput)
+  );
   return Object.freeze({
     question,
+    problemInput,
     source,
     parentHistoryId: cleanText(input.parentHistoryId) || null,
-    ocrUsed: source === "ocr" || input.ocrUsed === true,
-    ocrConfirmed: (source === "ocr" || input.ocrUsed === true)
-      && input.ocrConfirmed === true,
+    ocrUsed,
+    ocrConfirmed: ocrUsed && input.ocrConfirmed === true,
   });
+}
+
+function sameProblemInput(left, right) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  const fields = [
+    "schemaVersion",
+    "status",
+    "error",
+    "rawText",
+    "questionLabel",
+    "instructionText",
+    "instructionIntent",
+    "instructionStatus",
+    "formulaText",
+    "source",
+    "instructionSource",
+    "formulaSource",
+  ];
+  return fields.every((field) => left[field] === right[field])
+    && left.conditions.length === right.conditions.length
+    && left.conditions.every((condition, index) => condition === right.conditions[index]);
 }
 
 function sameInput(left, right) {
@@ -31,6 +84,7 @@ function sameInput(left, right) {
     left
       && right
       && left.question === right.question
+      && sameProblemInput(left.problemInput, right.problemInput)
       && left.source === right.source
       && left.parentHistoryId === right.parentHistoryId
       && left.ocrUsed === right.ocrUsed
@@ -112,7 +166,7 @@ export class LearningSession {
       throw error;
     }
     if (!this._baseWorkflow) {
-      const workflow = await this._solve(this._input.question, {
+      const workflow = await this._solve(this._input.problemInput ?? this._input.question, {
         mode,
         symbolicOperations,
       });
@@ -164,7 +218,7 @@ export class LearningSession {
           if (!historyRecord) this._historyId = null;
         }
         if (!this._historyId) {
-          historyRecord = await this._addHistory(createHistoryRecordPayload(workflow, {
+          const historyPayload = createHistoryRecordPayload(workflow, {
             source: this._input.source,
             parentHistoryId: this._input.parentHistoryId,
             selfAssessment: selfAssessment ?? defaultAssessment(workflow.outputMode),
@@ -175,7 +229,10 @@ export class LearningSession {
               ocrUsed: this._input.ocrUsed,
               ocrConfirmed: this._input.ocrConfirmed,
             },
-          }));
+          });
+          historyRecord = await this._addHistory(this._input.problemInput
+            ? { ...historyPayload, problemInput: this._input.problemInput }
+            : historyPayload);
           this._historyId = historyRecord?.id || null;
         }
       } catch (error) {

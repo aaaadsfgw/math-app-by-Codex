@@ -16,6 +16,11 @@ body { width: 410px; max-width: 100vw; min-height: 560px; }
 .popup-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
 .popup-nav a { text-align: center; text-decoration: none; padding: 0.38rem 0.2rem; border-radius: 8px; background: var(--surface-muted); color: var(--text); font-size: 0.75rem; }
 .compact-card { padding: 0.8rem; box-shadow: none; }
+.problem-optional-fields { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 0.55rem; align-items: start; }
+.problem-optional-fields .field, .problem-main-field { gap: 0.25rem; }
+.problem-optional-fields input, .problem-optional-fields textarea { width: 100%; }
+.problem-optional-fields textarea { min-height: 4rem; resize: vertical; }
+.problem-optional-fields .field-help, .problem-main-field .field-help { margin: 0; font-size: 0.7rem; }
 .input-actions, .input-meta { display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; }
 .input-actions .button { flex: 1 1 150px; }
 .input-meta { justify-content: space-between; }
@@ -24,5 +29,5 @@ body { width: 410px; max-width: 100vw; min-height: 560px; }
 .explain-action { grid-column: 1 / -1; }
 .action-help { margin: -0.2rem 0 0; font-size: 0.78rem; }
 .result-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-@media (max-width: 380px) { html, body { width: 100%; } .popup-nav { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 380px) { html, body { width: 100%; } .popup-nav { grid-template-columns: repeat(3, 1fr); } .problem-optional-fields { grid-template-columns: 1fr; } }
 

@@ -707,6 +707,13 @@ still requires unpacked-Chrome checks of capture pixels, extension CSP,
 WebGPU, forced WASM fallback, cancellation, timeout, disposal, warm reuse, and
 the no-auto-solve boundary.
 
+**Status update (2026-09-10):** D-032 supersedes this scope only for one or two
+short Japanese problem-number/instruction regions stacked above the single
+formula. Isolated Chrome 152 closed the base provider, Worker/CSP, warm-reuse,
+and confirmation blockers; automated lifecycle tests cover the remaining fault
+paths. Manual adversarial UI cases, exact rendered-fraction evidence, and peak
+Worker/WASM memory remain tracked gaps.
+
 ## D-030: Preserve web-selection math only from complete semantic DOM evidence
 
 **Status:** accepted
@@ -745,3 +752,55 @@ but unsupported expression unsolved, which is preferable to manufacturing a
 different problem. Solver parsers and verification rules remain unchanged, and
 the clipboard is still written only after the existing workflow produces a
 verified presentation.
+
+## D-031: Compile all structured acquisition through a closed ProblemInput boundary
+
+**Status:** accepted
+**Date:** 2026-09-10
+
+New structured entry points snapshot schema-v1 `ProblemInput` fields for the
+problem label, instruction text and intent, formula, conditions, source, and
+per-field provenance. Legacy strings remain unchanged formula input. Japanese
+instruction normalization emits only the 13 documented intents; generic
+`計算せよ` is ambiguous, while labels are separated only with line or lexical
+evidence. Explicit intent conflict, unsupported conditions, or failure in the
+chosen solver is terminal and cannot fall through to a different operation.
+This preserves the existing strict parsers and verification requirements.
+
+## D-032: Add Japanese OCR only as a gated mixed-layout acquisition stage
+
+**Status:** accepted for experimental local use
+**Date:** 2026-09-10
+
+The formula-only IBEM boundary in D-029 is extended only for a compact crop
+containing one or two short horizontal Japanese instruction/label regions
+above exactly one formula. Strong horizontal whitespace may propose at most
+three regions, but pixels never assign semantic roles. Every upper region must
+produce bounded Japanese/label evidence through packaged Tesseract.js 7.0.0
+and `tessdata_fast` 4.1.0 `jpn` before only the final crop is sent to IBEM.
+Failure to isolate one formula, excess regions, or missing Japanese evidence
+stops without formula OCR. Formula-only crops keep their established route.
+
+The evaluated browser-PaddleOCR/ONNX alternative carried roughly 64 MB of
+additional model/runtime payload and introduced another ONNX runtime/version
+path. For the bounded target of one or two machine-printed horizontal Japanese
+instruction lines, the smaller Tesseract path was therefore selected. The
+packaged sources are `naptha/tesseract.js` and `tesseract.js-core` 7.0.0 plus
+`tesseract-ocr/tessdata_fast` tag 4.1.0 `jpn`; those primary packages and data
+are Apache-2.0. The retained generated-bundle sidecars additionally preserve
+the applicable MIT and BSD-3-Clause dependency notices. The Japanese data is
+2,471,260 bytes and the complete packaged Japanese OCR directory is 14,385,195
+bytes (about 13.7 MiB), including three WASM feature builds, licenses, bundle
+notices, and the hash manifest.
+
+All runtime, WASM, language, license, and manifest assets are packaged and
+hash-pinned; runtime network/CDN/cache download and Tesseract dynamic-code
+fallbacks are forbidden. Generation invalidation terminates any worker that
+finishes initialization after cancellation or disposal. Raw OCR and
+normalized editable fields remain distinct, and recognition alone cannot
+confirm, solve, save history, or change the clipboard. Headless Chrome 152
+validated the exact fixture `次の方程式を解け。`, mixed region separation,
+the four-field UI, instruction/formula edit provenance, explicit solve,
+Study/Quick behavior, and
+cleanup. It did not establish exact OCR for a rendered fraction or measure
+Worker/WASM peak memory, so user review remains mandatory.

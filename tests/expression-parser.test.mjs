@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   MathParseError,
+  collectExactNonzeroDomainConditions,
   collectNonzeroDomainConditions,
   parseMathExpression,
   tokenizeMathExpression,
@@ -41,6 +42,25 @@ test("分母と負の指数から失ってはいけない定義域条件を抽�
 
   const negativePower = parseMathExpression("x^-2+1/x");
   assert.deepEqual(collectNonzeroDomainConditions(negativePower.ast), ["x≠0"]);
+});
+
+test("一次・二次分母だけを厳密な除外値へ変換し高次式は推測しない", () => {
+  const examples = [
+    ["1/x+2/(x+1)", ["x≠0", "x≠-1"]],
+    ["1/(x^2-1)-1/(x-1)", ["x≠-1", "x≠1"]],
+    ["1/(2*x-3)", ["x≠3/2"]],
+    ["1/(x^2-2)", ["x≠-√2", "x≠√2"]],
+  ];
+  for (const [expression, expected] of examples) {
+    const parsed = parseMathExpression(expression);
+    assert.deepEqual(collectExactNonzeroDomainConditions(parsed.ast), expected, expression);
+  }
+
+  const cubic = parseMathExpression("1/(x^3-1)");
+  assert.deepEqual(
+    collectExactNonzeroDomainConditions(cubic.ast),
+    ["((x^3)-1)≠0"],
+  );
 });
 
 test("トークン位置を保持し、危険・曖昧・未許可の入力を拒否する", () => {

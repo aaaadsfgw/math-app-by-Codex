@@ -49,9 +49,11 @@ and regression tests are complete.
 
 ## Intentionally unsupported
 
-- image-only questions other than a tightly cropped machine-printed single
-  formula that the user has reviewed, edited if necessary, and explicitly
-  confirmed as text; OCR does not expand the solver's supported mathematics;
+- image-only questions other than either a tightly cropped machine-printed
+  single formula or the supported compact layout of one or two short
+  horizontal Japanese instruction lines above exactly one formula. Every OCR
+  field must be reviewed, edited if necessary, and explicitly confirmed as
+  text; OCR does not expand the solver's supported mathematics;
 - missing conditions that appear only in a figure;
 - diagram-dependent geometry and construction;
 - proof requests such as “prove that” or “show that” requiring prose reasoning;
@@ -59,6 +61,20 @@ and regression tests are complete.
   explicit mathematical interpretation.
 
 Unsupported input returns no answer and is never marked verified.
+
+The acquisition layer is deliberately narrower than the table above. A
+schema-v1 `ProblemInput` may carry a separate problem label, instruction,
+formula, conditions, source, and instruction/formula provenance. Only 13
+closed instruction intents are accepted: simplification, expansion,
+factorization, equation solving, differentiation, indefinite/definite
+integration, limits, tangent/normal lines, monotonicity, extrema, and their
+combined request. A recognized explicit intent is terminal; conflict or solver
+failure cannot fall through to another mathematical operation. Generic
+`計算せよ`, unsupported conditions, plain `x2`/`x1`, and labels without
+structural evidence are not guessed. Web selections may preserve complete
+HTML `sup`/`sub`, supported presentation MathML, or one-to-one semantic
+MathML from KaTeX/MathJax; all partial, malformed, unsupported, or ambiguous
+structures fall back to the unchanged selected text.
 
 Derivative rules currently cover integer powers, sums, products, quotients,
 composition, `sin`, `cos`, `tan`, `exp`, `log`, and `sqrt`. Domain restrictions

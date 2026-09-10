@@ -1,7 +1,8 @@
 import { classifyCategory } from "./category-classifier.js";
+import { compileProblemInput } from "./problem/problem-input.js";
 import { presentSolution, OUTPUT_MODES } from "./solution-presenter.js";
 import { solveQuestionAsync } from "./solver/index.js";
-import { failedResult } from "./solver/utils.js";
+import { failedResult, unsupportedResult } from "./solver/utils.js";
 
 const OUTPUT_MODE_SET = new Set(OUTPUT_MODES);
 
@@ -19,14 +20,6 @@ function safeErrorMessage(error) {
     // Hostile thrown values must not escape the workflow boundary.
   }
   return "詳細不明の例外";
-}
-
-function snapshotQuestion(value) {
-  try {
-    return Object.freeze({ question: String(value ?? "").trim(), error: null });
-  } catch (error) {
-    return Object.freeze({ question: "", error });
-  }
 }
 
 function normalizedOutputMode(value) {
@@ -50,15 +43,29 @@ function workflowFailure(message, { retryable = false } = {}) {
   });
 }
 
+function problemInputFailure(compilation) {
+  const base = compilation.kind === "invalid"
+    ? failedResult("problem-input", compilation.error)
+    : unsupportedResult(compilation.error);
+  return Object.freeze({
+    ...base,
+    solverId: "problem-input",
+    recognized: true,
+    retryable: false,
+  });
+}
+
 function workflowResult({
   question,
   outputMode,
   classification,
   solverResult,
   presentation = null,
+  problemInput = null,
 }) {
   return Object.freeze({
     question,
+    problemInput,
     outputMode,
     classification,
     solverResult,
@@ -87,25 +94,27 @@ export async function solveWorkflow(
   if (typeof classifier !== "function") throw new TypeError("classifierは関数で指定してください。");
   if (typeof presenter !== "function") throw new TypeError("presenterは関数で指定してください。");
 
-  const snapshot = snapshotQuestion(questionValue);
+  const compilation = compileProblemInput(questionValue);
+  const problemInput = compilation.problemInput;
+  const question = problemInput.formulaText;
   const outputMode = normalizedOutputMode(mode);
-  if (snapshot.error) {
+  if (!compilation.ok) {
     return workflowResult({
-      question: snapshot.question,
+      question,
+      problemInput,
       outputMode,
       classification: null,
-      solverResult: workflowFailure(
-        `問題文を読み取れませんでした: ${safeErrorMessage(snapshot.error)}`,
-      ),
+      solverResult: problemInputFailure(compilation),
     });
   }
 
   let classification;
   try {
-    classification = classifier(snapshot.question);
+    classification = classifier(compilation.solverInput);
   } catch (error) {
     return workflowResult({
-      question: snapshot.question,
+      question,
+      problemInput,
       outputMode,
       classification: null,
       solverResult: workflowFailure(
@@ -117,10 +126,14 @@ export async function solveWorkflow(
 
   let solverResult;
   try {
-    solverResult = await solver(snapshot.question, {
+    const solverOptions = {
       category: classification?.primary || "その他",
       symbolicOperations,
-    });
+    };
+    if (compilation.instructionIntent) {
+      solverOptions.instructionIntent = compilation.instructionIntent;
+    }
+    solverResult = await solver(compilation.solverInput, solverOptions);
   } catch (error) {
     solverResult = workflowFailure(
       `ソルバー処理中にエラーが発生しました: ${safeErrorMessage(error)}`,
@@ -130,7 +143,8 @@ export async function solveWorkflow(
 
   if (!presentableSolverResult(solverResult)) {
     return workflowResult({
-      question: snapshot.question,
+      question,
+      problemInput,
       outputMode,
       classification,
       solverResult,
@@ -145,7 +159,8 @@ export async function solveWorkflow(
       }),
     });
     return workflowResult({
-      question: snapshot.question,
+      question,
+      problemInput,
       outputMode,
       classification,
       solverResult,
@@ -153,7 +168,8 @@ export async function solveWorkflow(
     });
   } catch (error) {
     return workflowResult({
-      question: snapshot.question,
+      question,
+      problemInput,
       outputMode,
       classification,
       solverResult: workflowFailure(
@@ -187,6 +203,7 @@ export function presentWorkflowResult(
   });
   return workflowResult({
     question: cleanText(solvedWorkflow.question),
+    problemInput: solvedWorkflow.problemInput || null,
     outputMode,
     classification: solvedWorkflow.classification,
     solverResult: solvedWorkflow.solverResult,
@@ -234,6 +251,20 @@ export function createHistoryRecordPayload(
     source: cleanText(source) || "manual",
     parentHistoryId: cleanText(parentHistoryId) || null,
   };
+  if (solvedWorkflow.problemInput && typeof solvedWorkflow.problemInput === "object") {
+    payload.problemInput = {
+      schemaVersion: solvedWorkflow.problemInput.schemaVersion,
+      rawText: solvedWorkflow.problemInput.rawText,
+      questionLabel: solvedWorkflow.problemInput.questionLabel,
+      instructionText: solvedWorkflow.problemInput.instructionText,
+      instructionIntent: solvedWorkflow.problemInput.instructionIntent,
+      formulaText: solvedWorkflow.problemInput.formulaText,
+      conditions: [...solvedWorkflow.problemInput.conditions],
+      source: solvedWorkflow.problemInput.source,
+      instructionSource: solvedWorkflow.problemInput.instructionSource,
+      formulaSource: solvedWorkflow.problemInput.formulaSource,
+    };
+  }
   if (selfAssessment !== undefined) payload.selfAssessment = selfAssessment;
   return Object.freeze(payload);
 }

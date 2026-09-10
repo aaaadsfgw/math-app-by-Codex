@@ -40,6 +40,10 @@ const INBOUND_MESSAGE_TYPES = new Set([
   DISCARD_OCR_CAPTURE,
 ]);
 
+const OCR_RESULT_CONTROL_CHARACTER = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
+const OCR_RESULT_INVISIBLE_CHARACTER = /[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFEFF]/u;
+const OCR_RECOGNITION_KINDS = new Set(["formula-only", "mixed", "instruction-only"]);
+
 export class OcrCaptureControllerError extends Error {
   constructor(message, { code = "OCR_CAPTURE_CONTROLLER_ERROR", cause = null } = {}) {
     super(message, cause instanceof Error ? { cause } : undefined);
@@ -139,6 +143,77 @@ function serializeError(error) {
   return Object.freeze({
     code: String(error?.code || "OCR_CAPTURE_FAILED"),
     message: String(error?.message || "OCR captureに失敗しました。"),
+  });
+}
+
+function safeOcrText(value, maximum, { optional = false } = {}) {
+  if (typeof value !== "string") {
+    if (optional && value === undefined) return "";
+    throw controllerError("OCR候補の文字列形式が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+  }
+  const text = value.replace(/\r\n?/gu, "\n").trim();
+  if (
+    (!text && !optional)
+    || text.length > maximum
+    || OCR_RESULT_CONTROL_CHARACTER.test(text)
+    || OCR_RESULT_INVISIBLE_CHARACTER.test(text)
+  ) {
+    throw controllerError("OCR候補の文字列が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+  }
+  return text;
+}
+
+function safeStructuredCandidate(value, recognitionKind, fallbackFormula) {
+  if (value === undefined && recognitionKind === "formula-only") {
+    return Object.freeze({
+      questionLabel: "",
+      instructionText: "",
+      instructionIntent: null,
+      instructionStatus: "empty",
+      formulaText: fallbackFormula,
+      conditions: Object.freeze([]),
+      rawInstructionText: "",
+      rawFormulaText: fallbackFormula,
+      source: "ocr",
+      instructionSource: "none",
+      formulaSource: "ocr",
+    });
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw controllerError("構造化OCR候補の形式が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+  }
+  const questionLabel = safeOcrText(value.questionLabel ?? "", 32, { optional: true });
+  const instructionText = safeOcrText(value.instructionText ?? "", 512, { optional: true });
+  const formulaText = safeOcrText(value.formulaText ?? "", 4_096, { optional: true });
+  if (recognitionKind === "instruction-only" ? !instructionText : !formulaText) {
+    throw controllerError("構造化OCR候補の必須欄が空です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+  }
+  if (!Array.isArray(value.conditions) || value.conditions.length > 8) {
+    throw controllerError("構造化OCR候補の条件が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+  }
+  const conditions = value.conditions.map((condition) => safeOcrText(condition, 512));
+  const instructionIntent = value.instructionIntent === null
+    || value.instructionIntent === undefined
+    ? null
+    : safeOcrText(value.instructionIntent, 64);
+  const instructionStatus = safeOcrText(value.instructionStatus ?? "empty", 32);
+  if (value.source !== "ocr") {
+    throw controllerError("構造化OCR候補の入力元が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
+  }
+  const instructionSource = instructionText && value.instructionSource === "ocr" ? "ocr" : "none";
+  const formulaSource = formulaText && value.formulaSource === "ocr" ? "ocr" : "none";
+  return Object.freeze({
+    questionLabel,
+    instructionText,
+    instructionIntent,
+    instructionStatus,
+    formulaText,
+    conditions: Object.freeze(conditions),
+    rawInstructionText: safeOcrText(value.rawInstructionText ?? instructionText, 512, { optional: true }),
+    rawFormulaText: safeOcrText(value.rawFormulaText ?? formulaText, 4_096, { optional: true }),
+    source: "ocr",
+    instructionSource,
+    formulaSource,
   });
 }
 
@@ -698,13 +773,26 @@ export function createOcrCaptureController({
     if (
       !output
       || typeof output !== "object"
-      || typeof output.text !== "string"
-      || !output.text.trim()
       || output.confirmationRequired !== true
       || output.verified !== false
     ) {
       throw controllerError("OCR候補の応答形式が不正です。", "OCR_RECOGNITION_OUTPUT_INVALID");
     }
+    if (!OCR_RECOGNITION_KINDS.has(output.recognitionKind)) {
+      throw controllerError(
+        "OCR候補の認識種別が不正です。",
+        "OCR_RECOGNITION_OUTPUT_INVALID",
+      );
+    }
+    const recognitionKind = output.recognitionKind;
+    const candidateText = safeOcrText(output.text ?? "", 4_096, {
+      optional: recognitionKind === "instruction-only",
+    });
+    const structuredCandidate = safeStructuredCandidate(
+      output.structuredCandidate,
+      recognitionKind,
+      candidateText,
+    );
     const currentSession = await getSessionOrThrow(message.captureId);
     requireConfirmationSender(sender, message.captureId, currentSession);
     if (currentSession.phase !== "preview") {
@@ -712,14 +800,19 @@ export function createOcrCaptureController({
     }
     return Object.freeze({
       captureId: currentSession.captureId,
-      candidateText: output.text,
-      rawText: typeof output.rawText === "string" ? output.rawText : output.text,
+      candidateText,
+      rawText: safeOcrText(output.rawText ?? candidateText, 4_096, {
+        optional: recognitionKind === "instruction-only",
+      }),
       provider: String(output.provider || ""),
       backend: output.backend,
       model: output.model,
       warnings: Array.isArray(output.warnings) ? Object.freeze([...output.warnings]) : Object.freeze([]),
       confidence: output.confidence || null,
       timings: output.timings || null,
+      recognitionKind,
+      structuredCandidate,
+      japaneseOcr: output.japaneseOcr || null,
       confirmationRequired: true,
     });
   }

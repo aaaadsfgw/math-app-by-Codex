@@ -46,6 +46,17 @@ const pinnedVendorHashes = new Map([
   ['vendor/ocr/ibem-im2typst/MODEL_CARD.md', 'DBBF239DF2DC281C44F76BFE7C9798817A2F750653A0753DCBB509C5FF0030FB'],
   ['vendor/ocr/ibem-im2typst/MODEL_LICENSE.md', '82C57FA9D3744FA58C1F6B346FCB2EA04C4CE73A2ED43AACE5B24B5E7022B5E7'],
   ['vendor/onnxruntime-web/LICENSE', '2F07C72751AED99790B8A4869CF2311DF85A860B22DED05FA22803587A48922C'],
+  ['vendor/ocr/tesseract-japanese/tesseract.esm.min.js', '1DB05D68D722D3F11C6EFE4851A4018D382353804CC59EC53C40976887E2FCF2'],
+  ['vendor/ocr/tesseract-japanese/worker.min.js', '387D326C59BB327D4F41DC45019570CB7ECAAF8ADED195D50672EC531FF59B4A'],
+  ['vendor/ocr/tesseract-japanese/tesseract.min.js.LICENSE.txt', 'CDF963CED7D25A0F98901A547647B4D6E2DBE0197FD78C87A059A87B0E542FE2'],
+  ['vendor/ocr/tesseract-japanese/worker.min.js.LICENSE.txt', '45F54171AEAA1D10C0C1A66F374B7BBA1F02472B1487FBE892EEC04F840002AC'],
+  ['vendor/ocr/tesseract-japanese/core/tesseract-core-lstm.wasm.js', 'EEF5F8B2F8E20E150680B20ADAEC4A60BABAFEE3ADBE8A94583C81FEE46E8680'],
+  ['vendor/ocr/tesseract-japanese/core/tesseract-core-simd-lstm.wasm.js', 'C58B46A4C796C0B8AFCCF77591D5B875B6896B45D402BBCE8CAA6F5362447B38'],
+  ['vendor/ocr/tesseract-japanese/core/tesseract-core-relaxedsimd-lstm.wasm.js', '861A536CF9EF8E63CB644D57BAB39C388F37F7D6B6F60024B741C5F6B39A59B3'],
+  ['vendor/ocr/tesseract-japanese/lang/jpn.traineddata', '1F5DE9236D2E85F5FDF4B3C500F2D4926F8D9449F28F5394472D9E8D83B91B4D'],
+  ['vendor/ocr/tesseract-japanese/LICENSE-TESSERACT-JS.txt', 'B40930BBCF80744C86C46A12BC9DA056641D722716C378F5659B9E555EF833E1'],
+  ['vendor/ocr/tesseract-japanese/LICENSE-TESSERACT-CORE.txt', 'B40930BBCF80744C86C46A12BC9DA056641D722716C378F5659B9E555EF833E1'],
+  ['vendor/ocr/tesseract-japanese/LICENSE-TESSDATA-FAST.txt', 'CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30'],
 ]);
 
 for (const [file, expectedHash] of pinnedVendorHashes) {
@@ -59,6 +70,59 @@ assert(relativeFiles.has('vendor/algebrite/LICENSE'), 'Missing Algebrite license
 assert(relativeFiles.has('vendor/ocr/ibem-im2typst/LICENSE'), 'Missing IBEM OCR model license');
 assert(relativeFiles.has('vendor/ocr/ibem-im2typst/MODEL_LICENSE.md'), 'Missing IBEM OCR model license notice');
 assert(relativeFiles.has('vendor/onnxruntime-web/LICENSE'), 'Missing ONNX Runtime Web license');
+assert(relativeFiles.has('vendor/ocr/tesseract-japanese/ASSET_MANIFEST.json'), 'Missing Japanese OCR asset manifest');
+assert(relativeFiles.has('vendor/ocr/tesseract-japanese/LICENSE-TESSERACT-JS.txt'), 'Missing Tesseract.js license');
+assert(relativeFiles.has('vendor/ocr/tesseract-japanese/LICENSE-TESSERACT-CORE.txt'), 'Missing Tesseract.js core license');
+assert(relativeFiles.has('vendor/ocr/tesseract-japanese/LICENSE-TESSDATA-FAST.txt'), 'Missing tessdata_fast license');
+assert(relativeFiles.has('vendor/ocr/tesseract-japanese/tesseract.min.js.LICENSE.txt'), 'Missing Tesseract.js bundled dependency notice');
+assert(relativeFiles.has('vendor/ocr/tesseract-japanese/worker.min.js.LICENSE.txt'), 'Missing Tesseract.js Worker bundled dependency notices');
+
+try {
+  const assetManifestPath = 'vendor/ocr/tesseract-japanese/ASSET_MANIFEST.json';
+  const assetManifest = JSON.parse(await readFile(join(root, assetManifestPath), 'utf8'));
+  assert(assetManifest.schemaVersion === 1, 'Japanese OCR asset manifest schema must be version 1');
+  assert(Array.isArray(assetManifest.assets), 'Japanese OCR asset manifest must list assets');
+  assert(assetManifest.runtimePolicy?.network === 'forbidden', 'Japanese OCR network policy must remain forbidden');
+  assert(assetManifest.runtimePolicy?.dynamicCode === 'forbidden', 'Japanese OCR dynamic-code policy must remain forbidden');
+  const manifestAssetPaths = new Set();
+  for (const asset of assetManifest.assets ?? []) {
+    const relativeAssetPath = `vendor/ocr/tesseract-japanese/${String(asset?.path ?? '')}`;
+    assert(!manifestAssetPaths.has(relativeAssetPath), `Duplicate Japanese OCR manifest asset: ${relativeAssetPath}`);
+    manifestAssetPaths.add(relativeAssetPath);
+    assert(relativeFiles.has(relativeAssetPath), `Japanese OCR manifest asset is missing: ${relativeAssetPath}`);
+    if (!relativeFiles.has(relativeAssetPath)) continue;
+    const bytes = await readFile(join(root, relativeAssetPath));
+    const actualHash = createHash('sha256').update(bytes).digest('hex').toUpperCase();
+    assert(
+      Number.isSafeInteger(asset.bytes) && asset.bytes === bytes.byteLength,
+      `Japanese OCR manifest byte count mismatch: ${relativeAssetPath}`,
+    );
+    assert(
+      typeof asset.sha256 === 'string' && asset.sha256.toUpperCase() === actualHash,
+      `Japanese OCR manifest hash mismatch: ${relativeAssetPath}`,
+    );
+    assert(
+      pinnedVendorHashes.get(relativeAssetPath) === actualHash,
+      `Japanese OCR manifest asset is not pinned by the project check: ${relativeAssetPath}`,
+    );
+  }
+  const packagedAssetPaths = [...relativeFiles].filter((file) => (
+    file.startsWith('vendor/ocr/tesseract-japanese/')
+    && file !== assetManifestPath
+  ));
+  for (const packagedAssetPath of packagedAssetPaths) {
+    assert(
+      manifestAssetPaths.has(packagedAssetPath),
+      `Japanese OCR packaged asset is absent from the manifest: ${packagedAssetPath}`,
+    );
+  }
+  assert(
+    manifestAssetPaths.size === packagedAssetPaths.length,
+    'Japanese OCR manifest and packaged asset counts differ',
+  );
+} catch (error) {
+  fail(`Japanese OCR asset manifest is invalid: ${error.message}`);
+}
 
 let manifest;
 try {
@@ -105,6 +169,19 @@ assert(
 );
 
 const jsFiles = files.filter((file) => ['.js', '.mjs'].includes(extname(file)));
+const directFunctionConstructorPattern = new RegExp(
+  '(?:^|[^A-Za-z0-9_$.])' + ['Fun', 'ction'].join('') + '\\s*\\(',
+);
+// ONNX Runtime's pinned Emscripten bundle contains this one upstream fallback
+// for environments without globalThis. Chrome MV3 always supplies globalThis,
+// so the branch is unreachable there. Keep the exception exact and hash-pinned;
+// all Tesseract assets and every other script must contain no direct constructor.
+const pinnedVendorDirectFunctionExceptions = new Map([
+  [
+    'vendor/onnxruntime-web/ort.webgpu.bundle.min.mjs',
+    ['typeof globalThis=="object"?globalThis:', ['Fun', 'ction'].join(''), '("return this")()'].join(''),
+  ],
+]);
 for (const file of jsFiles) {
   const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
   if (result.status !== 0) fail(`JavaScript syntax error in ${relative(root, file)}: ${(result.stderr || result.stdout).trim()}`);
@@ -112,6 +189,7 @@ for (const file of jsFiles) {
   const source = await readFile(file, 'utf8');
   const relativeFile = relative(root, file).replaceAll('\\', '/');
   const isPinnedVendor = pinnedVendorHashes.has(relativeFile);
+  const isStrictOfflineOcrVendor = relativeFile.startsWith('vendor/ocr/tesseract-japanese/');
   const mayReadClipboard = relativeFile === 'js/clipboard.js';
   for (const match of source.matchAll(/(?:from\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
     const target = resolve(dirname(file), match[1]);
@@ -123,7 +201,7 @@ for (const file of jsFiles) {
     if (!found) fail(`Broken import in ${relative(root, file)}: ${match[1]}`);
   }
 
-  if (!isPinnedVendor) {
+  if (!isPinnedVendor || isStrictOfflineOcrVendor) {
     const urls = [...source.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((match) => match[0]);
     for (const url of urls) {
       const isStandardNamespace = url === 'http://www.w3.org/2000/svg';
@@ -132,10 +210,22 @@ for (const file of jsFiles) {
   }
 
   if (file !== currentFile) {
+    let sourceWithoutApprovedDirectFunction = source;
+    const approvedDirectFunction = pinnedVendorDirectFunctionExceptions.get(relativeFile);
+    if (approvedDirectFunction) {
+      const occurrences = source.split(approvedDirectFunction).length - 1;
+      assert(
+        occurrences === 1,
+        `Pinned vendor direct Function exception changed or is duplicated: ${relativeFile}`,
+      );
+      sourceWithoutApprovedDirectFunction = source.replace(approvedDirectFunction, 'globalThis');
+    }
+    if (directFunctionConstructorPattern.test(sourceWithoutApprovedDirectFunction)) {
+      fail(`Forbidden direct Function constructor in ${relative(root, file)}`);
+    }
     const forbiddenApiPatterns = isPinnedVendor
       ? [
           new RegExp('(?:globalThis|window)\\s*\\.\\s*' + ['ev', 'al'].join('')),
-          new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
         ]
       : [
           ...(!mayReadClipboard ? [
@@ -143,7 +233,6 @@ for (const file of jsFiles) {
             new RegExp(['clipboard', 'read'].join('\\s*\\.\\s*') + '\\s*\\('),
           ] : []),
           new RegExp('(?:^|[^A-Za-z])' + ['ev', 'al'].join('') + '\\s*\\('),
-          new RegExp('new\\s+' + ['Fun', 'ction'].join('') + '\\s*\\('),
         ];
     for (const pattern of forbiddenApiPatterns) {
       if (pattern.test(source)) fail(`Forbidden JavaScript API in ${relative(root, file)}: ${pattern}`);

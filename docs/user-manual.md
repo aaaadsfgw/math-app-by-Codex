@@ -176,25 +176,30 @@ confirms success. If the page selection is empty, this explicit shortcut reads
 the current clipboard as a fallback. Unsupported or invalid input leaves the
 clipboard unchanged.
 
-## Printed-formula image input
+## Printed math image input
 
-Use the popup OCR action only for one machine-printed formula that is already
-visible on the current page:
+Use the popup OCR action only for a tightly cropped machine-printed formula, or
+for the supported compact layout with one or two short Japanese problem-number
+or instruction lines directly above exactly one formula:
 
-1. Start OCR and drag a close rectangle around the formula. Do not include a
-   diagram, labels, surrounding sentence, answer, or a second formula.
+1. Start OCR and drag a close rectangle around that bounded content. Do not
+   include a diagram, an arbitrary paragraph, an answer, or a second formula.
 2. On the local confirmation page, keep the original crop visible and choose
-   the recognition action. Recognition stays on the device. It prefers WebGPU
-   and automatically tries WASM if WebGPU is unavailable or cannot create the
-   model session.
-3. Inspect every sign, exponent, subscript, delimiter, variable, and bound in
-   the editable candidate. Correct the text yourself when needed.
-4. Choose the separate solve action only after the transcription matches the
-   image. Discard the crop instead if the result is uncertain.
+   the recognition action. Formula recognition stays on the device, prefers
+   WebGPU, and automatically tries WASM if WebGPU is unavailable. Safely split
+   upper Japanese lines use the separately packaged Tesseract.js WASM path; if
+   a mixed crop cannot be separated or supported as Japanese, formula OCR does
+   not run on the whole image.
+3. Inspect the separate editable problem-number, instruction, formula, and
+   conditions fields. Check every sign, exponent, subscript, delimiter,
+   variable, and bound, and correct any transcription yourself.
+4. Choose the separate solve action only after all fields match the image.
+   Discard the crop instead if the result is uncertain.
 
-If recognition fails, the crop is kept, retry remains available, and the same
-editable field opens for manual transcription. An empty or invisible-control
-containing candidate cannot be sent to the solver.
+If recognition or safe layout separation fails, the crop is kept, retry remains
+available, and the editable fields remain available for manual transcription.
+A non-empty valid formula is required; invisible control characters cannot be
+sent to the solver.
 
 The recognition result is an untrusted transcription, not an answer. Merely
 running OCR never invokes the solver, creates verified history, or changes the
@@ -203,18 +208,19 @@ deterministic workflow as typed input and may still be reported as unsupported
 or invalid. A Study record identifies `source: "ocr"` and that confirmation
 occurred; those fields do not mean the transcription or answer was correct.
 
-The first recognition can take longer while the packaged model and local ONNX
-runtime initialize. A later crop may reuse the warm session. You can cancel an
-active recognition; timeout, provider failure, invalid output, or cancellation
-produces no solver request. No companion program, sign-in, model download, or
-network connection is required. Recognition stops after 120 seconds, and the
-crop/confirmation session expires after ten minutes.
+The first recognition can take longer while the packaged formula and Japanese
+OCR runtimes initialize. A later crop may reuse their warm sessions. You can
+cancel active recognition; timeout, provider failure, invalid output, or
+cancellation produces no solver request. No companion program, sign-in, model
+download, or network connection is required. Recognition stops after 120
+seconds, and the crop/confirmation session expires after ten minutes.
 
 This path is experimental. It is not available for handwriting, photographs,
-full pages, multiple formulas, surrounding prose, tables, graphs, geometry
-diagrams, spatially positioned labels, construction problems, or proof
-interpretation. Incognito windows remain unsupported while the expiring crop is
-shared through the extension's offscreen document.
+full pages, arbitrary surrounding prose, more than two upper instruction/label
+lines, multiple formulas, tables, graphs, geometry diagrams, spatially
+positioned labels, construction problems, or proof interpretation. Incognito
+windows remain unsupported while the expiring crop is shared through the
+extension's offscreen document.
 
 ## History and review
 
@@ -233,8 +239,9 @@ application data.
 
 ## Limits
 
-Printed-formula OCR is limited to a tightly cropped machine-printed single
-formula and has experimental accuracy. It does not expand what the
+Printed math OCR is limited to exactly one machine-printed formula, optionally
+with one or two short horizontal Japanese problem-number/instruction lines
+above it, and has experimental accuracy. It does not expand what the
 deterministic solver can solve. Handwriting recognition, page/general OCR,
 diagram-dependent geometry, construction problems, and proof prose are outside
 scope. Current mathematical coverage is listed in

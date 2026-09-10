@@ -46,6 +46,42 @@
   const FACTOR_END_KINDS = new Set(["number", "identifier", "close", "factor"]);
   const FACTOR_START_KINDS = new Set(["number", "identifier", "open", "factor"]);
   const IGNORED_TEXT_CONTAINERS = new Set(["script", "style", "template", "noscript"]);
+  const HTML_LINE_BOUNDARY_TAGS = new Set([
+    "address",
+    "article",
+    "aside",
+    "blockquote",
+    "dd",
+    "div",
+    "dl",
+    "dt",
+    "figcaption",
+    "figure",
+    "footer",
+    "form",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "header",
+    "li",
+    "main",
+    "nav",
+    "ol",
+    "p",
+    "pre",
+    "section",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "ul",
+  ]);
 
   function nodeName(node) {
     const raw = String(node?.localName || node?.tagName || "").toLowerCase();
@@ -104,6 +140,15 @@
     if (hasClass(node, "katex") && !hasClass(node, "katex-display")) return "katex";
     if (hasClass(node, "MathJax")) return "mathjax";
     return "";
+  }
+
+  function createsStructuralLineBoundary(node) {
+    if (node?.nodeType !== ELEMENT_NODE) return false;
+    const name = nodeName(node);
+    if (HTML_LINE_BOUNDARY_TAGS.has(name) || name === "br") return true;
+    if (name === "math" && getAttribute(node, "display") === "block") return true;
+    if (name === "mjx-container" && getAttribute(node, "display") === "true") return true;
+    return hasClass(node, "katex-display");
   }
 
   function createBudget() {
@@ -562,6 +607,14 @@
         return { ok: true, parts: [], usedStructure: false };
       }
 
+      if (nodeName(node) === "br") {
+        return {
+          ok: true,
+          parts: [{ type: "line-break", text: "" }],
+          usedStructure: false,
+        };
+      }
+
       const kind = rendererKind(node);
       if (kind) {
         const serialized = serializeRenderer(node, kind, range, budget);
@@ -612,11 +665,30 @@
       }
 
       const combined = { ok: true, parts: [], usedStructure: false };
+      let combinedHasSelectedContent = false;
+      let previousSelectedChildWasBlock = false;
       for (const child of childNodes(node)) {
         const current = serializeSelectedDom(child, range, budget);
         if (!current.ok) return current;
+        const currentHasSelectedContent = current.parts.some((part) => (
+          part.type === "line-break" || /\S/u.test(String(part.text ?? ""))
+        ));
+        const currentChildIsBlock = currentHasSelectedContent
+          && createsStructuralLineBoundary(child);
+        if (
+          currentHasSelectedContent
+          && combinedHasSelectedContent
+          && (previousSelectedChildWasBlock || currentChildIsBlock)
+          && combined.parts.at(-1)?.type !== "line-break"
+        ) {
+          combined.parts.push({ type: "line-break", text: "" });
+        }
         combined.parts.push(...current.parts);
         combined.usedStructure ||= current.usedStructure;
+        if (currentHasSelectedContent) {
+          combinedHasSelectedContent = true;
+          previousSelectedChildWasBlock = currentChildIsBlock;
+        }
         if (combined.parts.length > MAX_VISITED_NODES) {
           return { ok: false, parts: [], usedStructure: false };
         }
@@ -636,16 +708,24 @@
   function combineDomParts(parts) {
     let output = "";
     for (const current of parts) {
-      if (current.type === "sup" || current.type === "sub") {
+      if (current.type === "line-break") {
+        output = output.trimEnd();
+        if (output && !output.endsWith("\n")) output += "\n";
+      } else if (current.type === "sup" || current.type === "sub") {
         if (!hasPostfixBase(output)) return "";
         output = output.trimEnd();
         output += current.type === "sup" ? `^${current.text}` : `_${current.text}`;
       } else {
-        output += current.text;
+        output += String(current.text ?? "").replace(/[\t\r\n\f\v\u00a0]+/gu, " ");
       }
       if (output.length > MAX_OUTPUT_LENGTH) return "";
     }
-    return output.replace(/[\t\r\n\f\v\u00a0]+/gu, " ").replace(/ {2,}/gu, " ").trim();
+    return output
+      .replace(/[\t\r\f\v\u00a0]+/gu, " ")
+      .replace(/ {2,}/gu, " ")
+      .replace(/ *\n */gu, "\n")
+      .replace(/\n{2,}/gu, "\n")
+      .trim();
   }
 
   function nearestContextRoot(range) {

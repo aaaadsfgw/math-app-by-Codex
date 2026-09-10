@@ -10,6 +10,7 @@ import {
   toIsoString,
 } from "./utils.js";
 import { createRealSet } from "./math-core/real-set.js";
+import { normalizeProblemInput } from "./problem/problem-input.js";
 
 export const STORAGE_KEYS = Object.freeze({
   settings: "settings",
@@ -339,6 +340,40 @@ function normalizeAssessment(value, mode, source) {
   return mode === "answer" && source !== "shortcut" ? "answer_seen" : "unassessed";
 }
 
+function storedProblemInput(value, { source = "manual" } = {}) {
+  if (value === undefined || value === null) return null;
+  if (!isPlainObject(value)) {
+    throw new TypeError("ProblemInputはオブジェクトで指定してください。");
+  }
+  const normalized = normalizeProblemInput(value, { source });
+  if (normalized.status === "invalid" || normalized.status === "conflict") {
+    throw new TypeError(normalized.error || "ProblemInputの形式が不正です。");
+  }
+  return {
+    schemaVersion: normalized.schemaVersion,
+    rawText: normalized.rawText,
+    questionLabel: normalized.questionLabel,
+    instructionText: normalized.instructionText,
+    instructionIntent: normalized.instructionIntent,
+    formulaText: normalized.formulaText,
+    conditions: [...normalized.conditions],
+    source: normalized.source,
+    instructionSource: normalized.instructionSource,
+    formulaSource: normalized.formulaSource,
+  };
+}
+
+function isOcrProblemInput(problemInput) {
+  return Boolean(
+    problemInput
+      && (
+        problemInput.source === "ocr"
+        || problemInput.instructionSource === "ocr"
+        || problemInput.formulaSource === "ocr"
+      ),
+  );
+}
+
 function inferredEntryPoint(source) {
   if (source === "shortcut") return "shortcut";
   if (source === "review") return "review";
@@ -455,18 +490,19 @@ function normalizeSolutionSet(input, verificationType) {
 
 export function createHistoryRecord(input = {}) {
   if (!isPlainObject(input)) throw new TypeError("履歴データはオブジェクトで指定してください。");
-  const question = normalizeWhitespace(input.question);
+  const source = SOURCES.has(input.source) ? input.source : "popup";
+  const problemInput = storedProblemInput(input.problemInput, { source });
+  const question = normalizeWhitespace(problemInput?.formulaText || input.question);
   if (!question) throw new TypeError("問題文が空です。");
 
   const now = toIsoString();
   const mode = MODES.has(input.mode) ? input.mode : "answer";
-  const source = SOURCES.has(input.source) ? input.source : "popup";
   const learningMode = LEARNING_MODES.has(input.learningMode) ? input.learningMode : "study";
   const entryPoint = ENTRY_POINTS.has(input.entryPoint)
     ? input.entryPoint
     : inferredEntryPoint(source);
   const usage = normalizeOutputUsage(input.usage, mode);
-  const ocrUsed = source === "ocr" || input.ocrUsed === true;
+  const ocrUsed = source === "ocr" || input.ocrUsed === true || isOcrProblemInput(problemInput);
   const ocrConfirmed = ocrUsed && input.ocrConfirmed === true;
   const selfAssessment = normalizeAssessment(input.selfAssessment, mode, source);
   const score = ASSESSMENT_SCORES[selfAssessment];
@@ -523,6 +559,7 @@ export function createHistoryRecord(input = {}) {
     parentHistoryId: normalizeWhitespace(input.parentHistoryId) || null,
   };
 
+  if (problemInput) record.problemInput = problemInput;
   if (classification.details) record.categoryClassification = classification.details;
   return record;
 }
@@ -564,8 +601,9 @@ function normalizeImportedHistory(value) {
             verificationType: "unsupported",
             verificationMessage:
               "インポートされたソルバー検証状態は引き継いでいません。再実行して検証してください。",
+            ocrConfirmed: false,
           }
-        : candidate);
+        : { ...candidate, ocrConfirmed: false });
       if (seen.has(record.id)) continue;
       seen.add(record.id);
       records.push(record);
@@ -739,10 +777,15 @@ export async function setPendingQuestion(questionOrObject, parentHistoryId = nul
     const candidate = isPlainObject(questionOrObject)
       ? questionOrObject
       : { question: questionOrObject, parentHistoryId };
-    const question = normalizeWhitespace(candidate.question);
+    const candidateSource = SOURCES.has(candidate.source) ? candidate.source : null;
+    const problemInput = storedProblemInput(candidate.problemInput, {
+      source: candidateSource || "manual",
+    });
+    const question = normalizeWhitespace(problemInput?.formulaText || candidate.question);
     if (!question) throw new TypeError("問題文が空です。");
-    const source = SOURCES.has(candidate.source) ? candidate.source : "review";
-    const ocrConfirmed = source === "ocr" && candidate.ocrConfirmed === true;
+    const source = candidateSource || problemInput?.source || "review";
+    const ocrUsed = source === "ocr" || isOcrProblemInput(problemInput);
+    const ocrConfirmed = ocrUsed && candidate.ocrConfirmed === true;
     const requestedMode = MODES.has(candidate.requestedMode)
       ? candidate.requestedMode
       : null;
@@ -754,9 +797,10 @@ export async function setPendingQuestion(questionOrObject, parentHistoryId = nul
       source,
       ocrConfirmed,
       requestedMode,
-      autoSolve: source === "ocr" && ocrConfirmed && candidate.autoSolve === true,
+      autoSolve: ocrUsed && ocrConfirmed && candidate.autoSolve === true,
       createdAt: validIso(candidate.createdAt, toIsoString()),
     };
+    if (problemInput) pending.problemInput = problemInput;
     await writeStorage({ [STORAGE_KEYS.pendingQuestion]: pending });
     return deepClone(pending);
   });
@@ -768,18 +812,31 @@ export async function getPendingQuestion() {
 }
 
 function normalizePendingQuestion(value) {
-  if (!isPlainObject(value) || !normalizeWhitespace(value.question)) return null;
-  const source = SOURCES.has(value.source) ? value.source : "review";
-  const ocrConfirmed = source === "ocr" && value.ocrConfirmed === true;
-  return {
-    question: normalizeWhitespace(value.question),
-    parentHistoryId: normalizeWhitespace(value.parentHistoryId) || null,
-    source,
-    ocrConfirmed,
-    requestedMode: MODES.has(value.requestedMode) ? value.requestedMode : null,
-    autoSolve: source === "ocr" && ocrConfirmed && value.autoSolve === true,
-    createdAt: validIso(value.createdAt, toIsoString()),
-  };
+  if (!isPlainObject(value)) return null;
+  try {
+    const candidateSource = SOURCES.has(value.source) ? value.source : null;
+    const problemInput = storedProblemInput(value.problemInput, {
+      source: candidateSource || "manual",
+    });
+    const question = normalizeWhitespace(problemInput?.formulaText || value.question);
+    if (!question) return null;
+    const source = candidateSource || problemInput?.source || "review";
+    const ocrUsed = source === "ocr" || isOcrProblemInput(problemInput);
+    const ocrConfirmed = ocrUsed && value.ocrConfirmed === true;
+    const pending = {
+      question,
+      parentHistoryId: normalizeWhitespace(value.parentHistoryId) || null,
+      source,
+      ocrConfirmed,
+      requestedMode: MODES.has(value.requestedMode) ? value.requestedMode : null,
+      autoSolve: ocrUsed && ocrConfirmed && value.autoSolve === true,
+      createdAt: validIso(value.createdAt, toIsoString()),
+    };
+    if (problemInput) pending.problemInput = problemInput;
+    return pending;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeImportedPendingQuestion(value) {
@@ -918,10 +975,7 @@ async function importDataUnlocked(payload, { mode = "replace" } = {}) {
   if (Object.hasOwn(parsed, "pendingQuestion")) {
     if (parsed.pendingQuestion === null) {
       entries[STORAGE_KEYS.pendingQuestion] = null;
-    } else if (
-      !isPlainObject(parsed.pendingQuestion) ||
-      !normalizeWhitespace(parsed.pendingQuestion.question)
-    ) {
+    } else if (!isPlainObject(parsed.pendingQuestion)) {
       throw new StorageError("再実行問題データの形式が正しくありません。", {
         code: "INVALID_IMPORT",
       });
@@ -929,9 +983,15 @@ async function importDataUnlocked(payload, { mode = "replace" } = {}) {
       // Imported JSON cannot attest that the current user reviewed an OCR
       // transcription. Keep the text available, but remove the confirmation
       // and auto-solve capability at the import trust boundary.
-      entries[STORAGE_KEYS.pendingQuestion] = normalizeImportedPendingQuestion(
+      const importedPending = normalizeImportedPendingQuestion(
         parsed.pendingQuestion,
       );
+      if (!importedPending) {
+        throw new StorageError("再実行問題データの形式が正しくありません。", {
+          code: "INVALID_IMPORT",
+        });
+      }
+      entries[STORAGE_KEYS.pendingQuestion] = importedPending;
     }
   }
   if (Object.hasOwn(parsed, "appMeta")) {

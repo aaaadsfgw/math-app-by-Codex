@@ -1,4 +1,5 @@
 import { setPendingQuestion } from "../storage.js";
+import { normalizeProblemInput } from "../problem/problem-input.js";
 import {
   CANCEL_OCR_RECOGNITION,
   DISCARD_OCR_CAPTURE,
@@ -10,6 +11,11 @@ import {
 } from "./capture-contract.js";
 
 const MAX_CANDIDATE_CHARACTERS = 4_096;
+const MAX_INSTRUCTION_CHARACTERS = 512;
+const MAX_QUESTION_LABEL_CHARACTERS = 32;
+const MAX_CONDITIONS = 8;
+const MAX_CONDITION_CHARACTERS = 512;
+const OCR_RECOGNITION_KINDS = new Set(["formula-only", "mixed", "instruction-only"]);
 const DISALLOWED_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 const DISALLOWED_INVISIBLE_CHARACTERS = /[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFEFF]/u;
 
@@ -28,8 +34,14 @@ const elements = Object.freeze({
   recognitionProgress: document.querySelector("#recognitionProgress"),
   recognitionError: document.querySelector("#recognitionError"),
   candidatePanel: document.querySelector("#candidatePanel"),
+  questionLabelInput: document.querySelector("#questionLabelInput"),
+  questionLabelHelp: document.querySelector("#questionLabelHelp"),
+  instructionInput: document.querySelector("#instructionInput"),
+  instructionHelp: document.querySelector("#instructionHelp"),
   candidateInput: document.querySelector("#candidateInput"),
   candidateHelp: document.querySelector("#candidateHelp"),
+  conditionsInput: document.querySelector("#conditionsInput"),
+  conditionsHelp: document.querySelector("#conditionsHelp"),
   providerInfo: document.querySelector("#providerInfo"),
   backendInfo: document.querySelector("#backendInfo"),
   modelInfo: document.querySelector("#modelInfo"),
@@ -49,6 +61,17 @@ let submitting = false;
 let previewDiscarded = false;
 let recognitionRevision = 0;
 let previewExpiryTimer = null;
+let rawOcrText = "";
+const fieldProvenance = {
+  instructionSource: "none",
+  formulaSource: "none",
+};
+const manualEdits = {
+  questionLabel: false,
+  instruction: false,
+  formula: false,
+  conditions: false,
+};
 
 function clearPreviewExpiryTimer() {
   if (previewExpiryTimer !== null) globalThis.clearTimeout(previewExpiryTimer);
@@ -100,6 +123,85 @@ function validCandidate(value) {
   );
 }
 
+function validOptionalText(value, maximumLength) {
+  const text = cleanText(value);
+  return Boolean(
+    text.length <= maximumLength
+      && !DISALLOWED_CONTROL_CHARACTERS.test(text)
+      && !DISALLOWED_INVISIBLE_CHARACTERS.test(text),
+  );
+}
+
+function conditionLines(value) {
+  return String(value ?? "")
+    .replace(/\r\n?/gu, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function validConditions(value) {
+  if (!validOptionalText(value, MAX_CANDIDATE_CHARACTERS)) return false;
+  const conditions = conditionLines(value);
+  return conditions.length <= MAX_CONDITIONS
+    && conditions.every((condition) => (
+      condition.length <= MAX_CONDITION_CHARACTERS
+      && !DISALLOWED_CONTROL_CHARACTERS.test(condition)
+      && !DISALLOWED_INVISIBLE_CHARACTERS.test(condition)
+    ));
+}
+
+function normalizeRawOcrText(value, fallback) {
+  if (typeof value !== "string") return fallback;
+  const rawText = value.replace(/\r\n?/gu, "\n").trim();
+  if (
+    !rawText
+    || rawText.length > MAX_CANDIDATE_CHARACTERS
+    || DISALLOWED_CONTROL_CHARACTERS.test(rawText)
+  ) return fallback;
+  return rawText;
+}
+
+function candidateFieldsAreSafe() {
+  return Boolean(
+    validCandidate(elements.candidateInput.value)
+      && validOptionalText(elements.questionLabelInput.value, MAX_QUESTION_LABEL_CHARACTERS)
+      && validOptionalText(elements.instructionInput.value, MAX_INSTRUCTION_CHARACTERS)
+      && validConditions(elements.conditionsInput.value),
+  );
+}
+
+function currentProblemInput() {
+  const formulaText = cleanText(elements.candidateInput.value);
+  const instructionText = cleanText(elements.instructionInput.value);
+  return normalizeProblemInput({
+    rawText: rawOcrText || formulaText,
+    questionLabel: cleanText(elements.questionLabelInput.value),
+    instructionText,
+    formulaText,
+    conditions: conditionLines(elements.conditionsInput.value),
+    source: "ocr",
+    instructionSource: instructionText ? fieldProvenance.instructionSource : "none",
+    formulaSource: fieldProvenance.formulaSource === "ocr" ? "ocr" : "manual",
+  });
+}
+
+function candidateCanSubmit() {
+  if (!candidateFieldsAreSafe()) return false;
+  const problemInput = currentProblemInput();
+  return problemInput.status !== "invalid" && problemInput.status !== "conflict";
+}
+
+function markManualEdit(field) {
+  manualEdits[field] = true;
+  if (field === "formula") fieldProvenance.formulaSource = "manual";
+  if (field === "instruction") {
+    fieldProvenance.instructionSource = cleanText(elements.instructionInput.value)
+      ? "manual"
+      : "none";
+  }
+}
+
 function updateActionStates() {
   const pageLocked = discarding || submitting;
   elements.recognizeButton.disabled = (
@@ -114,7 +216,7 @@ function updateActionStates() {
   elements.solveButton.disabled = (
     pageLocked
     || recognitionRunning
-    || !validCandidate(elements.candidateInput.value)
+    || !candidateCanSubmit()
   );
   elements.discardButton.disabled = pageLocked;
 }
@@ -281,6 +383,60 @@ function normalizeWarnings(value) {
     .slice(0, 5);
 }
 
+function normalizedRecognitionKind(value) {
+  if (!OCR_RECOGNITION_KINDS.has(value)) {
+    throw new Error("文字認識結果の認識種別が不正です。");
+  }
+  return value;
+}
+
+function normalizeStructuredCandidate(value, recognitionKind, candidateText, rawText) {
+  if (value === undefined && recognitionKind === "formula-only") {
+    return Object.freeze({
+      questionLabel: "",
+      instructionText: "",
+      formulaText: candidateText,
+      conditions: Object.freeze([]),
+      rawInstructionText: "",
+      rawFormulaText: rawText,
+      instructionSource: "none",
+      formulaSource: "ocr",
+    });
+  }
+  const candidate = requireRecord(value, "構造化OCR候補");
+  const questionLabel = cleanText(candidate.questionLabel);
+  const instructionText = cleanText(candidate.instructionText);
+  const formulaText = cleanText(candidate.formulaText);
+  const rawInstructionText = normalizeRawOcrText(
+    candidate.rawInstructionText,
+    instructionText,
+  );
+  const rawFormulaText = normalizeRawOcrText(candidate.rawFormulaText, formulaText);
+  if (
+    !validOptionalText(questionLabel, MAX_QUESTION_LABEL_CHARACTERS)
+    || !validOptionalText(instructionText, MAX_INSTRUCTION_CHARACTERS)
+    || (recognitionKind === "instruction-only" ? !instructionText : !validCandidate(formulaText))
+    || !Array.isArray(candidate.conditions)
+    || candidate.conditions.length > MAX_CONDITIONS
+  ) {
+    throw new Error("構造化OCR候補の項目が不正です。");
+  }
+  const conditions = candidate.conditions.map((condition) => cleanText(condition));
+  if (!validConditions(conditions.join("\n"))) {
+    throw new Error("構造化OCR候補の条件が不正です。");
+  }
+  return Object.freeze({
+    questionLabel,
+    instructionText,
+    formulaText,
+    conditions: Object.freeze(conditions),
+    rawInstructionText,
+    rawFormulaText,
+    instructionSource: instructionText && candidate.instructionSource === "ocr" ? "ocr" : "none",
+    formulaSource: formulaText && candidate.formulaSource === "ocr" ? "ocr" : "none",
+  });
+}
+
 function normalizeRecognitionResponse(response) {
   const envelope = requireRecord(response, "文字認識応答");
   if (envelope.ok !== true) {
@@ -298,20 +454,30 @@ function normalizeRecognitionResponse(response) {
   if (result.confirmationRequired !== true) {
     throw new Error("文字認識結果の確認必須状態を検証できません。");
   }
+  const recognitionKind = normalizedRecognitionKind(result.recognitionKind);
   const candidateText = cleanText(result.candidateText);
-  if (!validCandidate(candidateText)) {
+  if (recognitionKind !== "instruction-only" && !validCandidate(candidateText)) {
     throw new Error("文字認識の候補が空か、安全に扱える長さを超えています。");
   }
   const provider = cleanText(result.provider).toLowerCase();
   if (!new Set(["webgpu", "wasm"]).has(provider)) {
     throw new Error("文字認識の実行方式が不正です。");
   }
+  const rawText = normalizeRawOcrText(result.rawText, candidateText);
   return Object.freeze({
     candidateText,
+    rawText,
     provider,
     backend: safeMetadataText(result.backend, ["name", "id", "runtime"], "ローカルOCR"),
     model: safeMetadataText(result.model, ["family", "id", "revision"], "同梱モデル"),
     warnings: Object.freeze(normalizeWarnings(result.warnings)),
+    recognitionKind,
+    structuredCandidate: normalizeStructuredCandidate(
+      result.structuredCandidate,
+      recognitionKind,
+      candidateText,
+      rawText,
+    ),
   });
 }
 
@@ -349,7 +515,17 @@ function showPreview(preview) {
 }
 
 function showRecognitionResult(result) {
-  elements.candidateInput.value = result.candidateText;
+  const candidate = result.structuredCandidate;
+  elements.questionLabelInput.value = candidate.questionLabel;
+  elements.instructionInput.value = candidate.instructionText;
+  elements.candidateInput.value = candidate.formulaText;
+  elements.conditionsInput.value = candidate.conditions.join("\n");
+  rawOcrText = [candidate.rawInstructionText, candidate.rawFormulaText || result.rawText]
+    .filter(Boolean)
+    .join("\n");
+  fieldProvenance.instructionSource = candidate.instructionSource;
+  fieldProvenance.formulaSource = candidate.formulaSource;
+  for (const field of Object.keys(manualEdits)) manualEdits[field] = false;
   elements.providerInfo.textContent = result.provider === "webgpu" ? "WebGPU" : "WASM";
   elements.backendInfo.textContent = result.backend;
   elements.modelInfo.textContent = result.model;
@@ -362,8 +538,13 @@ function showRecognitionResult(result) {
   setRecognitionStatus("候補を確認してください", "warning");
   setMessage("文字認識が完了しました。候補を確認してから次へ進んでください。", "success");
   updateActionStates();
-  elements.candidateInput.focus();
-  elements.candidateInput.select();
+  if (result.recognitionKind === "instruction-only") {
+    elements.candidateHelp.textContent = "日本語指示だけを認識しました。画像を見ながら数式を入力してください。";
+    elements.candidateInput.focus();
+  } else {
+    elements.candidateInput.focus();
+    elements.candidateInput.select();
+  }
 }
 
 function showManualCandidateFallback() {
@@ -472,6 +653,17 @@ function closeConfirmationPage() {
   }, 80);
 }
 
+function clearCandidateFields() {
+  elements.questionLabelInput.value = "";
+  elements.instructionInput.value = "";
+  elements.candidateInput.value = "";
+  elements.conditionsInput.value = "";
+  rawOcrText = "";
+  fieldProvenance.instructionSource = "none";
+  fieldProvenance.formulaSource = "none";
+  for (const field of Object.keys(manualEdits)) manualEdits[field] = false;
+}
+
 async function discardAndClose() {
   if (discarding || submitting) return;
   discarding = true;
@@ -482,7 +674,7 @@ async function discardAndClose() {
   try {
     await cancelRecognition({ silent: true });
     await discardPreview();
-    elements.candidateInput.value = "";
+    clearCandidateFields();
     setMessage("プレビューを破棄しました。", "success");
     closeConfirmationPage();
   } catch (error) {
@@ -495,13 +687,40 @@ async function discardAndClose() {
 
 async function solveCandidate() {
   if (submitting || discarding || recognitionRunning) return;
-  const question = cleanText(elements.candidateInput.value);
-  if (!validCandidate(question)) {
-    setRecognitionError("確認する問題文を入力してください。");
+  if (!validCandidate(elements.candidateInput.value)) {
+    setRecognitionError("確認する数式を入力してください。");
     elements.candidateInput.focus();
     updateActionStates();
     return;
   }
+  if (!validOptionalText(elements.questionLabelInput.value, MAX_QUESTION_LABEL_CHARACTERS)) {
+    setRecognitionError("問題番号が長すぎるか、使用できない文字を含んでいます。");
+    elements.questionLabelInput.focus();
+    updateActionStates();
+    return;
+  }
+  if (!validOptionalText(elements.instructionInput.value, MAX_INSTRUCTION_CHARACTERS)) {
+    setRecognitionError("指示が長すぎるか、使用できない文字を含んでいます。");
+    elements.instructionInput.focus();
+    updateActionStates();
+    return;
+  }
+  if (!validConditions(elements.conditionsInput.value)) {
+    setRecognitionError("条件は8件以内・1件512文字以内で、1行に1つ入力してください。");
+    elements.conditionsInput.focus();
+    updateActionStates();
+    return;
+  }
+
+  const problemInput = currentProblemInput();
+  if (problemInput.status === "invalid" || problemInput.status === "conflict") {
+    setRecognitionError(problemInput.error || "問題の構造を確認してください。");
+    if (problemInput.status === "conflict") elements.instructionInput.focus();
+    else elements.questionLabelInput.focus();
+    updateActionStates();
+    return;
+  }
+  const question = problemInput.formulaText;
 
   submitting = true;
   updateActionStates();
@@ -512,6 +731,7 @@ async function solveCandidate() {
     await discardPreview();
     await setPendingQuestion({
       question,
+      problemInput,
       source: "ocr",
       ocrConfirmed: true,
       requestedMode: "answer",
@@ -532,10 +752,45 @@ elements.recognizeButton.addEventListener("click", () => void startRecognition()
 elements.cancelRecognitionButton.addEventListener("click", () => void cancelRecognition());
 elements.solveButton.addEventListener("click", () => void solveCandidate());
 elements.discardButton.addEventListener("click", () => void discardAndClose());
+elements.questionLabelInput.addEventListener("input", () => {
+  markManualEdit("questionLabel");
+  const label = cleanText(elements.questionLabelInput.value);
+  const problemInput = currentProblemInput();
+  elements.questionLabelHelp.textContent = !validOptionalText(label, MAX_QUESTION_LABEL_CHARACTERS)
+    ? "問題番号が長すぎるか、使用できない文字を含んでいます。"
+    : label && problemInput.status === "invalid" && /問題番号/u.test(problemInput.error)
+      ? problemInput.error
+      : "番号は数式へ混ぜず、問題を見分ける情報として保持します。";
+  updateActionStates();
+});
+elements.instructionInput.addEventListener("input", () => {
+  markManualEdit("instruction");
+  const instruction = cleanText(elements.instructionInput.value);
+  const problemInput = currentProblemInput();
+  elements.instructionHelp.textContent = !validOptionalText(instruction, MAX_INSTRUCTION_CHARACTERS)
+    ? "指示が長すぎるか、使用できない文字を含んでいます。"
+    : !instruction
+      ? "指示は任意です。空欄から処理を推測しません。"
+      : problemInput.status === "conflict" || problemInput.status === "unsupported"
+        ? `${problemInput.error} 内容を修正しない場合、解答は安全に停止します。`
+        : "入力した指示だけを処理の選択に使います。";
+  updateActionStates();
+});
 elements.candidateInput.addEventListener("input", () => {
+  markManualEdit("formula");
   elements.candidateHelp.textContent = validCandidate(elements.candidateInput.value)
-    ? "編集内容はまだ未確定です。「この内容で解く」を押す前に、もう一度確認してください。"
+    ? "編集した数式はまだ未確定です。「この内容で解く」を押す前に、もう一度確認してください。"
     : "空欄または使用できない文字が含まれています。候補を修正してください。";
+  updateActionStates();
+});
+elements.conditionsInput.addEventListener("input", () => {
+  markManualEdit("conditions");
+  const conditions = conditionLines(elements.conditionsInput.value);
+  elements.conditionsHelp.textContent = validConditions(elements.conditionsInput.value)
+    ? conditions.length
+      ? "入力条件は数式と分離して保持します。solverで安全に検証できなければ解答を停止します。"
+      : "画像に明記された条件だけを1行ずつ入力してください。"
+    : "条件は8件以内・1件512文字以内で、1行に1つ入力してください。";
   updateActionStates();
 });
 elements.image.addEventListener("load", () => {

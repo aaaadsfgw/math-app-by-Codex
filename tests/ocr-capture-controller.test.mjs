@@ -44,6 +44,7 @@ function fakeEnvironment({
   failPreviewCreation = false,
   previewMetadataPatch = null,
   recognitionGate = null,
+  recognitionOutputPatch = null,
 } = {}) {
   let clock = NOW;
   const calls = {
@@ -134,6 +135,7 @@ function fakeEnvironment({
       return {
         text: "x^2 - 5x + 6 = 0",
         rawText: "zws _( x ^( 2 ) - 5 x + 6 = 0 )",
+        recognitionKind: "formula-only",
         provider: "wasm",
         status: "unconfirmed",
         verified: false,
@@ -143,6 +145,7 @@ function fakeEnvironment({
         warnings: [],
         confidence: { geometricMeanProbability: 0.9 },
         timings: { totalMilliseconds: 123 },
+        ...(recognitionOutputPatch ?? {}),
       };
     }
     if (type === CANCEL_OCR_RECOGNITION) return { cancelled: true };
@@ -620,6 +623,24 @@ test("確認ページだけがpreview取得・OCR実行・破棄を行える", a
   assert.deepEqual(discarded, { discarded: true });
   assert.equal(await environment.store.get(), null);
   assert.equal(environment.previews.size, 0);
+});
+
+test("未知のOCR recognitionKindはformula-onlyへ格下げず拒否する", async () => {
+  const environment = fakeEnvironment({
+    recognitionOutputPatch: { recognitionKind: "future-mixed-layout" },
+  });
+  await start(environment);
+  await submit(environment);
+
+  await assert.rejects(
+    environment.controller.handleMessage(
+      message("RECOGNIZE_OCR_CAPTURE", { captureId: "capture-1" }),
+      confirmationSender(),
+    ),
+    (error) => error.code === "OCR_RECOGNITION_OUTPUT_INVALID"
+      && /認識種別/u.test(error.message),
+  );
+  assert.equal((await environment.store.get()).phase, "preview");
 });
 
 test("期限後の破棄はidempotent成功として確認ページを閉じられる", async () => {

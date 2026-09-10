@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-08
+Last updated: 2026-09-10
 
 ## Repository checkpoint
 
@@ -17,9 +17,11 @@ Last updated: 2026-09-08
 - Confirmed the revised product boundary:
   - no local or cloud answer-generation AI;
   - junior-high mathematics through Mathematics III;
-  - no image-derived answer generation; the only model-based acquisition
-    exception is a tightly cropped, machine-printed single formula transcribed
-    into editable, explicitly confirmed, untrusted candidate text;
+  - no image-derived answer generation; model-based acquisition is limited to a
+    tightly cropped, machine-printed image containing exactly one formula and,
+    optionally, one or two short Japanese problem-number/instruction lines
+    above it, all transcribed into editable, explicitly confirmed, untrusted
+    fields;
   - no diagram-based geometry;
   - no proof generation.
 - Audited deterministic CAS candidates.
@@ -74,7 +76,8 @@ Last updated: 2026-09-08
   - terminates the worker on success, failure, or timeout;
   - returns a typed error instead of blocking indefinitely.
 - Direct symbolic-adapter imports are limited to the worker and its contract
-  test. Unpacked-Chrome verification of module-worker loading remains pending.
+  test. Module-worker loading has passed in an isolated unpacked-Chrome profile;
+  the reproducible browser evidence is recorded below.
 - Replaced the older polynomial solver tokenizer/parser with the shared AST.
   Linear and quadratic solvers now consume the same precedence, implicit
   multiplication, symbol allow-list, and complexity limits as future domains.
@@ -666,6 +669,50 @@ Last updated: 2026-09-08
   unchanged `Selection.toString()` value. Literal controls remain literal,
   passwords remain excluded, and the verified-only clipboard workflow is
   unchanged.
+- Added the schema-v1 `ProblemInput` boundary before classification and solver
+  routing. It snapshots `questionLabel`, `instructionText`, canonical
+  `instructionIntent`, `formulaText`, input conditions, source, and separate
+  instruction/formula provenance while retaining legacy string input exactly.
+  The 13 closed intents are `simplify`, `expand`, `factor`, `solve_equation`,
+  `differentiate`, `integrate`, `definite_integral`, `limit`, `tangent`,
+  `normal`, `monotonicity`, `extrema`, and `monotonicity_extrema`. Explicit
+  intent dispatch is terminal: a conflict or failure cannot fall through to a
+  mathematically different solver.
+- Added conservative Japanese instruction normalization and problem-number
+  separation. Variant endings and bounded modifiers are data-driven rather
+  than one catch-all regular expression. Generic `計算せよ` remains ambiguous;
+  only explicit context such as `分数式を計算せよ` selects simplification.
+  Strong `問`/`問題` and circled labels are recognized at the first non-empty
+  line, while `(1)`, `（1）`, and `1.` additionally require an isolated line or
+  a following instruction. `(1+x)` and plain suffixes such as `x2` are never
+  repaired or removed.
+- Added optional problem-number and instruction fields to the popup and four
+  separately editable fields (problem number, instruction, formula, and
+  conditions) to OCR confirmation. Raw OCR text is retained separately, and
+  editing instruction or formula changes that field's provenance from OCR to
+  manual. An OCR candidate remains unconfirmed until the separate solve action;
+  unsupported conditions and instruction/formula conflicts stop safely.
+- Added a local mixed-OCR path for one or two short horizontal Japanese
+  instruction regions above exactly one formula. Strong horizontal whitespace
+  creates at most three bounded crops but does not classify pixels semantically.
+  The upper crops are checked with Tesseract.js 7.0.0 and horizontal
+  `tessdata_fast` 4.1.0 `jpn`; only the final formula crop reaches IBEM. If the
+  upper region is not Japanese, Japanese recognition fails, more than three
+  independent regions exist, or one formula cannot be isolated, formula OCR is
+  not started for the mixed crop.
+- Packaged the Japanese OCR runtime, three local WASM feature builds, language
+  data, Apache-2.0 license texts, bundle dependency notices, provenance, and
+  SHA-256 asset manifest. The
+  `jpn.traineddata` file is 2,471,260 bytes with SHA-256
+  `1f5de9236d2e85f5fdf4b3c500f2d4926f8d9449f28f5394472d9e8d83b91b4d`;
+  the complete added Japanese OCR asset directory is 14,385,195 bytes (about
+  14.4 MB decimal / 13.7 MiB). Runtime URLs must use `chrome-extension:` and
+  CDN, cache download, Blob workers, and external communication remain disabled.
+- Improved rational-expression domain display without weakening verification.
+  `1/x+2/(x+1)` now simplifies exactly to
+  `(3*x+1)/(x*(x+1))` under `x≠0`, `x≠-1`; and
+  `1/(x^2-1)-1/(x-1)` simplifies to `-x/(x^2-1)` while retaining
+  the original holes `x≠-1`, `x≠1`.
 
 ## Remaining validation
 
@@ -675,11 +722,16 @@ Last updated: 2026-09-08
   reverse drags, Esc/tab-switch/expiry cancellation, and a full capture flow in
   a forced-WASM profile. Their individual protocol, cleanup, and provider paths
   are already covered automatically.
+- Exact peak Worker/WASM memory remains unmeasured, and an actual
+  rendered fraction has not yet been transcribed exactly in the browser; both
+  remain release evidence gaps rather than reasons to relax confirmation.
 
 ## Last verified commands
 
-- `npm.cmd test` - 736 passed, 0 failed on 2026-09-08, including 5,500
-  generated evaluation cases.
+- `npm.cmd run check` - passed for 282 files, 14 HTML, 212 JS/MJS, and 12 CSS
+  files on 2026-09-10.
+- `npm.cmd test` - 801 passed, 0 failed on 2026-09-10, including 5,500
+  generated evaluation cases and the structured-input/OCR safety regressions.
 - `npm.cmd run check` - passed for 253 files, 13 HTML, 191 JS/MJS, and 12 CSS
   files on 2026-09-08.
 - `tests/browser/selection-structure-harness.html` - installed Chrome passed
@@ -691,6 +743,22 @@ Last updated: 2026-09-08
 - `npm.cmd run test:browser:ocr-flow -- 9335 --allow-storage-reset` - isolated Chrome 152 passed
   action-triggered Study and Quick capture, preview, WebGPU recognition, edit,
   solve, history, and cleanup on 2026-09-08.
+- `npm.cmd run test:browser:selection -- 9338` - isolated headless Chrome 152
+  passed 10/10 plain-text, HTML `sup`/`sub`, MathML, KaTeX/MathJax,
+  structured Japanese-instruction/MathML, and conservative fallback cases on
+  2026-09-10. The corresponding integration test reaches the verified
+  quadratic solver through `ProblemInput` and the shortcut workflow.
+- `node scripts/ocr-browser-smoke.mjs 9338 <extensionId> either` - isolated
+  headless Chrome 152 passed explicit WebGPU and WASM formula OCR, Worker warm
+  reuse, exact Japanese instruction recognition, mixed-region separation, and
+  the single-region formula regression on 2026-09-10. A fresh Japanese fixture
+  took about 283 ms and a warm rerun about 30--35 ms; the recorded page-heap
+  delta excludes Worker/WASM peak memory.
+- `npm.cmd run test:browser:ocr-mixed-flow -- 9338 --allow-storage-reset` -
+  isolated headless Chrome 152 passed Study and Quick capture, separation of
+  `(1)` / `次の方程式を解け` / `x+y`, the four-field confirmation UI,
+  instruction/formula manual edits and provenance, explicit solve,
+  mode-specific history, and preview cleanup on 2026-09-10.
 
 ## Restart procedure
 

@@ -71,6 +71,8 @@ test("v2 learning controls and metadata regions remain wired", async () => {
   }
   for (const id of [
     "learningModeStatus",
+    "questionLabelInput",
+    "instructionInput",
     "ocrButton",
     "ocrStatus",
     "inputSourceStatus",
