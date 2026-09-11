@@ -37,6 +37,17 @@ test("1つの連続した印刷領域はsingle-regionとして残す", () => {
   assert.equal(result.regions[0].y, 10);
 });
 
+test("crop端に混入した1pxのフレーム線を独立した文字行にしない", () => {
+  for (const edgeY of [0, 120]) {
+    const result = analyzeHorizontalOcrLayout(image(290, 121, [
+      { x: 35, y: 30, width: 210, height: 48 },
+      { x: 0, y: edgeY, width: 290, height: 1 },
+    ]));
+    assert.equal(result.kind, "single-region", String(edgeY));
+    assert.equal(result.regions.length, 1, String(edgeY));
+  }
+});
+
 test("日本語行と下側の数式を強い空白で2領域へ分ける", () => {
   const result = analyzeHorizontalOcrLayout(image(220, 100, [
     { x: 8, y: 8, width: 190, height: 17 },
@@ -46,6 +57,43 @@ test("日本語行と下側の数式を強い空白で2領域へ分ける", () =
   assert.equal(result.regions.length, 2);
   assert.ok(result.separators[0].gap >= result.separators[0].requiredGap);
   assert.ok(result.regions[0].y < result.regions[1].y);
+});
+
+test("mixed数式行の左端に十分離れた小領域がある場合だけ位置候補を返す", () => {
+  const result = analyzeHorizontalOcrLayout(image(240, 100, [
+    { x: 8, y: 8, width: 190, height: 17 },
+    { x: 10, y: 60, width: 4, height: 18 },
+    { x: 18, y: 60, width: 7, height: 18 },
+    { x: 29, y: 60, width: 4, height: 18 },
+    { x: 58, y: 57, width: 150, height: 24 },
+  ]));
+
+  assert.equal(result.regions.length, 2);
+  assert.equal(result.leadingSplitCandidate.regionIndex, 1);
+  assert.ok(
+    result.leadingSplitCandidate.gap >= result.leadingSplitCandidate.requiredGap,
+  );
+  assert.ok(
+    result.leadingSplitCandidate.prefix.x
+      + result.leadingSplitCandidate.prefix.width
+      < result.leadingSplitCandidate.remainder.x,
+  );
+});
+
+test("単一行ではより強い空白だけを意味未確定の左端候補として返す", () => {
+  const single = analyzeHorizontalOcrLayout(image(200, 50, [
+    { x: 8, y: 10, width: 20, height: 18 },
+    { x: 55, y: 10, width: 120, height: 18 },
+  ]));
+  assert.equal(single.regions.length, 1);
+  assert.equal(single.leadingSplitCandidate.regionIndex, 0);
+  assert.ok(single.leadingSplitCandidate.gap >= single.leadingSplitCandidate.requiredGap);
+
+  const mixedWithoutGap = analyzeHorizontalOcrLayout(image(220, 100, [
+    { x: 8, y: 8, width: 180, height: 17 },
+    { x: 24, y: 58, width: 160, height: 24 },
+  ]));
+  assert.equal(mixedWithoutGap.leadingSplitCandidate, null);
 });
 
 test("近接する分子・分数線・分母は1つの数式領域から分裂させない", () => {

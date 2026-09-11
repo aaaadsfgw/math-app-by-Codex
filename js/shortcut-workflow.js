@@ -25,6 +25,7 @@ function normalizeAction(value) {
 
 function structuredSelectionInput(selection) {
   const problemInput = parseCombinedProblemText(selection, { source: "selection" });
+  if (problemInput.status !== "ready") return problemInput;
   if (!problemInput.questionLabel && !problemInput.instructionText) return null;
   return problemInput;
 }
@@ -90,6 +91,12 @@ export async function runShortcutWorkflow({
   if (typeof solve !== "function") throw new TypeError("solveは関数で指定してください。");
 
   const input = await getShortcutInput({ getSelectionText, readClipboardText });
+  if (input.problemInput?.status === "unsupported") {
+    throw new ShortcutWorkflowError(
+      cleanText(input.problemInput.error) || "選択した問題を安全に解析できませんでした。",
+      { code: "UNSUPPORTED_INPUT" },
+    );
+  }
   const action = normalizeAction(settings.shortcutAction);
   const workflow = await solve(input.problemInput ?? input.question, {
     mode: action,

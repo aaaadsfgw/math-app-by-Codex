@@ -1,4 +1,5 @@
 import { normalizeInstruction } from "../problem/instruction-normalizer.js";
+import { parseCombinedProblemText } from "../problem/problem-input.js";
 import {
   isQuestionLabel,
   separateQuestionLabel,
@@ -129,11 +130,116 @@ function classifyInstructionRegions(outputs) {
 function singleRegionJapanese(output) {
   const rawText = normalizedText(output?.text);
   if (countJapanese(rawText) < 2) return null;
+  const combined = parseCombinedProblemText(rawText, { source: "ocr" });
+  if (
+    combined.status === "ready"
+    && combined.instructionText
+    && combined.instructionIntent
+    && combined.formulaText
+    && combined.formulaText !== rawText
+  ) {
+    return Object.freeze({
+      questionLabel: combined.questionLabel,
+      instructionText: combined.instructionText,
+      formulaText: combined.formulaText,
+      rawText,
+      inlineFormula: true,
+    });
+  }
   const separated = separateQuestionLabel(rawText);
   return Object.freeze({
     questionLabel: separated.questionLabel,
     instructionText: normalizedText(separated.remainingText),
+    formulaText: "",
     rawText,
+    inlineFormula: false,
+  });
+}
+
+function comparableQuestionLabel(value) {
+  return normalizedText(value)
+    .normalize("NFKC")
+    .replace(/\s+/gu, "")
+    .replace(/[.．:：]+$/u, "");
+}
+
+function stripVerifiedLeadingLabel(value, questionLabel) {
+  const source = normalizedText(value);
+  const expected = comparableQuestionLabel(questionLabel);
+  const maximum = Math.min(source.length, 32);
+  for (let end = 1; end <= maximum; end += 1) {
+    const prefix = source.slice(0, end).trim();
+    if (isQuestionLabel(prefix) && comparableQuestionLabel(prefix) === expected) {
+      return source.slice(end).trimStart();
+    }
+  }
+  return source;
+}
+
+async function inspectLeadingQuestionLabel({
+  segmented,
+  instruction,
+  japaneseRecognizer,
+  options,
+  fullFormulaBlob = segmented.regions.at(-1).blob,
+}) {
+  const split = segmented.leadingSplit;
+  if (!split || split.regionIndex !== segmented.regions.length - 1) {
+    return Object.freeze({
+      questionLabel: instruction.questionLabel,
+      formulaBlob: fullFormulaBlob,
+      probeOutput: null,
+      rawInstructionText: instruction.rawText,
+      warnings: Object.freeze([]),
+    });
+  }
+
+  let probeOutput;
+  try {
+    probeOutput = await japaneseRecognizer.recognize(split.prefix.blob, options);
+  } catch {
+    return Object.freeze({
+      questionLabel: instruction.questionLabel,
+      formulaBlob: fullFormulaBlob,
+      probeOutput: null,
+      rawInstructionText: instruction.rawText,
+      warnings: Object.freeze([
+        "数式行左端の独立領域を問題番号と確認できなかったため、数式候補に保持しました。",
+      ]),
+    });
+  }
+
+  const detectedLabel = normalizedText(probeOutput?.text);
+  if (!isQuestionLabel(detectedLabel)) {
+    return Object.freeze({
+      questionLabel: instruction.questionLabel,
+      formulaBlob: fullFormulaBlob,
+      probeOutput,
+      rawInstructionText: instruction.rawText,
+      warnings: Object.freeze([
+        "数式行左端の独立領域は問題番号と断定せず、数式候補に保持しました。",
+      ]),
+    });
+  }
+
+  if (
+    instruction.questionLabel
+    && comparableQuestionLabel(instruction.questionLabel) !== comparableQuestionLabel(detectedLabel)
+  ) {
+    throw mixedError(
+      "上段と数式行左端で異なる問題番号を認識したため、自動分離しませんでした。",
+      "MIXED_OCR_QUESTION_LABEL_CONFLICT",
+    );
+  }
+
+  return Object.freeze({
+    questionLabel: instruction.questionLabel || detectedLabel,
+    formulaBlob: split.remainder.blob,
+    probeOutput,
+    rawInstructionText: normalizedText(`${instruction.rawText}\n${detectedLabel}`),
+    warnings: Object.freeze([
+      "数式行左端の独立領域を問題番号として分離しました。",
+    ]),
   });
 }
 
@@ -169,28 +275,90 @@ export function createMixedOcrEngine({
             // Formula-only OCR remains available if the independent Japanese
             // preflight cannot load. Confirmation is still mandatory.
           }
-          const japanese = japaneseOutput ? singleRegionJapanese(japaneseOutput) : null;
+          const leading = await inspectLeadingQuestionLabel({
+            segmented,
+            instruction: {
+              questionLabel: "",
+              rawText: normalizedText(japaneseOutput?.text),
+            },
+            japaneseRecognizer,
+            options,
+            // Without a confirmed label, a single-region image remains the
+            // original trusted user crop. Tightening ordinary formulas to ink
+            // bounds changes IBEM's input distribution.
+            fullFormulaBlob: blob,
+          });
+          const semanticJapaneseOutput = japaneseOutput
+            ? {
+                ...japaneseOutput,
+                text: leading.questionLabel
+                  ? stripVerifiedLeadingLabel(japaneseOutput.text, leading.questionLabel)
+                  : japaneseOutput.text,
+              }
+            : null;
+          const japanese = semanticJapaneseOutput
+            ? singleRegionJapanese(semanticJapaneseOutput)
+            : null;
           if (japanese) {
+            if (japanese.inlineFormula) {
+              return recognitionKindOutput({
+                kind: "mixed",
+                questionLabel: leading.questionLabel || japanese.questionLabel,
+                instructionText: japanese.instructionText,
+                instructionRawText: leading.rawInstructionText || japanese.rawText,
+                formulaOutput: {
+                  text: japanese.formulaText,
+                  rawText: japanese.formulaText,
+                  provider: japaneseOutput.provider,
+                  backend: japaneseOutput.backend,
+                  model: japaneseOutput.model,
+                  confidence: japaneseOutput.confidence,
+                  timings: japaneseOutput.timings,
+                },
+                japaneseOutputs: [japaneseOutput, leading.probeOutput].filter(Boolean),
+                warnings: [
+                  "同一行の明確な数式と対応済み日本語指示を分離しました。各欄を画像と照合してください。",
+                  ...leading.warnings,
+                ],
+              });
+            }
             return recognitionKindOutput({
               kind: "instruction-only",
-              questionLabel: japanese.questionLabel,
+              questionLabel: leading.questionLabel || japanese.questionLabel,
               instructionText: japanese.instructionText,
-              instructionRawText: japanese.rawText,
-              japaneseOutputs: [japaneseOutput],
-              warnings: ["日本語指示だけを認識しました。数式は手動で入力してください。"],
+              instructionRawText: leading.rawInstructionText || japanese.rawText,
+              japaneseOutputs: [japaneseOutput, leading.probeOutput].filter(Boolean),
+              warnings: [
+                "日本語指示だけを認識しました。数式は手動で入力してください。",
+                ...leading.warnings,
+              ],
             });
           }
-          // A single-region image is already the trusted user crop. Keep its
-          // original whitespace and scale for the formula model; tightening
-          // it to detected ink changes IBEM's input distribution and can turn
-          // a previously correct formula-only recognition into garbage.
-          const formulaOutput = await formulaEngine.recognize(blob, options);
+          const formulaOutput = await formulaEngine.recognize(leading.formulaBlob, options);
+          if (leading.questionLabel) {
+            return recognitionKindOutput({
+              kind: "mixed",
+              questionLabel: leading.questionLabel,
+              instructionRawText: leading.rawInstructionText,
+              formulaOutput,
+              japaneseOutputs: [japaneseOutput, leading.probeOutput].filter(Boolean),
+              warnings: [
+                "同一行左端の問題番号と数式を位置情報から分離しました。各欄を画像と照合してください。",
+                ...leading.warnings,
+              ],
+            });
+          }
           return recognitionKindOutput({
             kind: "formula-only",
             formulaOutput,
-            warnings: japaneseOutput
-              ? []
-              : ["日本語OCR preflightは利用できませんでした。数式候補を必ず確認してください。"],
+            instructionRawText: leading.rawInstructionText,
+            japaneseOutputs: [japaneseOutput, leading.probeOutput].filter(Boolean),
+            warnings: [
+              ...(japaneseOutput
+                ? []
+                : ["日本語OCR preflightは利用できませんでした。数式候補を必ず確認してください。"]),
+              ...leading.warnings,
+            ],
           });
         }
 
@@ -209,15 +377,27 @@ export function createMixedOcrEngine({
           );
         }
         const instruction = classifyInstructionRegions(japaneseOutputs);
-        const formulaOutput = await formulaEngine.recognize(regions.at(-1).blob, options);
+        const leading = await inspectLeadingQuestionLabel({
+          segmented,
+          instruction,
+          japaneseRecognizer,
+          options,
+        });
+        const formulaOutput = await formulaEngine.recognize(leading.formulaBlob, options);
+        const allJapaneseOutputs = leading.probeOutput
+          ? [...japaneseOutputs, leading.probeOutput]
+          : japaneseOutputs;
         return recognitionKindOutput({
           kind: "mixed",
-          questionLabel: instruction.questionLabel,
+          questionLabel: leading.questionLabel,
           instructionText: instruction.instructionText,
-          instructionRawText: instruction.rawText,
+          instructionRawText: leading.rawInstructionText,
           formulaOutput,
-          japaneseOutputs,
-          warnings: ["指示と数式を別々に認識しました。各欄を画像と照合してください。"],
+          japaneseOutputs: allJapaneseOutputs,
+          warnings: [
+            "指示と数式を別々に認識しました。各欄を画像と照合してください。",
+            ...leading.warnings,
+          ],
         });
       } finally {
         active = Math.max(0, active - 1);

@@ -644,16 +644,18 @@ async function runFlowUnsafe({
     })()`),
     { label: "Side Panel launcher button" },
   );
-  const targetsBeforePanel = new Set((await listTargets()).map(({ id }) => id));
   await clickElement(launcherProtocol, "#openPanelButton");
   const popupTarget = await waitForTarget(
-    (target) => !targetsBeforePanel.has(target.id)
+    (target) => target.type === "page"
       && target.url === extensionPageUrl(extensionId, POPUP_PATH),
     { timeoutMs: 10_000, label: "Side Panel workspace" },
   );
   flowTargetIds.add(popupTarget.id);
   const popupProtocol = await connectTarget(popupTarget);
   openedProtocols.push(popupProtocol);
+  // Reload a Side Panel target that may have survived a previous disposable
+  // profile run so it uses the freshly loaded unpacked extension context.
+  await popupProtocol.send("Page.reload", { ignoreCache: true });
   await waitFor(
     async () => evaluate(popupProtocol, `(() => {
       const button = document.querySelector("#ocrButton");
@@ -672,6 +674,13 @@ async function runFlowUnsafe({
   const geometry = await fixtureGeometry(sourceProtocol);
   assert.equal(geometry.width, geometry.expectedWidth);
   assert.equal(geometry.height, geometry.expectedHeight);
+  assert.ok(
+    geometry.left >= 0
+      && geometry.top >= 0
+      && geometry.right <= geometry.viewportWidth
+      && geometry.bottom <= geometry.viewportHeight,
+    `The OCR fixture must be fully visible after the Side Panel opens: ${JSON.stringify(geometry)}`,
+  );
 
   let workerTarget = await waitForTarget(
     (target) => target.type === "service_worker"
@@ -805,7 +814,10 @@ async function runFlowUnsafe({
   assert.ok(preview.lightPixels > (preview.naturalWidth * preview.naturalHeight) / 2);
   assert.ok(
     preview.magentaPixels < (preview.naturalWidth * preview.naturalHeight) * 0.05,
-    "The crop contains too much of the magenta area outside the requested image.",
+    `The crop contains too much of the magenta area outside the requested image: ${JSON.stringify({
+      geometry,
+      preview,
+    })}`,
   );
   assert.equal(preview.recognizeDisabled, false);
   assert.equal(preview.candidatePanelHidden, true);
@@ -874,7 +886,11 @@ async function runFlowUnsafe({
         backend: document.querySelector("#backendInfo")?.textContent || "",
         model: document.querySelector("#modelInfo")?.textContent || "",
       }))()`);
-      if (!state.errorHidden && state.error) throw new Error(state.error);
+      if (!state.errorHidden && state.error) {
+        const failure = new Error(`${state.error} Preview: ${JSON.stringify(preview)}`);
+        failure.fatal = true;
+        throw failure;
+      }
       return !state.panelHidden && state.candidate ? state : null;
     },
     { timeoutMs: 150_000, intervalMs: 250, label: "local OCR candidate" },
@@ -920,13 +936,12 @@ async function runFlowUnsafe({
     await replaceInput(confirmProtocol, "#instructionInput", solveInstruction);
   }
   await clickElement(confirmProtocol, "#solveButton");
-  await waitFor(
-    async () => evaluate(confirmProtocol, `location.pathname === ${JSON.stringify(POPUP_PATH)}`),
-    { timeoutMs: 15_000, label: "confirmed question popup navigation" },
-  );
+  // The confirmation tab intentionally closes after it hands the confirmed
+  // candidate to the already-open Side Panel. Observe the persistent panel
+  // instead of waiting for the closed tab to navigate to popup.html.
   const solved = await waitFor(
     async () => {
-      const state = await evaluate(confirmProtocol, `(() => ({
+      const state = await evaluate(popupProtocol, `(() => ({
         question: document.querySelector("#questionInput")?.value || "",
         questionLabel: document.querySelector("#questionLabelInput")?.value || "",
         instruction: document.querySelector("#instructionInput")?.value || "",
@@ -980,7 +995,7 @@ async function runFlowUnsafe({
 
   const finalSession = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
   assert.equal(finalSession[OCR_SESSION_KEY], undefined);
-  const cleanup = await evaluate(confirmProtocol, `(async () => {
+  const cleanup = await evaluate(popupProtocol, `(async () => {
     let oldBlobFetchSucceeded = false;
     try {
       const response = await fetch(${JSON.stringify(preview.previewUrl)});

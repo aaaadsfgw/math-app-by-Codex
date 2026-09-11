@@ -42,6 +42,77 @@ function comparable(value) {
     .toLowerCase();
 }
 
+function topLevelCommaParts(value) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (["(", "[", "{"].includes(character)) depth += 1;
+    else if ([")", "]", "}"].includes(character)) depth = Math.max(0, depth - 1);
+    else if (character === "," && depth === 0) {
+      parts.push(value.slice(start, index));
+      start = index + 1;
+    }
+  }
+  parts.push(value.slice(start));
+  return parts.map((part) => part.trim()).filter(Boolean);
+}
+
+function answerCandidates(result) {
+  const candidates = [];
+  for (const value of [result?.answer, result?.exactAnswer, result?.approximateAnswer]) {
+    const normalized = comparable(value);
+    if (!normalized) continue;
+    candidates.push(normalized);
+    const parts = topLevelCommaParts(normalized);
+    if (parts.length < 2) continue;
+    const first = /^([A-Za-z][A-Za-z0-9_]*)=(.+)$/u.exec(parts[0]);
+    if (!first) continue;
+    candidates.push(parts[0], first[2]);
+    for (const part of parts.slice(1)) {
+      candidates.push(part, part.includes("=") ? part : `${first[1]}=${part}`);
+    }
+  }
+  return [...new Set(candidates)];
+}
+
+const ANSWER_PREFIX_MARKER = /(?:最終回答|最終的に|最終|答え|結論|解|結果|値)(?:は|が|[:：=])?$|(?:したがって|従って|ゆえに|よって|このあと|変形すると|計算すると)$/u;
+const ANSWER_SUFFIX_MARKER = /^(?:です|でした|である|とな(?:る|ります|った)|にな(?:る|ります|った)|を得(?:る|ます|ました)|が得られ(?:る|ます|ました)|と求ま(?:る|ります|った)|が答え|まで|[。．.!！?？])/u;
+
+function occurrenceDisclosesAnswer(normalized, answer) {
+  let offset = 0;
+  while (offset <= normalized.length - answer.length) {
+    const index = normalized.indexOf(answer, offset);
+    if (index < 0) return false;
+    const before = normalized.slice(0, index);
+    const after = normalized.slice(index + answer.length);
+    const prefixed = ANSWER_PREFIX_MARKER.test(before)
+      || /[A-Za-z][A-Za-z0-9_]*=$/u.test(before);
+    const suffixed = ANSWER_SUFFIX_MARKER.test(after);
+    if (
+      (!before && (!after || suffixed))
+      || suffixed
+      || (prefixed && (!after || /^[、,;；)）\]]/u.test(after)))
+    ) {
+      return true;
+    }
+    offset = index + Math.max(1, answer.length);
+  }
+  return false;
+}
+
+function disclosesAnswer(value, answers) {
+  const normalized = comparable(value);
+  return answers.some((answer) => (
+    normalized === answer
+    // A complete equality/inequality answer is conclusive wherever it appears
+    // outside the original input line; it never belongs in a staged hint.
+    || (/[=≈<>≤≥≦≧]/u.test(answer) && normalized.includes(answer))
+    || occurrenceDisclosesAnswer(normalized, answer)
+  ));
+}
+
 function usableSteps(result) {
   return usableTrace(result).map((step) => step.content);
 }
@@ -67,17 +138,19 @@ function usableTrace(result) {
 }
 
 function stepsWithoutFinalAnswer(result) {
-  const answers = [
-    result?.answer,
-    result?.exactAnswer,
-    result?.approximateAnswer,
-  ].map(comparable).filter(Boolean);
-  return usableTrace(result).filter((step) => {
-    if (["answer", "conclusion", "result"].includes(step.type)) return false;
-    if (step.type === "input") return true;
-    const content = comparable(step.content);
-    return !answers.some((answer) => content === answer || content.includes(answer));
-  });
+  const answers = answerCandidates(result);
+  const safeSteps = [];
+  for (const step of usableTrace(result)) {
+    if (["answer", "conclusion", "result"].includes(step.type)) continue;
+    const contentLeaks = disclosesAnswer(step.content, answers);
+    const explanationLeaks = disclosesAnswer(step.explanation, answers);
+    if (step.type === "input") {
+      safeSteps.push(explanationLeaks ? { ...step, explanation: "" } : step);
+    } else if (!contentLeaks && !explanationLeaks) {
+      safeSteps.push(step);
+    }
+  }
+  return safeSteps;
 }
 
 function assertVerifiedResult(result) {
@@ -88,7 +161,12 @@ function assertVerifiedResult(result) {
 }
 
 function methodHint(result) {
-  return METHOD_HINTS[result.solverId]
+  const strategy = result.solverId === "algebra-transformation"
+    ? stepsWithoutFinalAnswer(result).find((step) => step.type === "strategy")
+    : null;
+  return strategy?.explanation
+    || strategy?.content
+    || METHOD_HINTS[result.solverId]
     || stepsWithoutFinalAnswer(result)[0]?.explanation
     || stepsWithoutFinalAnswer(result)[0]?.content
     || "問題文から既知の値・未知の値・求めるものを整理します。";
@@ -96,8 +174,22 @@ function methodHint(result) {
 
 function secondHint(result) {
   const method = methodHint(result);
+  const guided = stepsWithoutFinalAnswer(result)
+    .find((step) => step.type === "guided-transformation");
+  if (guided) {
+    return `${method}\n\n次の変形まで進めます:\n${guided.explanation || guided.content}`;
+  }
+  const showConcreteTrace = result.solverId === "quadratic-equation";
   const progress = stepsWithoutFinalAnswer(result)
-    .map((step) => step.explanation || step.content)
+    .map((step) => {
+      const content = cleanText(step.content);
+      const explanation = cleanText(step.explanation);
+      if (!showConcreteTrace) return explanation || content;
+      if (!content) return explanation;
+      if (!explanation || comparable(content) === comparable(explanation)) return content;
+      return `${content}\n${explanation}`;
+    })
+    .filter(Boolean)
     .slice(0, 3);
   if (!progress.length) return method;
   return `${method}\n\nここまで進めてみましょう:\n${progress.join("\n")}`;

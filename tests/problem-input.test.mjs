@@ -61,6 +61,99 @@ test("1行または2行のinstruction prefixと1つのformulaだけを自動分�
   assert.equal(multipleFormulaLines.formulaText, "次の式を簡単にせよ。\nx+1\nx-1");
 });
 
+test("同一行の明確な数式runと対応済み日本語指示だけを分離する", () => {
+  const cases = [
+    ["x^2-5x+6=0 を解け", "方程式を解け", "solve_equation", "x^2-5x+6=0", "x^2-5x+6=0"],
+    ["x^2-5x+6=0を解け", "方程式を解け", "solve_equation", "x^2-5x+6=0", "x^2-5x+6=0"],
+    ["方程式 x^2-5x+6=0 を解け", "方程式を解け", "solve_equation", "x^2-5x+6=0", "x^2-5x+6=0"],
+    ["y=x^3-2x を微分せよ", "を微分せよ", "differentiate", "y=x^3-2x", "y=x^3-2xを微分せよ"],
+    ["y=x^3-2xを微分せよ", "を微分せよ", "differentiate", "y=x^3-2x", "y=x^3-2xを微分せよ"],
+    ["(x+1)^2 を展開せよ", "を展開せよ", "expand", "(x+1)^2", "展開: (x+1)^2"],
+    ["次の式「(x+1)^2」を展開せよ", "次の式を展開せよ", "expand", "(x+1)^2", "展開: (x+1)^2"],
+    ["x^2-1 を因数分解せよ", "を因数分解せよ", "factor", "x^2-1", "因数分解: x^2-1"],
+    ["次の式『x^2-1』を因数分解せよ", "次の式を因数分解せよ", "factor", "x^2-1", "因数分解: x^2-1"],
+    ["1/x+2/(x+1) を簡単にせよ", "を簡単にせよ", "simplify", "1/x+2/(x+1)", "簡約: 1/x+2/(x+1)"],
+  ];
+
+  for (const [source, instructionText, intent, formulaText, solverInput] of cases) {
+    const input = parseCombinedProblemText(source);
+    assert.equal(input.status, "ready", source);
+    assert.equal(input.instructionText, instructionText, source);
+    assert.equal(input.instructionIntent, intent, source);
+    assert.equal(input.formulaText, formulaText, source);
+    assert.equal(compileProblemInput(input).solverInput, solverInput, source);
+  }
+});
+
+test("同一行解析は曖昧な指示や複数数式を推測せず数式表記も書き換えない", () => {
+  const untouched = [
+    "x2 + 5x + 2 = 0",
+    "x+1 を計算せよ",
+    "x^2<4 を解け",
+    "f(x)=x^2 を解け",
+    "x+1 と x-1 を展開せよ",
+    "x^2 を展開して因数分解せよ",
+    "x^2 を証明せよ",
+    "次の 2 次式を因数分解せよ",
+    "以下の 3 次関数を微分せよ",
+    "2 次方程式を解け",
+    "xを 2 回微分せよ",
+    "関数 f を微分せよ",
+    "分母を x+1 として簡単にせよ",
+    "共通分母を x*(x+1) として簡単にせよ",
+    "式を x+1 倍して展開せよ",
+    "次の 1/2 個の式を簡単にせよ",
+    "x+1 を平方して展開せよ",
+    "x+1 を二乗して展開せよ",
+    "x+1 を逆数にして簡単にせよ",
+    "x+1 を置換して微分せよ",
+    "係数 x+1 を使って因数分解せよ",
+    "次の式「x^2-1 を因数分解せよ",
+    "次の式x^2-1』を因数分解せよ",
+    "次の式「x^2-1』を因数分解せよ",
+    "次の式『「x^2-1」』を因数分解せよ",
+  ];
+  for (const source of untouched) {
+    const input = parseCombinedProblemText(source);
+    assert.equal(input.instructionText, "", source);
+    assert.equal(input.instructionIntent, null, source);
+    assert.equal(input.formulaText, source, source);
+  }
+
+  const unguessed = parseCombinedProblemText("x2 を展開せよ");
+  assert.equal(unguessed.instructionIntent, "expand");
+  assert.equal(unguessed.formulaText, "x2");
+
+  const leadingFactor = parseCombinedProblemText("(2)x^2 を展開せよ");
+  assert.equal(leadingFactor.questionLabel, "");
+  assert.equal(leadingFactor.status, "unsupported");
+  assert.equal(leadingFactor.instructionIntent, null);
+  assert.equal(leadingFactor.formulaText, "(2)x^2 を展開せよ");
+  assert.match(leadingFactor.error, /問題番号か数式の係数か判別できない/u);
+
+  const ambiguousLabel = parseCombinedProblemText("(3) 1/x+2/(x+1) を簡単にせよ");
+  assert.equal(ambiguousLabel.status, "unsupported");
+  assert.equal(ambiguousLabel.questionLabel, "");
+  assert.equal(ambiguousLabel.formulaText, "(3) 1/x+2/(x+1) を簡単にせよ");
+
+  const formulaOnlyAmbiguity = parseCombinedProblemText("(3) 1/x+2/(x+1)");
+  assert.equal(formulaOnlyAmbiguity.status, "unsupported");
+  assert.equal(formulaOnlyAmbiguity.formulaText, "(3) 1/x+2/(x+1)");
+
+  for (const [source, expectedFormula, expectedIntent] of [
+    ["1.5*x", "1.5*x", null],
+    ["1.5*x を簡単にせよ", "1.5*x", "simplify"],
+    ["2.0*x+1=5", "2.0*x+1=5", null],
+    ["2.0*x+1=5 を解け", "2.0*x+1=5", "solve_equation"],
+    ["２．０*x+1=5 を解け", "２．０*x+1=5", "solve_equation"],
+  ]) {
+    const decimal = parseCombinedProblemText(source);
+    assert.equal(decimal.status, "ready", source);
+    assert.equal(decimal.formulaText, expectedFormula, source);
+    assert.equal(decimal.instructionIntent, expectedIntent, source);
+  }
+});
+
 test("問題番号は強い行構造または明確なinstruction後続時だけ分離する", () => {
   const positives = [
     ["(1)\n次の式を簡単にせよ。\nx+1", "(1)"],
@@ -84,6 +177,8 @@ test("問題番号は強い行構造または明確なinstruction後続時だけ
     "f((1+x))",
     "x+(1)",
     "(1) x^2-1",
+    "(2)x^2 を展開せよ",
+    "(2) (x+1) を展開せよ",
     "1.5*x",
     "問1234 x+1",
     "問題1234",
@@ -93,6 +188,10 @@ test("問題番号は強い行構造または明確なinstruction後続時だけ
     const result = separateQuestionLabel(source);
     assert.equal(result.detected, false, source);
     assert.equal(result.remainingText, source, source);
+  }
+
+  for (const source of ["1.5*x", "2.0*x+1=5", "２．０*x+1=5"]) {
+    assert.equal(separateQuestionLabel(source).reason, "", source);
   }
 });
 

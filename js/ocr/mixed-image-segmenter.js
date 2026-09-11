@@ -58,6 +58,42 @@ function closeBitmap(bitmap) {
   }
 }
 
+function validBounds(bounds, width, height) {
+  return Boolean(
+    bounds
+    && Number.isSafeInteger(bounds.x)
+    && Number.isSafeInteger(bounds.y)
+    && Number.isSafeInteger(bounds.width)
+    && Number.isSafeInteger(bounds.height)
+    && bounds.x >= 0
+    && bounds.y >= 0
+    && bounds.width > 0
+    && bounds.height > 0
+    && bounds.x + bounds.width <= width
+    && bounds.y + bounds.height <= height
+  );
+}
+
+async function cropBitmap(bitmap, bounds, createCanvas) {
+  const regionCanvas = createCanvas(bounds.width, bounds.height);
+  const regionContext = regionCanvas?.getContext?.("2d");
+  if (!regionContext || typeof regionContext.drawImage !== "function") {
+    throw segmentError("分離領域用2D contextを利用できません。", "MIXED_OCR_CANVAS_UNAVAILABLE");
+  }
+  regionContext.drawImage(
+    bitmap,
+    bounds.x,
+    bounds.y,
+    bounds.width,
+    bounds.height,
+    0,
+    0,
+    bounds.width,
+    bounds.height,
+  );
+  return canvasPng(regionCanvas);
+}
+
 /** Decodes once, detects strong line separators, and returns bounded PNG crops. */
 export async function segmentOcrImageBlob(
   blob,
@@ -94,29 +130,44 @@ export async function segmentOcrImageBlob(
     const regions = [];
     for (let index = 0; index < layout.regions.length; index += 1) {
       const bounds = layout.regions[index];
-      const regionCanvas = createCanvas(bounds.width, bounds.height);
-      const regionContext = regionCanvas?.getContext?.("2d");
-      if (!regionContext || typeof regionContext.drawImage !== "function") {
-        throw segmentError("分離領域用2D contextを利用できません。", "MIXED_OCR_CANVAS_UNAVAILABLE");
+      if (!validBounds(bounds, width, height)) {
+        throw segmentError("分離領域の位置が不正です。", "MIXED_OCR_SEGMENTATION_INVALID");
       }
-      regionContext.drawImage(
-        bitmap,
-        bounds.x,
-        bounds.y,
-        bounds.width,
-        bounds.height,
-        0,
-        0,
-        bounds.width,
-        bounds.height,
-      );
       regions.push(Object.freeze({
         index,
         bounds,
-        blob: await canvasPng(regionCanvas),
+        blob: await cropBitmap(bitmap, bounds, createCanvas),
       }));
     }
-    return Object.freeze({ layout, regions: Object.freeze(regions) });
+    const split = layout.leadingSplitCandidate;
+    let leadingSplit = null;
+    if (split !== null && split !== undefined) {
+      if (
+        split.regionIndex !== regions.length - 1
+        || !validBounds(split.prefix, width, height)
+        || !validBounds(split.remainder, width, height)
+      ) {
+        throw segmentError("左端候補領域の位置が不正です。", "MIXED_OCR_SEGMENTATION_INVALID");
+      }
+      leadingSplit = Object.freeze({
+        regionIndex: split.regionIndex,
+        gap: split.gap,
+        requiredGap: split.requiredGap,
+        prefix: Object.freeze({
+          bounds: split.prefix,
+          blob: await cropBitmap(bitmap, split.prefix, createCanvas),
+        }),
+        remainder: Object.freeze({
+          bounds: split.remainder,
+          blob: await cropBitmap(bitmap, split.remainder, createCanvas),
+        }),
+      });
+    }
+    return Object.freeze({
+      layout,
+      regions: Object.freeze(regions),
+      leadingSplit,
+    });
   } catch (error) {
     if (error?.name === "MixedOcrLayoutError" || error instanceof MixedOcrSegmentationError) {
       throw error;

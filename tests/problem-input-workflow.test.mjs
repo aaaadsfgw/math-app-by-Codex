@@ -8,6 +8,7 @@ import {
   integrateSymbolic,
   simplifySymbolic,
 } from "../js/math-core/symbolic-adapter.js";
+import { parseCombinedProblemText } from "../js/problem/problem-input.js";
 import { solveWorkflow } from "../js/solve-workflow.js";
 
 const symbolicOperations = Object.freeze({
@@ -149,4 +150,28 @@ test("指示なしformulaは従来routerでそのまま解ける", async () => {
   assert.equal(workflow.presentable, true, workflow.solverResult.error);
   assert.equal(workflow.solverResult.solverId, "quadratic-equation");
   assert.equal(workflow.solverResult.verified, true);
+});
+
+test("同一行の日本語指示と数式を分離して5つの既存solverへ接続する", async () => {
+  const cases = [
+    ["x^2-5x+6=0 を解け", "solve_equation", "x^2-5x+6=0", "quadratic-equation", "x=2,3"],
+    ["2.0*x+1=5 を解け", "solve_equation", "2.0*x+1=5", "linear-equation", "x=2"],
+    ["y=x^3-2x を微分せよ", "differentiate", "y=x^3-2x", "derivative", "3*x^2-2"],
+    ["(x+1)^2 を展開せよ", "expand", "(x+1)^2", "algebra-transformation", "x^2+2*x+1"],
+    ["次の式「(x+1)^2」を展開せよ", "expand", "(x+1)^2", "algebra-transformation", "x^2+2*x+1"],
+    ["x^2-1 を因数分解せよ", "factor", "x^2-1", "algebra-transformation", "(x-1)*(x+1)"],
+    ["次の式『x^2-1』を因数分解せよ", "factor", "x^2-1", "algebra-transformation", "(x-1)*(x+1)"],
+    ["1/x+2/(x+1) を簡単にせよ", "simplify", "1/x+2/(x+1)", "algebra-transformation", "(3*x+1)/(x*(x+1))"],
+  ];
+
+  for (const [source, intent, formula, solverId, exactAnswer] of cases) {
+    const problemInput = parseCombinedProblemText(source, { source: "selection" });
+    const workflow = await solveWorkflow(problemInput, { symbolicOperations });
+    assert.equal(problemInput.instructionIntent, intent, source);
+    assert.equal(problemInput.formulaText, formula, source);
+    assert.equal(workflow.presentable, true, source);
+    assert.equal(workflow.solverResult.solverId, solverId, source);
+    assert.equal(workflow.solverResult.exactAnswer, exactAnswer, source);
+    assert.equal(workflow.solverResult.verified, true, source);
+  }
 });

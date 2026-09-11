@@ -62,7 +62,10 @@ The current migration checkpoint supports:
 - algebraic expansion, factorization, and simplification;
 - binary-to-decimal conversion;
 - direct percentage calculation;
-- answer, two hint levels, working, and explanation output;
+- answer, two hint levels, working, and explanation output, including a
+  problem-specific, equivalence-checked common-denominator walkthrough for
+  supported sums and differences of two rational expressions and concrete
+  standard-form/discriminant progress in quadratic Hint 2;
 - Quick Mode for ephemeral answers and Study Mode for one-record learning
   attempts across Hint 1, Hint 2, Steps, Answer, and explanation;
 - Side Panel manual input, selected-text input, and a selection-first shortcut that
@@ -140,10 +143,15 @@ instruction blank preserves the established formula-only routing.
 Question labels are removed from solver input only with structural evidence.
 `問1`, `問題1`, and circled numbers are strong labels; `(1)`, `（1）`, and
 `1.` additionally need their own line or a following recognized instruction.
-An expression such as `(1+x)(1-x)` is never stripped. A page selection is split
-into instruction and formula only when it contains one or two complete
-instruction lines followed by exactly one formula line. Otherwise its original
-plain text follows the legacy route without reconstructing lost notation.
+Expressions such as `(1+x)(1-x)` and `(2)x^2` are never stripped as labels.
+If a one-line selection starts with a weak `(N)` form followed by mathematics,
+the extension cannot know whether it is a problem number or a coefficient and
+stops instead of solving either interpretation. A page selection is split into
+instruction and formula when it contains one or two complete instruction lines
+followed by exactly one formula line, or when exactly one formula run is
+followed directly by one supported Japanese command such as `を展開せよ`.
+Counts, prose operands, multiple formula runs, and compound operations remain
+unsplit. This boundary never reconstructs `x2` as an exponent.
 
 For a web-page selection, the extension preserves mathematical structure when
 the selected DOM proves it. Complete presentation MathML supports single-letter
@@ -168,7 +176,12 @@ produces an empty `Selection.toString()`, the shortcut treats it as no text
 selection and follows its pre-existing clipboard fallback.
 
 Only a successfully checked solver result receives the verified label. Hints,
-working, and explanations are derived from that same result.
+working, and explanations are derived from that same result. For a supported
+two-fraction simplification such as `1/x+2/(x+1)`, Hint 1 names the actual
+common denominator, Hint 2 shows each rewritten fraction, and Steps show the
+combined numerator while retaining `x≠0` and `x≠-1`. Every displayed
+intermediate expression is checked for symbolic equivalence first; failure to
+check it uses the conservative generic working instead.
 
 For image input, choose the OCR action in the Side Panel and drag around either one printed
 formula or the supported compact layout of one or two short horizontal
@@ -177,11 +190,17 @@ used only to create regions; pixels alone never declare a region to be Japanese
 or mathematical. Tesseract.js 7.0.0 with the Apache-2.0
 `tessdata_fast` 4.1.0 `jpn` data reads the upper regions. Only the final,
 separately cropped formula region reaches the existing MIT-licensed IBEM
-formula OCR. The confirmation page exposes problem number, instruction,
-formula, and conditions as separate editable fields and retains raw OCR text
-and OCR/manual provenance internally. Review every field, then explicitly
-choose to solve. Recognition by itself does not run the solver or save a
-verified result.
+formula OCR. Within that final row, a strong horizontal column gap may only
+propose a small left prefix. The prefix is removed from the formula crop only
+when a separate Japanese OCR pass recognizes an exact question-label form;
+`(1+x)` and unconfirmed prefixes stay in the full formula image, and conflicting
+upper/inline labels stop before formula OCR. A single OCR transcript containing
+one formula followed directly by one supported Japanese command can use the
+same conservative one-line splitter. The confirmation page exposes problem
+number, instruction, formula, and conditions as separate editable fields and
+retains raw OCR text and OCR/manual provenance internally. Review every field,
+then explicitly choose to solve. Recognition by itself does not run the solver
+or save a verified result.
 
 The packaged Japanese OCR assets are pinned by SHA-256 in
 `vendor/ocr/tesseract-japanese/ASSET_MANIFEST.json`; the language model hash is

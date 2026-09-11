@@ -25,6 +25,9 @@ The Digicon learning workflow additionally requires automated coverage for:
 - schema-v1 `ProblemInput` normalization, legacy-string compatibility,
   problem-label evidence, per-field provenance, all 13 instruction intents,
   conflict detection, and terminal intent dispatch with no solver fallback;
+- one-line Japanese/formula separation for solve, differentiate, expand,
+  factor, and simplify, plus negative cases for quantities, prose operands,
+  multiple formula runs, extra operations, `x2`, and ambiguous `(N)` prefixes;
 - unsupported/invalid results never reaching presentation, history, or the
   clipboard;
 - structured web-selection extraction from complete HTML `sup`/`sub`, native
@@ -62,6 +65,14 @@ The Digicon learning workflow additionally requires automated coverage for:
   regions above exactly one formula, Japanese-evidence gating before IBEM,
   formula-only preservation, region/output limits, cancellation, and raw OCR
   retention alongside normalized editable fields;
+- same-row OCR label candidates gated by both a strong horizontal column gap
+  and exact label recognition, including single-/multi-region `(2)` cases,
+  `(1+x)` preservation, punctuation-normalized label agreement, and
+  conflicting-label rejection before formula OCR;
+- rational-simplification Hint 1/Hint 2/Steps built from exact AST transforms,
+  with per-fraction and whole-expression equivalence checks, retained domain
+  exclusions, fallback on verification failure, and answer-leak regressions for
+  short, expression-valued, and multiple-solution answers;
 - manifest checks that Chrome 114 is the minimum for the Side Panel and incognito use stays
   disabled for the shared offscreen-preview boundary, while the extension CSP
   permits only the packaged WASM runtime and no remote script or host access.
@@ -81,6 +92,9 @@ covers that primary path.
    Answer, and confirm no history record is created.
 2. Switch to Study Mode, use Hint 1, Hint 2, Steps, then Answer for the same
    problem, and confirm one history item contains all four viewed stages.
+   Repeat with `1/x+2/(x+1)` and confirm Hint 1 names `x*(x+1)`, Hint 2
+   rewrites both fractions, Steps show the combined numerator, and the Answer
+   retains `x≠0`, `x≠-1`.
 3. Confirm changing the problem creates an attempt boundary. Confirm a
    Quick/Study round trip resumes the same Study record, excludes stages viewed
    in Quick, and does not rerun the solver.
@@ -104,6 +118,9 @@ covers that primary path.
    recognition, and the solver starts only after the separate confirmation. In
    Study Mode confirm the saved source is OCR and confirmation is recorded
    separately from solver verification.
+   Also crop a clearly separated single row `(2) 1/x+2/(x+1)` and confirm the
+   label and formula fields are separated without solving until the explicit
+   confirmation action. A row beginning `(1+x)` must remain mathematical text.
 
 ## Unpacked-Chrome printed-formula OCR smoke test
 
@@ -115,8 +132,10 @@ or the WASM runtime in Chrome.
 
 Start the loopback fixture server in one terminal, launch the isolated Chrome
 with `--remote-debugging-port=9333` and
-`--enable-unsafe-extension-debugging`, then run the action-driven flow in a
-second terminal:
+`--enable-unsafe-extension-debugging`, and use a window large enough to keep
+the selected fixture visible beside the Side Panel (for example,
+`--window-size=1800,1000`). Then run the action-driven flow in a second
+terminal:
 
 ```powershell
 npm.cmd run test:browser:serve

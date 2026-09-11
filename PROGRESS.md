@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-10
+Last updated: 2026-09-12
 
 ## Repository checkpoint
 
@@ -9,6 +9,37 @@ Last updated: 2026-09-10
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
 - Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
 - Working milestone: problem acquisition, staged learning records, and analytics
+
+## 2026-09-11: demo-critical OCR parsing and learning guidance
+
+- Added horizontal column-gap analysis inside the final OCR formula row. A
+  small left prefix is removed only after a separate OCR pass recognizes an
+  exact question-label form; `(1+x)` and ordinary leading mathematics remain
+  in the full formula crop, while conflicting labels fail closed.
+- Covered both stacked mixed crops and strongly separated single-row
+  `(2) + formula` crops. OCR output stays editable and unconfirmed, raw text is
+  retained, and recognition still never triggers solving.
+- Added conservative one-line separation for exactly one target formula
+  followed directly by a supported solve, differentiate, expand, factor, or
+  simplify command. Counts, operands mentioned in prose, compound operations,
+  and ambiguous leading `(N)` forms are not inferred; the last case is stopped
+  before a selection shortcut can produce a verified answer. Matched Japanese
+  formula quotes are removed as proven delimiters, while unmatched quotes are
+  left untouched, and a leading decimal such as `2.0*x` is never mistaken for
+  a dotted problem number.
+- Added deterministic rational-simplification learning output. For
+  `1/x+2/(x+1)`, Hint 1 identifies `x*(x+1)`, Hint 2 shows both rewritten
+  fractions, and Steps combine their exact numerators while preserving
+  `x≠0`, `x≠-1`. Each proposed fraction and complete intermediate expression
+  must pass symbolic equivalence checking or the solver returns to its generic
+  safe trace.
+- Hardened Hint answer filtering for short answers, expression-valued answers,
+  and individual members of multiple-solution lists without hiding the same
+  symbols when they occur only inside a useful intermediate expression.
+- Made quadratic Hint 2 expose the solver's concrete standard form and actual
+  discriminant while continuing to filter every final root.
+- Kept the current Side Panel, Quick/Study behavior, editable confirmation
+  fields, explicit solve action, history contract, and clipboard safety.
 
 ## 2026-09-10: persistent Side Panel learning workspace
 
@@ -750,6 +781,23 @@ Last updated: 2026-09-10
 
 ## Last verified commands
 
+- `npm.cmd test` - 829 passed, 0 failed on 2026-09-12, including 5,500
+  generated evaluation cases plus the OCR label, inline instruction,
+  clipboard-safety, and deterministic learning-output regressions.
+- `npm.cmd run check` - passed for 285 files, 15 HTML, 213 JS/MJS, and 13 CSS
+  files on 2026-09-12.
+- `npm.cmd run test:browser:selection -- 9333` - isolated Chrome 152 passed
+  10/10 structured-selection cases on 2026-09-11.
+- `node scripts/ocr-browser-smoke.mjs 9333 <extensionId> either` - isolated
+  Chrome 152 passed explicit WebGPU and WASM, Worker warm reuse, both native
+  and 2x-scale formula-only crops, exact Japanese recognition, and mixed
+  separation on 2026-09-11.
+- `npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset` and
+  `npm.cmd run test:browser:ocr-mixed-flow -- 9333 --allow-storage-reset` -
+  isolated Chrome 152 passed action-triggered Study and Quick capture,
+  editable confirmation, explicit solve, verified answer, history policy, and
+  preview cleanup on 2026-09-11. The mixed run additionally separated `(1)`,
+  `次の方程式を解け`, and `x+y` from the real screenshot crop.
 - `npm.cmd run check` - passed for 282 files, 14 HTML, 212 JS/MJS, and 12 CSS
   files on 2026-09-10.
 - `npm.cmd test` - 801 passed, 0 failed on 2026-09-10, including 5,500

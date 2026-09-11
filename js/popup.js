@@ -535,6 +535,9 @@ async function loadSelection() {
     if (!text) throw new Error("ページ上で問題文を選択してください。");
 
     const parsedProblemInput = parseCombinedProblemText(text, { source: "selection" });
+    if (parsedProblemInput.status !== "ready") {
+      throw new Error(parsedProblemInput.error || "選択した問題を安全に解析できませんでした。");
+    }
     const problemInput = hasSelectionStructure(parsedProblemInput)
       ? parsedProblemInput
       : null;

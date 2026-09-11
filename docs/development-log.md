@@ -1,5 +1,35 @@
 # Development log
 
+## 2026-09-11: OCR label isolation and deterministic learning steps
+
+- Added a two-evidence gate for same-row OCR problem numbers: a strong
+  horizontal gap proposes the prefix, and a separate recognition must confirm
+  an exact label before the remainder alone reaches formula OCR. Ambiguous
+  `(1+x)` content is retained, label conflicts stop, and all candidates remain
+  editable and unconfirmed.
+- The regression case `(2) 1/x+2/(x+1)` previously reached simplification as
+  `(2)*(1/x)+2/(x+1)` and produced the verified but unintended
+  `2*(2*x+1)/(x*(x+1))`. With layout and label evidence, solver input is now
+  `1/x+2/(x+1)` and the exact result is `(3*x+1)/(x*(x+1))` under
+  `x≠0`, `x≠-1`.
+- Added a narrow one-line parser for a single formula immediately followed by
+  a supported Japanese command. It handles solve, differentiate, expand,
+  factor, and simplify, including a missing space at the Latin/Japanese script
+  boundary, without rewriting `x2`. A single matching pair of Japanese formula
+  quotes is treated as a proven delimiter; unmatched pairs remain untouched,
+  and decimal prefixes such as `2.0*x` cannot be confused with `2.` labels.
+  Counts, explanatory operands, multiple formulas, extra operations, and an
+  ambiguous leading `(N)` fail safely.
+- Replaced the generic rational-simplification hint path for two-fraction sums
+  and differences with a deterministic common-denominator plan. Hint 1,
+  Hint 2, and Steps are built from the parsed AST, retain original domain
+  exclusions, and require individual and whole-expression equivalence checks.
+- Hardened final-answer filtering across typed content and explanations,
+  including short scalar answers and components of multiple-solution lists,
+  while preserving useful occurrences such as the `1` in `x+1`.
+- Quadratic Hint 2 now includes the exact standard form and computed
+  discriminant from its verified trace without exposing either final root.
+
 ## 2026-09-10: persistent Side Panel workspace and digicon UI pass
 
 - Moved the main learning workspace from the short-lived action popup to the

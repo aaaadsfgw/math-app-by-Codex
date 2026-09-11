@@ -122,3 +122,153 @@ test("与件と答えに同じ記号があってもinput行だけはヒントに
   assert.match(hint2, /次数と最高次係数/u);
   assert.doesNotMatch(hint2, /極限: \+∞/u);
 });
+
+test("strategyやexplanation内に最終回答が混入してもHintへ漏らさない", () => {
+  const contaminated = {
+    ...verifiedResult,
+    solutionTrace: [
+      { type: "input", content: "2x+3=11" },
+      { type: "strategy", content: "変数を孤立", explanation: "このあと x=4 を得る" },
+      { type: "guided-transformation", content: "2x=8", explanation: "x=4 まで割る" },
+      { type: "result", content: "x=4" },
+    ],
+  };
+  for (const mode of ["hint1", "hint2"]) {
+    const hint = presentSolution(contaminated, { mode }).content;
+    assert.doesNotMatch(hint, /x=4/u, mode);
+  }
+});
+
+test("最終回答の丁寧形と非結論風の等式もHintへ漏らさない", () => {
+  for (const contaminatedStep of [
+    { type: "strategy", content: "変数を孤立", explanation: "ここで x=4 を得ます" },
+    { type: "guided-transformation", content: "x=4 が得られます", explanation: "次を確認します" },
+    { type: "strategy", content: "確認", explanation: "途中でx=4を使います" },
+  ]) {
+    const contaminated = {
+      ...verifiedResult,
+      solutionTrace: [
+        { type: "input", content: "2x+3=11" },
+        contaminatedStep,
+        { type: "result", content: "x=4" },
+      ],
+    };
+    for (const mode of ["hint1", "hint2"]) {
+      assert.doesNotMatch(presentSolution(contaminated, { mode }).content, /x=4/u, mode);
+    }
+  }
+
+  const expressionAnswer = {
+    ...verifiedResult,
+    answer: "x+1",
+    exactAnswer: "x+1",
+    solutionTrace: [
+      { type: "strategy", content: "方針", explanation: "ここでx+1を得ます" },
+      { type: "guided-transformation", content: "次の変形", explanation: "x+1が得られます" },
+    ],
+  };
+  const hints = `${presentSolution(expressionAnswer, { mode: "hint1" }).content}\n${presentSolution(expressionAnswer, { mode: "hint2" }).content}`;
+  assert.doesNotMatch(hints, /x\+1/u);
+});
+
+test("短い答え1が式に現れても問題固有Hintを消さず、結論表現だけ除外する", () => {
+  const result = {
+    ...verifiedResult,
+    answer: "1",
+    exactAnswer: "1",
+    solverId: "algebra-transformation",
+    solutionTrace: [
+      { type: "input", content: "x/(x+1)+1/(x+1)" },
+      {
+        type: "strategy",
+        content: "共通分母: x+1",
+        explanation: "分母 x+1 と x+1 をそろえます。",
+      },
+      {
+        type: "guided-transformation",
+        content: "x/(x+1)+1/(x+1)",
+        explanation: "分子を x+1 にまとめます。",
+      },
+      { type: "transformation", content: "したがって答えは1" },
+      { type: "result", content: "1" },
+    ],
+  };
+
+  const hint1 = presentSolution(result, { mode: "hint1" }).content;
+  const hint2 = presentSolution(result, { mode: "hint2" }).content;
+  assert.match(hint1, /分母 x\+1 と x\+1/u);
+  assert.match(hint2, /分子を x\+1/u);
+  assert.doesNotMatch(hint1, /答えは1/u);
+  assert.doesNotMatch(hint2, /答えは1/u);
+});
+
+test("答えと同じ式を分母説明では保ち、隣接した結論文脈だけ除外する", () => {
+  const useful = {
+    ...verifiedResult,
+    answer: "x+1",
+    exactAnswer: "x+1",
+    solverId: "algebra-transformation",
+    solutionTrace: [
+      { type: "strategy", content: "共通分母を考える", explanation: "分母 x+1 と x-1 をそろえます。" },
+      { type: "guided-transformation", content: "1/(x+1)", explanation: "1/(x+1) を書き換えます。" },
+    ],
+  };
+  assert.match(presentSolution(useful, { mode: "hint1" }).content, /分母 x\+1/u);
+  assert.match(presentSolution(useful, { mode: "hint2" }).content, /1\/\(x\+1\)/u);
+
+  for (const phrase of ["値はx+1", "したがってx+1を得る", "x+1です"]) {
+    const contaminated = {
+      ...useful,
+      solutionTrace: [
+        { type: "strategy", content: "方針", explanation: phrase },
+        { type: "guided-transformation", content: "次の変形", explanation: phrase },
+      ],
+    };
+    const hints = `${presentSolution(contaminated, { mode: "hint1" }).content}\n${presentSolution(contaminated, { mode: "hint2" }).content}`;
+    assert.doesNotMatch(hints, /x\+1/u, phrase);
+  }
+});
+
+test("複数解の一部だけをHintへ漏らさない", () => {
+  const result = {
+    ...verifiedResult,
+    answer: "x=-2,-1/2",
+    exactAnswer: "x=-2,-1/2",
+    solutionTrace: [
+      { type: "strategy", content: "因数分解を試す", explanation: "一つの解はx=-2です。" },
+      { type: "guided-transformation", content: "もう一つを調べる", explanation: "よってx=-1/2を得る。" },
+    ],
+  };
+  for (const mode of ["hint1", "hint2"]) {
+    const hint = presentSolution(result, { mode }).content;
+    assert.doesNotMatch(hint, /x=-2|-1\/2/u, mode);
+  }
+});
+
+test("二次方程式のHint2は標準形と実際の判別式を示し最終解を漏らさない", () => {
+  const result = {
+    ...verifiedResult,
+    answer: "x=-2,-1/2",
+    exactAnswer: "x=-2,-1/2",
+    solverId: "quadratic-equation",
+    solutionTrace: [
+      { type: "input", content: "2*x^2+5*x+2=0" },
+      {
+        type: "transformation",
+        content: "(2)x^2+(5)x+(2)=0",
+        explanation: "右辺を0にして係数を整理します。",
+      },
+      {
+        type: "strategy",
+        content: "判別式 D=b^2-4ac=9",
+        explanation: "判別式の符号と平方数かを厳密に判定します。",
+      },
+      { type: "result", content: "x=-2,-1/2" },
+    ],
+  };
+
+  const hint2 = presentSolution(result, { mode: "hint2" }).content;
+  assert.match(hint2, /\(2\)x\^2\+\(5\)x\+\(2\)=0/u);
+  assert.match(hint2, /D=b\^2-4ac=9/u);
+  assert.doesNotMatch(hint2, /x=-2|-1\/2/u);
+});

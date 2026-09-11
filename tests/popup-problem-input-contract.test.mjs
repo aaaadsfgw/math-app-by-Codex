@@ -75,6 +75,7 @@ test("selectionは強い行構造だけ分離し、plain textのx2を推測変�
   const script = await source("js/popup.js");
   const selection = script.match(/async function loadSelection\(\)[\s\S]*?\n\}/u)?.[0] ?? "";
   assert.match(selection, /parseCombinedProblemText\(text,\s*\{ source:\s*["']selection["'] \}\)/u);
+  assert.match(selection, /parsedProblemInput\.status !== ["']ready["']/u);
   assert.match(selection, /hasSelectionStructure\(parsedProblemInput\)/u);
   assert.doesNotMatch(selection, /x2|replace\([^)]*\^/u);
 });

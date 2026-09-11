@@ -6,7 +6,8 @@ const MAX_LABEL_CHARACTERS = 32;
 const CIRCLED_NUMBER = /^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]/u;
 const PARENTHESIZED_NUMBER = /^[（(]\s*[0-9０-９]{1,3}\s*[)）]/u;
 const QUESTION_WORD_NUMBER = /^(?:問|問題)\s*[0-9０-９]{1,3}(?![0-9０-９])(?:\s*[.．:：])?/u;
-const DOTTED_NUMBER = /^[0-9０-９]{1,3}[.．]/u;
+const DOTTED_NUMBER = /^[0-9０-９]{1,3}[.．](?![0-9０-９])/u;
+const JAPANESE_START = /^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
 function result({ detected = false, questionLabel = "", remainingText = "", reason = "" }) {
   return Object.freeze({ detected, questionLabel, remainingText, reason });
@@ -68,7 +69,10 @@ export function separateQuestionLabel(value) {
   if (!candidate) return result({ remainingText: source });
   const safeRemainder = !candidate.remainder
     || candidate.strong
-    || looksLikeInstructionText(candidate.remainder);
+    || (
+      JAPANESE_START.test(candidate.remainder)
+      && looksLikeInstructionText(candidate.remainder)
+    );
   if (!safeRemainder) {
     return result({
       remainingText: source,

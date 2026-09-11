@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   getShortcutInput,
   runShortcutWorkflow,
+  ShortcutWorkflowError,
 } from "../js/shortcut-workflow.js";
 
 function solvedWorkflow(mode = "answer") {
@@ -67,6 +68,55 @@ test("行構造で裏付けられた選択だけをProblemInputへ分離する",
   assert.equal(input.problemInput.formulaText, "2x=4");
   assert.equal(input.problemInput.instructionSource, "selection");
   assert.equal(input.problemInput.formulaSource, "selection");
+});
+
+test("同一行selectionも明確な日本語指示境界だけをProblemInputへ分離する", async () => {
+  const input = await getShortcutInput({
+    getSelectionText: async () => "x^2-5x+6=0 を解け",
+    readClipboardText: async () => "unused",
+  });
+  assert.equal(input.source, "selection");
+  assert.equal(input.problemInput.instructionText, "方程式を解け");
+  assert.equal(input.problemInput.instructionIntent, "solve_equation");
+  assert.equal(input.problemInput.formulaText, "x^2-5x+6=0");
+});
+
+test("番号か係数か曖昧な同一行selectionはverified結果にもclipboardにも進めない", async () => {
+  let clipboardWrites = 0;
+  const result = await assert.rejects(
+    runShortcutWorkflow({
+      getSelectionText: async () => "(3) 1/x+2/(x+1) を簡単にせよ",
+      readClipboardText: async () => "original",
+      writeClipboardText: async () => { clipboardWrites += 1; },
+      settings: { shortcutAction: "answer", learningMode: "quick" },
+    }),
+    (error) => error instanceof ShortcutWorkflowError
+      && error.code === "UNSUPPORTED_INPUT"
+      && /問題番号か数式の係数か判別できない/u.test(error.message),
+  );
+  assert.equal(result, undefined);
+  assert.equal(clipboardWrites, 0);
+});
+
+test("小数係数の先頭を問題番号と誤認せずverified結果だけclipboardへ書く", async () => {
+  const writes = [];
+  let observedProblemInput = null;
+  const result = await runShortcutWorkflow({
+    getSelectionText: async () => "2.0*x+1=5 を解け",
+    readClipboardText: async () => "original clipboard",
+    writeClipboardText: async (text) => writes.push(text),
+    settings: { shortcutAction: "answer", learningMode: "quick" },
+    solve: async (problemInput, { mode }) => {
+      observedProblemInput = problemInput;
+      return solvedWorkflow(mode);
+    },
+  });
+
+  assert.equal(observedProblemInput.status, "ready");
+  assert.equal(observedProblemInput.instructionIntent, "solve_equation");
+  assert.equal(observedProblemInput.formulaText, "2.0*x+1=5");
+  assert.deepEqual(writes, ["x=2"]);
+  assert.equal(result.workflow.solverResult.verified, true);
 });
 
 test("plain selectionとclipboardは従来どおり文字列のまま渡す", async () => {

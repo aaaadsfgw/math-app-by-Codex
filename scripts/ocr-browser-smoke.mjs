@@ -162,6 +162,18 @@ try {
           matchesExpected: compositeFormula.text.replaceAll(" ", "") === "x+y",
         };
 
+        const sourceBitmap = await createImageBitmap(blob);
+        const scaledCanvas = new OffscreenCanvas(290, 120);
+        scaledCanvas.getContext("2d").drawImage(sourceBitmap, 0, 0, 290, 120);
+        sourceBitmap.close();
+        const scaledFormula = await mixedEngine.recognize(await toPng(scaledCanvas));
+        outcomes.compositeFormula2x = {
+          ok: true,
+          recognitionKind: scaledFormula.recognitionKind,
+          text: scaledFormula.text,
+          matchesExpected: scaledFormula.text.replaceAll(" ", "") === "x+y",
+        };
+
         const instructionCanvas = new OffscreenCanvas(900, 150);
         const instructionContext = instructionCanvas.getContext("2d");
         instructionContext.fillStyle = "white";
@@ -270,6 +282,11 @@ try {
     && outcomes.compositeFormula.recognitionKind === "formula-only"
     && outcomes.compositeFormula.matchesExpected,
   );
+  const compositeFormula2xPassed = Boolean(
+    outcomes?.compositeFormula2x?.ok
+    && outcomes.compositeFormula2x.recognitionKind === "formula-only"
+    && outcomes.compositeFormula2x.matchesExpected,
+  );
   const mixedPassed = Boolean(
     outcomes?.mixed?.ok
     && outcomes.mixed.recognitionKind === "mixed"
@@ -285,6 +302,7 @@ try {
     || !providerExpectationPassed
     || !workerPassed
     || !compositeFormulaPassed
+    || !compositeFormula2xPassed
     || !japanesePassed
     || !mixedPassed
   ) {
