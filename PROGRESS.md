@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-12
+Last updated: 2026-09-14
 
 ## Repository checkpoint
 
@@ -9,6 +9,49 @@ Last updated: 2026-09-12
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
 - Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
 - Working milestone: problem acquisition, staged learning records, and analytics
+
+## 2026-09-14: demo input hardening across OCR, paste, and global shortcut
+
+- Replaced the final-row OCR label's single large column-gap assumption with a
+  bounded connected-component candidate scan. Narrow same-row spacing can now
+  be proposed relative to the label glyph height, but a split is applied only
+  when exactly one separately OCR-probed prefix is an exact question label and
+  its measured components can contain the recognized digits and delimiters.
+  Probe failure, multiple matches, an unreadable or binary-continuation
+  remainder, and incomplete evidence restore the full formula row.
+- Added regressions for `(1)`, `(2)`, `(10)`, and `（2）`, multiple possible
+  cuts, OCR-completed missing parentheses, and full-row fallback. Fresh
+  isolated Chrome 152 profiles captured actual screenshot pixels and passed
+  the narrow same-row fixture for all four labels through editable candidate
+  and explicit verified solve.
+- Added a global shortcut coordinator that treats HTTP page selection/toasts as
+  optional integration. HTTP/HTTPS keeps selection-first behavior; restricted
+  `chrome://`, extension, DevTools, or tabless contexts use the offscreen
+  clipboard path directly. Toast failure is best-effort, concurrent commands
+  share one lock, and the clipboard is written only for explicitly supported,
+  solved, and verified results.
+- Added Side Panel structure-preserving paste. A detached inert document may
+  recover supported `sup`/`sub`, MathML, or one-to-one KaTeX/MathJax structure
+  only when it corresponds to the complete `text/plain` representation.
+  Mismatch, unsupported HTML, or any extraction failure keeps plain text;
+  `x2` is never inferred as `x^2`. The resulting `ProblemInput` stays editable
+  and paste never starts solving.
+- Added the independently gated one-line label form
+  `(2) x^2-5x+6=0 を解け`, while retaining `(2)x^2`, `(2)*(x+1)`,
+  `(1+x)(1-x)`, and `f((2+x))` as mathematics. Terminal acquisition statuses
+  now survive normalization, preventing rejected pasted or shortcut input from
+  becoming ready accidentally.
+- Added unit coverage for shortcut environment routing, every configured
+  shortcut action, clipboard preservation, structured/plain paste, label
+  negatives, OCR candidate geometry, and end-to-end `ProblemInput` routing.
+  Added a disposable-Chrome input-entry smoke for paste and HTTP/restricted-page
+  shortcut paths without changing product permissions.
+- Added a permission-scoped legacy paste fallback in the existing offscreen
+  clipboard document for environments where the asynchronous Clipboard API is
+  present but cannot read because that hidden document lacks focus. Chrome 152
+  browser runs passed HTTP clipboard fallback, `chrome://version`, an extension
+  page, DevTools, and unsupported-input preservation as separate real-command
+  scenarios.
 
 ## 2026-09-11: demo-critical OCR parsing and learning guidance
 

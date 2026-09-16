@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 
 const rawArguments = process.argv.slice(2);
-const supportedFlags = new Set(["--allow-storage-reset", "--mixed"]);
+const supportedFlags = new Set(["--allow-storage-reset", "--mixed", "--quick-only"]);
 const unknownFlags = rawArguments.filter(
   (argument) => argument.startsWith("--") && !supportedFlags.has(argument),
 );
@@ -11,6 +11,7 @@ if (unknownFlags.length > 0) {
 }
 const allowStorageReset = rawArguments.includes("--allow-storage-reset");
 const useMixedFixture = rawArguments.includes("--mixed");
+const quickOnly = rawArguments.includes("--quick-only");
 if (!allowStorageReset) {
   throw new Error(
     "Refusing to clear extension test storage without --allow-storage-reset. "
@@ -55,6 +56,13 @@ const TEST_QUESTIONS = Object.freeze({
 const delay = (milliseconds) => new Promise((resolvePromise) => {
   setTimeout(resolvePromise, milliseconds);
 });
+
+function comparableQuestionLabel(value) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .replace(/\s+/gu, "")
+    .replace(/[.．:：]+$/u, "");
+}
 
 async function readJson(path, options) {
   const response = await fetch(`${devtoolsBase}${path}`, options);
@@ -512,6 +520,7 @@ async function fixtureGeometry(sourceProtocol) {
         expectedKind: String(target.dataset.expectedKind || "formula-only"),
         expectedQuestionLabel: String(target.dataset.expectedQuestionLabel || ""),
         expectedInstruction: String(target.dataset.expectedInstruction || ""),
+        expectedSolveInstruction: String(target.dataset.expectedSolveInstruction || ""),
         expectedFormula: String(target.dataset.expectedFormula || "x+y"),
         expectedIntent: String(target.dataset.expectedIntent || ""),
         expectedAnswer: String(target.dataset.expectedAnswer || ""),
@@ -885,6 +894,7 @@ async function runFlowUnsafe({
         provider: document.querySelector("#providerInfo")?.textContent || "",
         backend: document.querySelector("#backendInfo")?.textContent || "",
         model: document.querySelector("#modelInfo")?.textContent || "",
+        warning: document.querySelector("#candidateWarning")?.textContent || "",
       }))()`);
       if (!state.errorHidden && state.error) {
         const failure = new Error(`${state.error} Preview: ${JSON.stringify(preview)}`);
@@ -895,8 +905,15 @@ async function runFlowUnsafe({
     },
     { timeoutMs: 150_000, intervalMs: 250, label: "local OCR candidate" },
   );
-  assert.equal(recognition.candidate.replaceAll(" ", ""), geometry.expectedFormula.replaceAll(" ", ""));
-  assert.equal(recognition.questionLabel, geometry.expectedQuestionLabel);
+  assert.equal(
+    recognition.candidate.replaceAll(" ", ""),
+    geometry.expectedFormula.replaceAll(" ", ""),
+    JSON.stringify({ recognition, geometry }),
+  );
+  assert.equal(
+    comparableQuestionLabel(recognition.questionLabel),
+    comparableQuestionLabel(geometry.expectedQuestionLabel),
+  );
   if (geometry.expectedInstruction) {
     assert.equal(recognition.instruction, geometry.expectedInstruction);
   } else {
@@ -929,9 +946,11 @@ async function runFlowUnsafe({
   if (!candidateMatchesSolveInput) {
     await replaceInput(confirmProtocol, "#candidateInput", testQuestion.question);
   }
-  const solveInstruction = geometry.expectedKind === "mixed"
-    ? "方程式を解きなさい"
-    : geometry.expectedInstruction;
+  const solveInstruction = geometry.expectedSolveInstruction
+    || (geometry.expectedKind === "mixed"
+      ? "方程式を解きなさい"
+      : geometry.expectedInstruction);
+  const instructionMatchesRecognition = recognition.instruction === solveInstruction;
   if (recognition.instruction !== solveInstruction) {
     await replaceInput(confirmProtocol, "#instructionInput", solveInstruction);
   }
@@ -955,8 +974,14 @@ async function runFlowUnsafe({
     },
     { timeoutMs: 30_000, intervalMs: 150, label: "deterministic solve result" },
   );
-  assert.equal(solved.question, testQuestion.question);
-  assert.equal(solved.questionLabel, geometry.expectedQuestionLabel);
+  assert.equal(
+    solved.question.replaceAll(" ", ""),
+    testQuestion.question.replaceAll(" ", ""),
+  );
+  assert.equal(
+    comparableQuestionLabel(solved.questionLabel),
+    comparableQuestionLabel(geometry.expectedQuestionLabel),
+  );
   assert.equal(solved.instruction, solveInstruction);
   assert.equal(solved.source, "画像読み取り");
   assert.ok(solved.result.replaceAll(" ", "").includes(testQuestion.expectedAnswer));
@@ -972,7 +997,10 @@ async function runFlowUnsafe({
   assert.equal(finalLocal.pendingQuestion, undefined);
   if (learningMode === "study") {
     const record = finalLocal.history[0];
-    assert.equal(record.question, testQuestion.question);
+    assert.equal(
+      String(record.question || "").replaceAll(" ", ""),
+      testQuestion.question.replaceAll(" ", ""),
+    );
     assert.equal(record.learningMode, "study");
     assert.equal(record.source, "ocr");
     assert.equal(record.ocrUsed, true);
@@ -981,16 +1009,25 @@ async function runFlowUnsafe({
     assert.equal(record.verificationType, "solver");
     assert.ok(String(record.finalAnswer || "").replaceAll(" ", "").includes(testQuestion.expectedAnswer));
     if (geometry.expectedKind === "mixed") {
-      assert.equal(record.problemInput?.questionLabel, geometry.expectedQuestionLabel);
+      assert.equal(
+        comparableQuestionLabel(record.problemInput?.questionLabel),
+        comparableQuestionLabel(geometry.expectedQuestionLabel),
+      );
       assert.equal(record.problemInput?.instructionText, solveInstruction.replace(/[。．.!！?？]+$/u, ""));
       assert.equal(record.problemInput?.instructionIntent, geometry.expectedIntent || "solve_equation");
-      assert.equal(record.problemInput?.formulaText, testQuestion.question);
-      assert.equal(record.problemInput?.instructionSource, "manual");
+      assert.equal(
+        String(record.problemInput?.formulaText || "").replaceAll(" ", ""),
+        testQuestion.question.replaceAll(" ", ""),
+      );
+      assert.equal(
+        record.problemInput?.instructionSource,
+        instructionMatchesRecognition ? "ocr" : "manual",
+      );
       assert.equal(record.problemInput?.formulaSource, candidateMatchesSolveInput ? "ocr" : "manual");
     }
     assert.deepEqual(finalLocal.history.slice(1), historySnapshot);
   } else {
-    assert.deepEqual(finalLocal.history, historySnapshot);
+    assert.deepEqual(Array.isArray(finalLocal.history) ? finalLocal.history : [], historySnapshot);
   }
 
   const finalSession = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
@@ -1123,7 +1160,7 @@ try {
   })()`);
 
   const outcomes = [];
-  for (const learningMode of ["study", "quick"]) {
+  for (const learningMode of (quickOnly ? ["quick"] : ["study", "quick"])) {
     const runUrl = new URL(fixtureUrl);
     runUrl.searchParams.set("mode", learningMode);
     runUrl.searchParams.set("run", `${Date.now()}-${outcomes.length}`);

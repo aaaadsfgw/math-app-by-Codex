@@ -8,6 +8,7 @@ import {
   integrateSymbolic,
   simplifySymbolic,
 } from "../js/math-core/symbolic-adapter.js";
+import { createLearningSession } from "../js/learning-session.js";
 import { parseCombinedProblemText } from "../js/problem/problem-input.js";
 import { solveWorkflow } from "../js/solve-workflow.js";
 
@@ -17,6 +18,29 @@ const symbolicOperations = Object.freeze({
   factor: async (expression) => factorSymbolic(expression),
   integrate: async (expression, variable) => integrateSymbolic(expression, variable),
   simplify: async (expression) => simplifySymbolic(expression),
+});
+
+test("LearningSessionも取得時unsupportedを保持してsolver routing前に停止する", async () => {
+  const terminal = parseCombinedProblemText("(2) x^2", { source: "clipboard" });
+  let observed = null;
+  const session = createLearningSession({
+    solve: async (problemInput, options) => {
+      observed = problemInput;
+      return solveWorkflow(problemInput, options);
+    },
+  });
+  session.setInput({
+    question: terminal.formulaText,
+    problemInput: terminal,
+    source: "clipboard",
+  });
+
+  assert.equal(session.snapshot.input.problemInput.status, "unsupported");
+  const outcome = await session.view("answer", { learningMode: "quick" });
+  assert.equal(observed.status, "unsupported");
+  assert.equal(outcome.workflow.presentable, false);
+  assert.equal(outcome.workflow.solverResult.solverId, "problem-input");
+  assert.equal(outcome.workflow.resultKind, "unsupported");
 });
 
 test("分数式の計算instructionを簡約へ限定し元の定義域を保持する", async () => {

@@ -37,6 +37,32 @@ test("ProblemInput schemaVersionは欠落または現行versionだけを受理�
   }
 });
 
+test("取得時のterminal statusはnormalizeとcompileでreadyへ昇格しない", () => {
+  const terminal = parseCombinedProblemText("(2) x^2", { source: "clipboard" });
+  assert.equal(terminal.status, "unsupported");
+
+  const normalized = normalizeProblemInput(terminal);
+  assert.equal(normalized.status, "unsupported");
+  assert.equal(normalized.error, terminal.error);
+
+  const compiled = compileProblemInput(terminal);
+  assert.equal(compiled.ok, false);
+  assert.equal(compiled.kind, "unsupported");
+  assert.equal(compiled.solverInput, "");
+
+  const invalid = normalizeProblemInput({
+    status: "invalid",
+    error: "取得時エラー",
+    formulaText: "x^2=1",
+  });
+  assert.equal(invalid.status, "invalid");
+  assert.equal(invalid.error, "取得時エラー");
+
+  const unknown = normalizeProblemInput({ status: "solved", formulaText: "x^2=1" });
+  assert.equal(unknown.status, "invalid");
+  assert.match(unknown.error, /status/u);
+});
+
 test("構造的な改行があるselectionだけをinstructionとformulaへ分ける", () => {
   const input = parseCombinedProblemText("(1) 次の方程式を解け。\n(4*x-6)/(x^2-5*x+6)=1");
   assert.equal(input.status, "ready");
@@ -131,14 +157,26 @@ test("同一行解析は曖昧な指示や複数数式を推測せず数式表�
   assert.equal(leadingFactor.formulaText, "(2)x^2 を展開せよ");
   assert.match(leadingFactor.error, /問題番号か数式の係数か判別できない/u);
 
-  const ambiguousLabel = parseCombinedProblemText("(3) 1/x+2/(x+1) を簡単にせよ");
-  assert.equal(ambiguousLabel.status, "unsupported");
-  assert.equal(ambiguousLabel.questionLabel, "");
-  assert.equal(ambiguousLabel.formulaText, "(3) 1/x+2/(x+1) を簡単にせよ");
+  const labeledInlineProblem = parseCombinedProblemText("(3) 1/x+2/(x+1) を簡単にせよ");
+  assert.equal(labeledInlineProblem.status, "ready");
+  assert.equal(labeledInlineProblem.questionLabel, "(3)");
+  assert.equal(labeledInlineProblem.instructionIntent, "simplify");
+  assert.equal(labeledInlineProblem.formulaText, "1/x+2/(x+1)");
 
   const formulaOnlyAmbiguity = parseCombinedProblemText("(3) 1/x+2/(x+1)");
   assert.equal(formulaOnlyAmbiguity.status, "unsupported");
   assert.equal(formulaOnlyAmbiguity.formulaText, "(3) 1/x+2/(x+1)");
+
+  for (const source of [
+    "(2) (x+1) を展開せよ",
+    "(2) -x+1 を簡単にせよ",
+    "(2) +x=3 を解け",
+  ]) {
+    const ambiguousPrefix = parseCombinedProblemText(source);
+    assert.equal(ambiguousPrefix.status, "unsupported", source);
+    assert.equal(ambiguousPrefix.questionLabel, "", source);
+    assert.equal(ambiguousPrefix.formulaText, source, source);
+  }
 
   for (const [source, expectedFormula, expectedIntent] of [
     ["1.5*x", "1.5*x", null],

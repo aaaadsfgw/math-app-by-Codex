@@ -68,8 +68,10 @@ The current migration checkpoint supports:
   standard-form/discriminant progress in quadratic Hint 2;
 - Quick Mode for ephemeral answers and Study Mode for one-record learning
   attempts across Hint 1, Hint 2, Steps, Answer, and explanation;
-- Side Panel manual input, selected-text input, and a selection-first shortcut that
-  falls back to the clipboard and only replaces it after a verified result;
+- Side Panel manual input, structure-preserving paste, selected-text input, and
+  a selection-first shortcut that falls back to the clipboard and only replaces
+  it after a verified result, including clipboard-only use on restricted Chrome
+  pages where page selection cannot be read;
 - a common `ProblemInput` boundary that keeps a problem number, instruction,
   formula, conditions, source, and per-field provenance separate while keeping
   legacy one-string questions compatible;
@@ -78,15 +80,18 @@ The current migration checkpoint supports:
   unambiguous;
 - experimental browser-local OCR for either one tightly cropped
   machine-printed formula or one to two short horizontal Japanese instruction
-  regions followed by exactly one formula region, producing four separately
-  editable confirmation fields and requiring a separate explicit solve action;
+  regions followed by exactly one formula region, with an optional independently
+  confirmed problem number at the start of that formula row, producing four
+  separately editable confirmation fields and requiring a separate explicit
+  solve action;
 - source-aware history, staged-output usage, analytics, and review.
 
 The long-term target is text/formula input from junior-high mathematics through
 Japanese Mathematics III. OCR is a narrow, untrusted input method: the
 formula-only path retains IBEM, while a mixed crop is split at strong horizontal
 whitespace and sends only its final formula crop to IBEM. Short Japanese
-instruction crops use the separately packaged Tesseract.js runtime. The crop
+instruction and bounded label-probe crops use the separately packaged
+Tesseract.js runtime. The crop
 and structured candidate remain visible together, and the existing
 deterministic solver receives the edited fields only after the user presses the
 separate confirmation action. OCR never answers, explains, validates, or marks
@@ -124,9 +129,13 @@ then choose only the stage you need. Switching stages for the same input reuses
 the verified solver result instead of recalculating it.
 
 The shortcut `Ctrl+Shift+Y` (`Command+Shift+Y` on macOS) first uses selected
-page text and otherwise reads the clipboard. It copies the configured verified
-Answer, Hint 1, Hint 2, or Steps output only after the solver succeeds. An
-unsupported or invalid input leaves the original clipboard unchanged. Quick
+page text on an HTTP/HTTPS page and otherwise reads the clipboard. On
+`chrome://` pages, extension pages, DevTools, or a tabless invocation, it skips
+page selection and page injection and uses the clipboard directly. A page
+toast is therefore best-effort rather than a requirement for solving. The
+shortcut copies the configured Answer, Hint 1, Hint 2, or Steps output only
+after the result is explicitly supported, solved, and verified. Unsupported,
+invalid, or conflicting input leaves the original clipboard unchanged. Quick
 Mode never writes history; Study Mode records the input source and viewed
 stage.
 
@@ -143,10 +152,12 @@ instruction blank preserves the established formula-only routing.
 Question labels are removed from solver input only with structural evidence.
 `問1`, `問題1`, and circled numbers are strong labels; `(1)`, `（1）`, and
 `1.` additionally need their own line or a following recognized instruction.
-Expressions such as `(1+x)(1-x)` and `(2)x^2` are never stripped as labels.
-If a one-line selection starts with a weak `(N)` form followed by mathematics,
-the extension cannot know whether it is a problem number or a coefficient and
-stops instead of solving either interpretation. A page selection is split into
+A one-line weak label such as `(2) x^2-5x+6=0 を解け` is accepted only when
+horizontal whitespace separates it and the complete remainder independently
+parses as exactly one closed instruction plus one formula. Expressions such as
+`(2)x^2`, `(2)*(x+1)`, `(1+x)(1-x)`, and `f((2+x))` are never stripped as
+labels. If that independent evidence is absent, the extension keeps the full
+input and does not solve either interpretation. A page selection is split into
 instruction and formula when it contains one or two complete instruction lines
 followed by exactly one formula line, or when exactly one formula run is
 followed directly by one supported Japanese command such as `を展開せよ`.
@@ -175,6 +186,17 @@ literal, and password inputs remain excluded. If a textless rendering also
 produces an empty `Selection.toString()`, the shortcut treats it as no text
 selection and follows its pre-existing clipboard fallback.
 
+A user-initiated paste into an empty Side Panel input, or over its complete
+selection, uses the same semantic extractor. `text/plain` remains the
+authoritative fallback. Clipboard HTML is parsed only in a detached inert
+document, and supported HTML `sup`/`sub`, MathML, or one-to-one
+KaTeX/MathJax semantics are accepted only when the visible-source signature
+matches the accompanying plain text. A mismatch, malformed or oversized HTML,
+unsupported structure, or extraction error keeps the literal plain text.
+Thus `x<sup>2</sup>` can become `x^2`, explicit Unicode `²` remains explicit,
+and plain `x2` remains `x2`. The pasted problem is split through the common
+`ProblemInput` boundary, remains editable, and never solves automatically.
+
 Only a successfully checked solver result receives the verified label. Hints,
 working, and explanations are derived from that same result. For a supported
 two-fraction simplification such as `1/x+2/(x+1)`, Hint 1 names the actual
@@ -185,16 +207,22 @@ check it uses the conservative generic working instead.
 
 For image input, choose the OCR action in the Side Panel and drag around either one printed
 formula or the supported compact layout of one or two short horizontal
-Japanese instruction lines above one formula. Strong horizontal whitespace is
+Japanese instruction lines above one formula, optionally with a small problem
+number at the start of the formula row. Strong horizontal whitespace is
 used only to create regions; pixels alone never declare a region to be Japanese
 or mathematical. Tesseract.js 7.0.0 with the Apache-2.0
 `tessdata_fast` 4.1.0 `jpn` data reads the upper regions. Only the final,
 separately cropped formula region reaches the existing MIT-licensed IBEM
-formula OCR. Within that final row, a strong horizontal column gap may only
-propose a small left prefix. The prefix is removed from the formula crop only
-when a separate Japanese OCR pass recognizes an exact question-label form;
-`(1+x)` and unconfirmed prefixes stay in the full formula image, and conflicting
-upper/inline labels stop before formula OCR. A single OCR transcript containing
+formula OCR. Within that final row, bounded connected-component analysis may
+propose up to six small left-prefix boundaries, including realistic narrow
+whitespace. Every prefix is OCR-probed separately. A prefix is removed from the
+formula crop only when exactly one candidate is an exact question-label form
+and its observed glyph components can contain the recognized digits and
+delimiters. Formula OCR failure or a remainder beginning with a definite binary
+continuation restores the complete row. `(1+x)`, `(2)x^2`, incomplete
+parentheses, multiple matching candidates, and unconfirmed prefixes therefore
+stay in the full formula image; conflicting upper/inline labels stop before
+formula OCR. A single OCR transcript containing
 one formula followed directly by one supported Japanese command can use the
 same conservative one-line splitter. The confirmation page exposes problem
 number, instruction, formula, and conditions as separate editable fields and
@@ -210,9 +238,10 @@ MIT/BSD bundle dependency notices, and asset manifest total 14,385,195 bytes
 (about 14.4 MB decimal / 13.7 MiB). No asset is downloaded at runtime. Japanese
 recognition is WASM-only; formula recognition
 continues to prefer WebGPU and fall back to WASM. In the latest isolated
-headless Chrome 152 check, the packaged Japanese path transcribed
-`次の方程式を解け。`, the mixed path separated `(1)`, the instruction, and
-`x+y`, and the full confirmation flow passed in both Study and Quick modes.
+headless Chrome 152 checks, the packaged path captured real screenshot pixels,
+separated narrow same-row `(1)`, `(2)`, `(10)`, and `（2）` labels from the
+`x+y` formula, kept the candidate editable, and reached the verified result
+only after the explicit solve action.
 A fresh Japanese run took about 283 ms and a warm rerun about 30--35 ms in
 that fixture. The available page-heap delta is only a partial measurement and
 does not include the Worker/WASM peak, so no precise peak-memory claim is made.
@@ -377,7 +406,9 @@ Chrome checks in [docs/test-plan.md](docs/test-plan.md). That plan also explains
 how to run
 `npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset` against a
 disposable remote-debugging profile for the complete OCR capture-to-solve
-smoke.
+smoke. It also documents the scenario-based
+`npm.cmd run test:browser:inputs -- 9333 --allow-storage-reset` checks for
+structured paste and HTTP/restricted-page shortcut coverage.
 
 ## Privacy and permissions
 

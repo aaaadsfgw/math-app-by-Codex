@@ -51,9 +51,11 @@ and regression tests are complete.
 
 - image-only questions other than either a tightly cropped machine-printed
   single formula or the supported compact layout of one or two short
-  horizontal Japanese instruction lines above exactly one formula. Every OCR
-  field must be reviewed, edited if necessary, and explicitly confirmed as
-  text; OCR does not expand the solver's supported mathematics;
+  horizontal Japanese instruction lines above exactly one formula, optionally
+  with one independently confirmed problem-number prefix at the start of the
+  formula row. Every OCR field must be reviewed, edited if necessary, and
+  explicitly confirmed as text; OCR does not expand the solver's supported
+  mathematics;
 - missing conditions that appear only in a figure;
 - diagram-dependent geometry and construction;
 - proof requests such as “prove that” or “show that” requiring prose reasoning;
@@ -74,7 +76,10 @@ failure cannot fall through to another mathematical operation. Generic
 structural evidence are not guessed. Web selections may preserve complete
 HTML `sup`/`sub`, supported presentation MathML, or one-to-one semantic
 MathML from KaTeX/MathJax; all partial, malformed, unsupported, or ambiguous
-structures fall back to the unchanged selected text.
+structures fall back to the unchanged selected text. A Side Panel paste uses
+the same subset only when the clipboard HTML's complete visible-source
+signature matches its plain-text representation; otherwise it keeps the plain
+text and never infers structure from `x2`.
 
 Derivative rules currently cover integer powers, sums, products, quotients,
 composition, `sin`, `cos`, `tan`, `exp`, `log`, and `sqrt`. Domain restrictions

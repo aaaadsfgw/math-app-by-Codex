@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Input entry browser harness</title>
+  <style>
+    body {
+      margin: 40px;
+      color: #172033;
+      background: #f4f6fa;
+      font: 20px/1.7 system-ui, sans-serif;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px;
+      border: 1px solid #d7ddea;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .problem {
+      margin: 24px 0;
+      padding: 20px;
+      border-left: 4px solid #4263eb;
+      background: #f8f9ff;
+    }
+
+    math {
+      font-family: "Cambria Math", "Times New Roman", serif;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>入力経路の実ブラウザ確認</h1>
+
+    <p id="shortcutProblem" class="problem">
+      方程式
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <msup><mi>x</mi><mn>2</mn></msup><mo>-</mo><mn>5</mn><mi>x</mi><mo>+</mo><mn>6</mn><mo>=</mo><mn>0</mn>
+      </math>
+      を解け
+    </p>
+
+    <p id="pasteProblem" class="problem">(2) x<sup>2</sup>-5x+6=0 を解け</p>
+
+    <p id="plainAmbiguous" class="problem">2x2-3x+5=0</p>
+  </main>
+</body>
+</html>

@@ -8,6 +8,7 @@ import {
 } from "../js/clipboard.js";
 
 const originalNavigator = globalThis.navigator;
+const originalDocument = globalThis.document;
 
 function setNavigator(value) {
   Object.defineProperty(globalThis, "navigator", {
@@ -20,6 +21,10 @@ afterEach(() => {
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
     value: originalNavigator,
+  });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: originalDocument,
   });
 });
 
@@ -40,6 +45,33 @@ test("空clipboardと権限拒否を型付きエラーにする", async () => {
     readFromClipboard(),
     (error) => error instanceof ClipboardError && error.code === "READ_FAILED",
   );
+});
+
+test("offscreen documentがfocusを持たない場合は権限付きpasteへ限定fallbackする", async () => {
+  setNavigator({ clipboard: { readText: async () => { throw new Error("not focused"); } } });
+  const textarea = {
+    value: "",
+    style: {},
+    setAttribute() {},
+    focus() {},
+    remove() {},
+  };
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      body: { append() {} },
+      createElement: (name) => {
+        assert.equal(name, "textarea");
+        return textarea;
+      },
+      execCommand: (command) => {
+        assert.equal(command, "paste");
+        textarea.value = "3x=15";
+        return true;
+      },
+    },
+  });
+  assert.equal(await readFromClipboard(), "3x=15");
 });
 
 test("空文字はclipboardへ書かない", async () => {

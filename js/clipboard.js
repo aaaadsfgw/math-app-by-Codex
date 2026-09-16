@@ -8,20 +8,56 @@ export class ClipboardError extends Error {
   }
 }
 
+function legacyDocumentPaste() {
+  if (!globalThis.document?.body || typeof globalThis.document.execCommand !== "function") {
+    return null;
+  }
+  const textarea = globalThis.document.createElement("textarea");
+  textarea.setAttribute("aria-hidden", "true");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  globalThis.document.body.append(textarea);
+  textarea.focus();
+  let pasted = false;
+  try {
+    pasted = globalThis.document.execCommand("paste");
+    return pasted ? String(textarea.value ?? "") : null;
+  } finally {
+    textarea.remove();
+  }
+}
+
 export async function readFromClipboard() {
-  if (!globalThis.navigator?.clipboard?.readText) {
+  if (
+    !globalThis.navigator?.clipboard?.readText
+    && (!globalThis.document?.body || typeof globalThis.document.execCommand !== "function")
+  ) {
     throw new ClipboardError("クリップボードの読み取り機能を利用できません。", {
       code: "READ_UNAVAILABLE",
     });
   }
 
-  let text;
-  try {
-    text = await globalThis.navigator.clipboard.readText();
-  } catch (error) {
+  let text = null;
+  let directError = null;
+  if (globalThis.navigator?.clipboard?.readText) {
+    try {
+      text = await globalThis.navigator.clipboard.readText();
+    } catch (error) {
+      directError = error;
+    }
+  }
+  if (text === null) {
+    try {
+      text = legacyDocumentPaste();
+    } catch (error) {
+      directError ??= error;
+    }
+  }
+  if (text === null) {
     throw new ClipboardError(
       "クリップボードを読み取れません。Chromeの権限を確認してください。",
-      { code: "READ_FAILED", cause: error },
+      { code: "READ_FAILED", cause: directError },
     );
   }
 

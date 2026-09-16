@@ -80,6 +80,76 @@ test("mixed数式行の左端に十分離れた小領域がある場合だけ位
   );
 });
 
+test("数式行全高ではなく左端component高を基準に狭い問題番号候補を列挙する", () => {
+  for (const scale of [1, 2]) {
+    const result = analyzeHorizontalOcrLayout(image(240 * scale, 100 * scale, [
+      { x: 8 * scale, y: 8 * scale, width: 190 * scale, height: 17 * scale },
+      { x: 10 * scale, y: 60 * scale, width: 4 * scale, height: 18 * scale },
+      { x: 18 * scale, y: 60 * scale, width: 7 * scale, height: 18 * scale },
+      { x: 29 * scale, y: 60 * scale, width: 4 * scale, height: 18 * scale },
+      { x: 38 * scale, y: 57 * scale, width: 150 * scale, height: 24 * scale },
+    ]));
+    const completeLabel = result.leadingSplitCandidates.find(
+      (candidate) => candidate.evidence.componentCount === 3,
+    );
+    assert.ok(completeLabel, String(scale));
+    assert.equal(completeLabel.gap, 5 * scale, String(scale));
+    assert.ok(completeLabel.gap < result.regions[1].height * 0.55, String(scale));
+    assert.ok(
+      completeLabel.prefix.x + completeLabel.prefix.width <= completeLabel.remainder.x,
+      String(scale),
+    );
+    assert.equal(completeLabel.evidence.leftAnchored, true, String(scale));
+  }
+});
+
+test("隣接した(2)相当componentは完全なlabel prefix候補にしない", () => {
+  const result = analyzeHorizontalOcrLayout(image(220, 100, [
+    { x: 8, y: 8, width: 180, height: 17 },
+    { x: 10, y: 60, width: 4, height: 18 },
+    { x: 18, y: 60, width: 7, height: 18 },
+    { x: 29, y: 60, width: 4, height: 18 },
+    { x: 33, y: 57, width: 150, height: 24 },
+  ]));
+  assert.equal(
+    result.leadingSplitCandidates.some(
+      (candidate) => candidate.evidence.componentCount === 3,
+    ),
+    false,
+  );
+});
+
+test("係数(2)のfont side-bearing相当gapは内部文字間隔以下なら分離しない", () => {
+  const result = analyzeHorizontalOcrLayout(image(220, 100, [
+    { x: 8, y: 8, width: 180, height: 17 },
+    { x: 10, y: 60, width: 4, height: 18 },
+    { x: 18, y: 60, width: 7, height: 18 },
+    { x: 29, y: 60, width: 4, height: 18 },
+    // The same four blank columns as inside `(2)` are glyph spacing, not
+    // independent layout evidence for a question label.
+    { x: 37, y: 57, width: 150, height: 24 },
+  ]));
+  assert.equal(
+    result.leadingSplitCandidates.some(
+      (candidate) => candidate.evidence.componentCount === 3,
+    ),
+    false,
+  );
+});
+
+test("左端component候補数を制限し全cropを非重複に保つ", () => {
+  const rectangles = [{ x: 8, y: 7, width: 210, height: 14 }];
+  for (let index = 0; index < 15; index += 1) {
+    rectangles.push({ x: 10 + index * 7, y: 60, width: 3, height: 18 });
+  }
+  rectangles.push({ x: 125, y: 57, width: 100, height: 24 });
+  const result = analyzeHorizontalOcrLayout(image(250, 100, rectangles));
+  assert.ok(result.leadingSplitCandidates.length <= 6);
+  for (const candidate of result.leadingSplitCandidates) {
+    assert.ok(candidate.prefix.x + candidate.prefix.width <= candidate.remainder.x);
+  }
+});
+
 test("単一行ではより強い空白だけを意味未確定の左端候補として返す", () => {
   const single = analyzeHorizontalOcrLayout(image(200, 50, [
     { x: 8, y: 10, width: 20, height: 18 },

@@ -3,7 +3,7 @@
 ## Runtime flow
 
 ```text
-typed / selected / clipboard / confirmed-OCR input
+typed / semantic-paste / selected / clipboard / confirmed-OCR input
           |
           v
 bounded ProblemInput normalization and intent compilation
@@ -31,12 +31,18 @@ solver router -> deterministic solver -> mathematical verification
 
 The Side Panel and keyboard shortcut use the same asynchronous solver router. The
 Side Panel runs a solver once for the same input metadata and derives later display
-stages from the cached verified result. The shortcut prefers selected page text
-and falls back to the clipboard only when the selection is empty.
+stages from the cached verified result. On HTTP/HTTPS, the shortcut prefers
+selected page text and falls back to the clipboard when selection is empty or
+cannot be read. On restricted or absent tabs it does not inject a selection or
+toast helper and uses the clipboard directly. Page feedback is best-effort and
+cannot reverse a verified clipboard write.
 Symbolic requests from a visible extension page run in a fresh module worker.
 Shortcut requests travel through a bundled offscreen document, which creates
 the same deadline-controlled worker because the service worker does not own a
-window context. Unsupported input stops before presentation, clipboard, or
+window context. Clipboard reads prefer the asynchronous Clipboard API; the
+permission-scoped offscreen document uses legacy paste only when that API is
+present but denied because the hidden document lacks focus. Unsupported input
+stops before presentation, clipboard, or
 verified-history creation.
 
 ## Trust boundary
@@ -52,9 +58,9 @@ verified-history creation.
 
 ## Acquisition and learning-session boundaries
 
-- Manual popup text, page selection, clipboard fallback, explicitly confirmed
-  OCR text, and review reruns enter the same deterministic solve workflow with
-  explicit source metadata.
+- Manual text, user-initiated semantic paste, page selection, clipboard
+  fallback, explicitly confirmed OCR text, and review reruns enter the same
+  deterministic solve workflow with explicit source metadata.
 - Quick Mode is ephemeral. Its popup and shortcut coordinators do not call
   history APIs, and storage also rejects a non-Study record defensively.
 - Study Mode creates one attempt for the first viewed output stage and appends
@@ -73,9 +79,11 @@ verified-history creation.
   attempt or touch the clipboard.
 - The OCR path accepts either one tightly cropped machine-printed formula or a
   compact top-to-bottom layout containing one or two short horizontal Japanese
-  instruction regions and exactly one formula region. It cannot use a diagram,
-  graph, table, arbitrary prose, handwriting, vertical text, general page
-  layout, or spatial relationships to complete a question.
+  instruction regions and exactly one formula region. A short problem-number
+  prefix may also share the formula row, but is separated only by the bounded
+  evidence gate described below. It cannot use a diagram, graph, table,
+  arbitrary prose, handwriting, vertical text, general page layout, or spatial
+  relationships to complete a question.
 
 ## Structured problem-input boundary
 
@@ -99,12 +107,28 @@ integrated into every solver verifier.
 
 Question-label separation examines only the first non-empty line. `問`/`問題`
 forms and circled numbers are strong evidence. Parenthesized and dotted numbers
-require either an otherwise empty line or a following recognized instruction,
-so `(1+x)(1-x)` remains formula text. Combined page selection is split only
+require either an otherwise empty line or a following recognized instruction.
+The additional one-line `(N)` path requires horizontal whitespace after the
+label and independently parses the entire remainder as exactly one supported
+instruction/formula pair. Consequently `(2) x^2-5x+6=0 を解け` can be split,
+while `(2)x^2`, `(2)*(x+1)`, `(1+x)(1-x)`, and `f((2+x))` remain complete
+formula text. Combined page selection is split only
 when one or two complete instruction lines precede exactly one formula line;
 otherwise the unchanged legacy selection is used. These decisions mirror the
 semantic-DOM rule: structure is recovered only from structural evidence, never
 from character guesses such as `x2 -> x^2`.
+
+A Side Panel paste reads `text/plain` and optionally `text/html` only from the
+user's paste event. The HTML is parsed in a detached inert document and passed
+through the same bounded semantic DOM serializer used by page selection. A
+structured result is admitted only when its normalized source signature equals
+the complete plain representation; otherwise the whole operation falls back to
+plain text. No page JavaScript is invoked and no clipboard markup is attached
+to a live document. The resulting text passes through `parseCombinedProblemText`
+and `normalizeProblemInput`, remains editable, and does not trigger a solver.
+Unsupported, invalid, and conflicting acquisition statuses survive subsequent
+normalization so no caller can accidentally turn a rejected paste into ready
+input.
 
 ## Local printed-formula OCR boundary
 
@@ -124,6 +148,7 @@ popup START (explicit user action)
   -> explicit RECOGNIZE action
   -> strong horizontal-whitespace segmentation (one to three regions)
   -> upper region(s): packaged Japanese Tesseract.js WASM
+  -> bounded same-row component boundaries -> exact unique label probe, or full-row fallback
   -> final formula region only: packaged IBEM Worker, WebGPU then WASM fallback
   -> untrusted problem-number / instruction / formula / conditions fields
   -> user reviews or edits every field and explicitly chooses SOLVE
@@ -181,8 +206,8 @@ down.
 
 Before formula recognition, the mixed engine decodes the crop once and computes
 row ink against a border-derived background luminance. Only a sufficiently
-large horizontal whitespace gap divides regions; close numerator, fraction
-bar, denominator, and superscript runs remain grouped. More than three
+large horizontal whitespace gap divides stacked regions; close numerator,
+fraction bar, denominator, and superscript runs remain grouped. More than three
 independent regions, an empty/tiny region, or invalid pixels fail closed. The
 segmenter never labels a region as prose or formula from pixels. For two or
 three regions, all upper crops must independently produce Japanese/label
@@ -191,6 +216,18 @@ fails or an upper crop instead looks like another formula, IBEM is not run.
 For one region, Japanese recognition is a preflight: a Japanese-only result is
 shown with an empty formula field, while a non-Japanese result uses the
 established formula-only IBEM path.
+
+Inside the final formula row, a bounded 8-connected-component scan may emit at
+most six possible boundaries after a short left prefix. Gap size is measured
+against the prefix glyphs rather than the full row, allowing narrow textbook
+spacing without declaring it semantic. Each prefix is cropped and upscaled for
+a separate Japanese OCR probe. A split is accepted only when exactly one probe
+returns a complete recognized question label and the measured component count
+can contain all recognized digits and delimiters. Conflicting stacked/inline
+labels stop. Multiple or zero exact candidates, a probe failure, formula OCR
+failure after the split, or a formula remainder that begins with a definite
+binary continuation restores the original full formula row. No unverified
+leading-text deletion occurs.
 
 The Japanese recognizer is packaged Tesseract.js 7.0.0 with Tesseract.js core
 7.0.0 and horizontal `tessdata_fast` 4.1.0 `jpn`. Those primary packages and
@@ -238,6 +275,11 @@ page heap does not include the Worker/WASM peak, so a precise peak-memory value
 is still unknown. A rendered fraction image has not been recognized exactly in
 this browser evidence; deterministic fraction integration tests do not replace
 that acquisition test, and manual candidate correction remains required.
+On 2026-09-14, separate fresh Chrome 152 profiles also passed real
+screenshot-to-explicit-solve flows for narrow same-row `(1)`, `(2)`, `(10)`,
+and `（2）` labels beside the packaged `x+y` formula. Separate real-command
+runs also passed HTTP selection, HTTP clipboard fallback, `chrome://version`,
+an extension page, DevTools, and unsupported-input clipboard preservation.
 
 ## Polynomial-tangent verification
 

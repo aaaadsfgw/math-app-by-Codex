@@ -22,14 +22,24 @@ The Digicon learning workflow additionally requires automated coverage for:
 - new attempts after question, source, or review-parent changes, while a
   Quick/Study round trip resumes the same Study record without Quick stages;
 - selection, clipboard, manual, review, and confirmed-OCR source metadata;
+- Side Panel paste from complete matching HTML `sup`/`sub`, MathML, and
+  KaTeX/MathJax semantics, including inert parsing, whole-field replacement,
+  editable/no-auto-solve behavior, plain-text mismatch fallback, Unicode
+  superscripts, and unchanged plain `x2`;
 - schema-v1 `ProblemInput` normalization, legacy-string compatibility,
   problem-label evidence, per-field provenance, all 13 instruction intents,
-  conflict detection, and terminal intent dispatch with no solver fallback;
+  conflict detection, terminal intent dispatch with no solver fallback, and
+  preservation of unsupported/invalid/conflict acquisition statuses through
+  repeat normalization;
 - one-line Japanese/formula separation for solve, differentiate, expand,
   factor, and simplify, plus negative cases for quantities, prose operands,
   multiple formula runs, extra operations, `x2`, and ambiguous `(N)` prefixes;
 - unsupported/invalid results never reaching presentation, history, or the
   clipboard;
+- HTTP selection-first shortcut coordination, selection-message failure to
+  clipboard fallback, clipboard-only `chrome://`/extension/DevTools/tabless
+  routing, best-effort toast failure, one command-wide concurrency guard, all
+  four shortcut actions, and explicit supported/solved/verified write gating;
 - structured web-selection extraction from complete HTML `sup`/`sub`, native
   MathML, and one-to-one KaTeX/MathJax semantic MathML, including nested
   fractions and square roots;
@@ -65,10 +75,13 @@ The Digicon learning workflow additionally requires automated coverage for:
   regions above exactly one formula, Japanese-evidence gating before IBEM,
   formula-only preservation, region/output limits, cancellation, and raw OCR
   retention alongside normalized editable fields;
-- same-row OCR label candidates gated by both a strong horizontal column gap
-  and exact label recognition, including single-/multi-region `(2)` cases,
-  `(1+x)` preservation, punctuation-normalized label agreement, and
-  conflicting-label rejection before formula OCR;
+- same-row OCR label candidates gated by bounded connected-component geometry,
+  exactly one exact label recognition, and matching component evidence,
+  including narrow `(1)`, `(2)`, `(10)`, and `（2）` spacing, multiple cuts,
+  OCR-completed missing-parenthesis rejection, `(2)x^2`, `(2)*(x+1)`,
+  `(1+x)` preservation, punctuation-normalized label agreement, formula-
+  remainder failure/binary-continuation fallback, and conflicting-label
+  rejection before formula OCR;
 - rational-simplification Hint 1/Hint 2/Steps built from exact AST transforms,
   with per-fraction and whole-expression equivalence checks, retained domain
   exclusions, fallback on verification failure, and answer-leak regressions for
@@ -100,8 +113,10 @@ covers that primary path.
    in Quick, and does not rerun the solver.
 4. Select `2x+3=11` on a normal page and press the shortcut; confirm the
    selection is used before the clipboard. Repeat with no selection and
-   confirm the clipboard input is used. For unsupported input, confirm the
-   original clipboard is unchanged.
+   confirm the clipboard input is used. Then put a supported question on the
+   clipboard and invoke the shortcut from `chrome://version`, an extension
+   page, and DevTools; confirm clipboard-only solving works without requiring a
+   toast. For unsupported input, confirm the original clipboard is unchanged.
 5. On a page containing HTML `x<sup>2</sup>`, native MathML, KaTeX, and MathJax,
    select the complete displayed formula `2x²+5x+2=0`. Confirm the shortcut
    reaches the verified answer `x=-2,-1/2`. Select only part of an exponent or
@@ -109,10 +124,15 @@ covers that primary path.
    `x2+5x+2=0` and confirm it remains unsupported and the clipboard is not
     replaced. `tests/browser/selection-structure-harness.html` provides ten
    DOM/Range smoke cases for this boundary.
-6. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
+6. Paste a complete HTML problem containing `x<sup>2</sup>` into an empty Side
+   Panel field. Confirm the editable fields contain the preserved exponent and
+   no result appears until **解析する**. Repeat with mismatching HTML/plain
+   clipboard data and with literal `x2`; confirm the complete plain text is
+   preserved and no exponent is guessed.
+7. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
    Steps, direct Answer rate, understanding, and review priority agree with the
    Study attempt. Confirm Quick interactions are absent.
-7. Use the Side Panel OCR action first on one tightly cropped printed formula and
+8. Use the Side Panel OCR action first on one tightly cropped printed formula and
    then on a supported problem-number/instruction/formula stack. Confirm the
    crop and four editable fields are shown together, no solver runs after
    recognition, and the solver starts only after the separate confirmation. In
@@ -142,6 +162,7 @@ npm.cmd run test:browser:serve
 npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset
 npm.cmd run test:browser:ocr-mixed-flow -- 9333 --allow-storage-reset
 npm.cmd run test:browser:selection -- 9333
+npm.cmd run test:browser:inputs -- 9333 --allow-storage-reset
 ```
 
 The flow loads the current unpacked directory, triggers the real browser action,
@@ -164,6 +185,29 @@ verified shortcut solver. On
 engine smoke recognized the Japanese instruction and `x+y` mixed fixture and
 separately exercised explicit WebGPU and WASM formula OCR. This is not evidence
 that arbitrary fonts/layouts or a rendered fraction image transcribe exactly.
+
+The input-entry smoke copies a real HTML `sup` selection, pastes through the
+Side Panel event, proves that the result remains editable and unsolved until an
+explicit click, and checks literal `x2`. Each run invokes the real command once;
+use a fresh disposable profile and repeat with
+`--shortcut=http-selection` (the default), `--shortcut=http-clipboard`,
+`--shortcut=chrome`, `--shortcut=extension`, `--shortcut=devtools`, and
+`--shortcut=unsupported`. It saves and restores the pre-test clipboard and
+refuses to clear extension storage without `--allow-storage-reset`. Separate
+scenarios avoid treating DevTools Protocol's synthetic repeated accelerator
+behavior as application behavior.
+
+For the narrow same-row OCR fixture, pass its loopback URL as the fourth
+positional argument and run one fresh disposable Chrome profile per label:
+
+```powershell
+npm.cmd run test:browser:ocr-flow -- 9333 . either "http://127.0.0.1:8765/tests/browser/mixed-ocr-narrow-label-harness.html?label=2" --allow-storage-reset --quick-only
+```
+
+Repeat with `label=1`, `label=10`, and `label=fullwidth2`. On 2026-09-14 all
+four screenshot-to-crop-to-recognition-to-explicit-solve flows passed in fresh
+isolated headless Chrome 152 profiles. The fixture demonstrates the bounded
+narrow-gap behavior, not arbitrary page layout or OCR accuracy.
 
 For the reproducible provider/runtime check, launch an isolated Chrome for
 Testing profile with remote debugging and the unpacked extension, then run

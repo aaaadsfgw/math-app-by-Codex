@@ -23,22 +23,29 @@ function validLabelNumber(label) {
 function labelCandidate(line) {
   const source = String(line ?? "").trimStart();
   const candidates = [
-    { match: source.match(QUESTION_WORD_NUMBER), strong: true },
-    { match: source.match(CIRCLED_NUMBER), strong: true },
-    { match: source.match(PARENTHESIZED_NUMBER), strong: false },
-    { match: source.match(DOTTED_NUMBER), strong: false },
+    { kind: "question-word", match: source.match(QUESTION_WORD_NUMBER), strong: true },
+    { kind: "circled", match: source.match(CIRCLED_NUMBER), strong: true },
+    { kind: "parenthesized", match: source.match(PARENTHESIZED_NUMBER), strong: false },
+    { kind: "dotted", match: source.match(DOTTED_NUMBER), strong: false },
   ];
   for (const candidate of candidates) {
     if (!candidate.match) continue;
     const questionLabel = candidate.match[0].trim().replace(/[.．:：]$/u, "").trim();
-    const remainder = source.slice(candidate.match[0].length).trim();
+    const suffix = source.slice(candidate.match[0].length);
+    const remainder = suffix.trim();
     if (
       questionLabel.length > MAX_LABEL_CHARACTERS
       || !validLabelNumber(questionLabel)
     ) {
       return null;
     }
-    return { questionLabel, remainder, strong: candidate.strong };
+    return {
+      questionLabel,
+      remainder,
+      strong: candidate.strong,
+      kind: candidate.kind,
+      separatedByHorizontalSpace: /^[\t \u3000]+/u.test(suffix),
+    };
   }
   return null;
 }
@@ -47,6 +54,32 @@ export function isQuestionLabel(value) {
   const source = String(value ?? "").trim();
   const candidate = labelCandidate(source);
   return Boolean(candidate && !candidate.remainder && candidate.questionLabel === source.replace(/[.．:：]$/u, ""));
+}
+
+/**
+ * Returns an untrusted weak label candidate without removing it. Callers must
+ * supply independent evidence that the remainder is one complete problem.
+ */
+export function inspectWeakInlineQuestionLabel(value) {
+  let source;
+  try {
+    source = String(value ?? "").trim();
+  } catch {
+    return null;
+  }
+  if (!source || /[\r\n]/u.test(source)) return null;
+  const candidate = labelCandidate(source);
+  if (
+    !candidate
+    || candidate.strong
+    || candidate.kind !== "parenthesized"
+    || !candidate.separatedByHorizontalSpace
+    || !candidate.remainder
+  ) return null;
+  return Object.freeze({
+    questionLabel: candidate.questionLabel,
+    remainingText: candidate.remainder,
+  });
 }
 
 /**

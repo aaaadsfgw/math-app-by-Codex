@@ -174,6 +174,8 @@ function loadExtractor() {
   vm.runInContext(extractorSource, context, { filename: extractorUrl.pathname });
   const api = context.__mathStudyLogSelectionMathExtractor;
   assert.equal(typeof api?.getSelectionText, "function");
+  assert.equal(typeof api?.extractClipboardDom, "function");
+  assert.equal(typeof api?.extractClipboardHtml, "function");
   return api;
 }
 
@@ -183,6 +185,14 @@ function extract(root, plainText, selection = fullSelection(root, plainText)) {
   return extractor.getSelectionText({
     documentObject: new FakeDocument(),
     selection,
+  });
+}
+
+function extractClipboard(root, plainText, selection = fullSelection(root, plainText)) {
+  return extractor.extractClipboardDom({
+    plainText,
+    root,
+    range: selection.range,
   });
 }
 
@@ -262,6 +272,60 @@ test("complete HTML sup and sub elements preserve their proven structure", () =>
     html("sub", {}, text("2")),
   );
   assert.equal(extract(indexed, "x1 + x2"), "x_1 + x_2");
+});
+
+test("clipboard HTML reuses proven sup/sub and MathML structure only when plain text agrees", () => {
+  const squared = html("span", {}, text("2x"), html("sup", {}, text("2")), text("-3x+5=0"));
+  const structured = extractClipboard(squared, "2x2-3x+5=0");
+  assert.equal(structured.usedStructure, true);
+  assert.equal(structured.format, "html");
+  assert.equal(structured.text, "2x^2-3x+5=0");
+  assert.equal(structured.rawText, "2x2-3x+5=0");
+
+  const subscripted = html(
+    "span",
+    {},
+    text("x"),
+    html("sub", {}, text("1")),
+    text(" + x"),
+    html("sub", {}, text("2")),
+  );
+  assert.equal(extractClipboard(subscripted, "x1 + x2").text, "x_1 + x_2");
+
+  const fraction = math("math", math("mfrac", mn("1"), mn("2")));
+  assert.equal(extractClipboard(fraction, "12").text, "(1)/(2)");
+});
+
+test("clipboard HTML mismatch or absent structure falls back to literal plain text", () => {
+  const squared = html("span", {}, text("x"), html("sup", {}, text("2")));
+  const mismatch = extractClipboard(squared, "x3");
+  assert.equal(mismatch.usedStructure, false);
+  assert.equal(mismatch.format, "plain");
+  assert.equal(mismatch.text, "x3");
+  assert.match(mismatch.fallbackReason, /does not match/u);
+
+  const literal = html("span", {}, text("x2 + 5x + 2 = 0"));
+  const plain = extractClipboard(literal, "x2 + 5x + 2 = 0");
+  assert.equal(plain.usedStructure, false);
+  assert.equal(plain.text, "x2 + 5x + 2 = 0");
+  assert.doesNotMatch(plain.text, /\^/u);
+});
+
+test("clipboard structure comparison ignores only explicit glyph and spacing variants", () => {
+  const squared = html("span", {}, text("x"), html("sup", {}, text("2")), text(" − 1"));
+  const result = extractClipboard(squared, "x²−1");
+  assert.equal(result.usedStructure, true);
+  assert.equal(result.text, "x^2 − 1");
+
+  const withIgnoredScript = html(
+    "span",
+    {},
+    text("x"),
+    html("sup", {}, text("2")),
+    html("script", {}, text("+999=999")),
+    text("+1=0"),
+  );
+  assert.equal(extractClipboard(withIgnoredScript, "x2+1=0").text, "x^2+1=0");
 });
 
 test("non-rendered script, style, template, and noscript text never joins structured output", () => {

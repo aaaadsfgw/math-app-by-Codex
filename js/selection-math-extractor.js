@@ -6,9 +6,11 @@
 
   const ELEMENT_NODE = 1;
   const TEXT_NODE = 3;
+  const DOCUMENT_FRAGMENT_NODE = 11;
   const MAX_VISITED_NODES = 4_096;
   const MAX_DEPTH = 64;
   const MAX_OUTPUT_LENGTH = 10_000;
+  const MAX_CLIPBOARD_HTML_LENGTH = 200_000;
   const MATHML_NAMESPACE = ["http:", "//www.w3.org/1998/Math/MathML"].join("");
   const TEXT_INPUT_TYPES = new Set(["", "text", "search", "url", "tel", "email"]);
   const MATHML_TAGS = new Set([
@@ -538,7 +540,13 @@
     const semanticCovered = contentFullySelected(range, semanticMath, budget, {
       mathPresentation: true,
     });
-    if (semanticCovered) return serializeMathNode(semanticMath, budget);
+    if (semanticCovered) {
+      const serialized = serializeMathNode(semanticMath, budget);
+      const sourceText = rendererTextSignature(semanticMath, budget, {
+        mathPresentation: true,
+      });
+      return serialized && sourceText ? { serialized, sourceText } : null;
+    }
 
     let visibleCovered = false;
     let visibleRoot = null;
@@ -572,7 +580,8 @@
       mathPresentation: true,
     });
     if (!visibleSignature || visibleSignature !== semanticSignature) return null;
-    return serializeMathNode(semanticMath, budget);
+    const serialized = serializeMathNode(semanticMath, budget);
+    return serialized ? { serialized, sourceText: visibleSignature } : null;
   }
 
   function htmlScriptText(node, budget) {
@@ -595,33 +604,43 @@
         const selected = selectedTextSlice(range, node);
         return {
           ok: true,
-          parts: selected ? [{ type: "text", text: selected }] : [],
+          parts: selected ? [{ type: "text", text: selected, sourceText: selected }] : [],
           usedStructure: false,
         };
       }
-      if (node?.nodeType !== ELEMENT_NODE) {
+      if (
+        node?.nodeType !== ELEMENT_NODE
+        && node?.nodeType !== DOCUMENT_FRAGMENT_NODE
+      ) {
         return { ok: true, parts: [], usedStructure: false };
       }
 
-      if (IGNORED_TEXT_CONTAINERS.has(nodeName(node))) {
+      if (
+        node?.nodeType === ELEMENT_NODE
+        && IGNORED_TEXT_CONTAINERS.has(nodeName(node))
+      ) {
         return { ok: true, parts: [], usedStructure: false };
       }
 
       if (nodeName(node) === "br") {
         return {
           ok: true,
-          parts: [{ type: "line-break", text: "" }],
+          parts: [{ type: "line-break", text: "", sourceText: "\n" }],
           usedStructure: false,
         };
       }
 
       const kind = rendererKind(node);
       if (kind) {
-        const serialized = serializeRenderer(node, kind, range, budget);
-        return serialized
+        const renderer = serializeRenderer(node, kind, range, budget);
+        return renderer
           ? {
             ok: true,
-            parts: [{ type: "structured", text: serialized.text }],
+            parts: [{
+              type: "structured",
+              text: renderer.serialized.text,
+              sourceText: renderer.sourceText,
+            }],
             usedStructure: true,
           }
           : { ok: false, parts: [], usedStructure: false };
@@ -637,10 +656,11 @@
           return { ok: false, parts: [], usedStructure: false };
         }
         const serialized = serializeMathNode(node, budget);
+        const sourceText = rendererTextSignature(node, budget, { mathPresentation: true });
         return serialized
           ? {
             ok: true,
-            parts: [{ type: "structured", text: serialized.text }],
+            parts: [{ type: "structured", text: serialized.text, sourceText }],
             usedStructure: true,
           }
           : { ok: false, parts: [], usedStructure: false };
@@ -658,7 +678,11 @@
         return script
           ? {
             ok: true,
-            parts: [{ type: name, text: script }],
+            parts: [{
+              type: name,
+              text: script,
+              sourceText: rawDescendantText(node, budget),
+            }],
             usedStructure: true,
           }
           : { ok: false, parts: [], usedStructure: false };
@@ -681,7 +705,7 @@
           && (previousSelectedChildWasBlock || currentChildIsBlock)
           && combined.parts.at(-1)?.type !== "line-break"
         ) {
-          combined.parts.push({ type: "line-break", text: "" });
+          combined.parts.push({ type: "line-break", text: "", sourceText: "\n" });
         }
         combined.parts.push(...current.parts);
         combined.usedStructure ||= current.usedStructure;
@@ -728,6 +752,28 @@
       .trim();
   }
 
+  function combineSourceParts(parts) {
+    let output = "";
+    for (const current of parts) {
+      output += String(current.sourceText ?? current.text ?? "");
+      if (output.length > MAX_OUTPUT_LENGTH) return "";
+    }
+    return output.trim();
+  }
+
+  function correspondenceSignature(value) {
+    return String(value ?? "")
+      .normalize("NFKC")
+      .replace(/[\s\u00a0]+/gu, "")
+      .replace(/[−–—﹣－]/gu, "-")
+      .replace(/[×·⋅∙]/gu, "*")
+      .replace(/÷/gu, "/")
+      .replace(/＝/gu, "=")
+      .replace(/≤|≦/gu, "<=")
+      .replace(/≥|≧/gu, ">=")
+      .replace(/\u2062/gu, "*");
+  }
+
   function nearestContextRoot(range) {
     let root = range?.commonAncestorContainer || null;
     if (root?.nodeType === TEXT_NODE) root = root.parentNode;
@@ -742,7 +788,7 @@
     return rendererRoot || mathRoot || root;
   }
 
-  function structuredSelectionText(selection) {
+  function structuredSelectionResult(selection) {
     if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) return "";
     let range;
     try {
@@ -757,9 +803,106 @@
     try {
       const serialized = serializeSelectedDom(root, range, createBudget());
       if (!serialized.ok || !serialized.usedStructure) return "";
-      return combineDomParts(serialized.parts);
+      const text = combineDomParts(serialized.parts);
+      const sourceText = combineSourceParts(serialized.parts);
+      return text && sourceText
+        ? Object.freeze({ text, sourceText, usedStructure: true })
+        : "";
     } catch {
       return "";
+    }
+  }
+
+  function structuredSelectionText(selection) {
+    return structuredSelectionResult(selection)?.text || "";
+  }
+
+  function clipboardFallback(plainText, fallbackReason = "") {
+    return Object.freeze({
+      text: plainText,
+      rawText: plainText,
+      usedStructure: false,
+      format: "plain",
+      fallbackReason,
+    });
+  }
+
+  function extractClipboardDom({ plainText, root, range } = {}) {
+    let plain;
+    try {
+      plain = String(plainText ?? "").trim();
+    } catch {
+      return clipboardFallback("", "clipboard text could not be read");
+    }
+    if (!plain) return clipboardFallback(plain, "clipboard text is empty");
+    if (plain.length > MAX_OUTPUT_LENGTH) {
+      return clipboardFallback(plain, "clipboard text exceeds the structure limit");
+    }
+    if (!root || !range || range.collapsed) {
+      return clipboardFallback(plain, "clipboard HTML has no complete range");
+    }
+
+    try {
+      const serialized = serializeSelectedDom(root, range, createBudget());
+      if (!serialized.ok || !serialized.usedStructure) {
+        return clipboardFallback(plain, "clipboard HTML has no supported math structure");
+      }
+      const text = combineDomParts(serialized.parts);
+      const sourceText = combineSourceParts(serialized.parts);
+      if (
+        !text
+        || !sourceText
+        || correspondenceSignature(sourceText) !== correspondenceSignature(plain)
+      ) {
+        return clipboardFallback(plain, "clipboard HTML does not match its plain text");
+      }
+      return Object.freeze({
+        text,
+        rawText: plain,
+        usedStructure: true,
+        format: "html",
+        fallbackReason: "",
+      });
+    } catch {
+      return clipboardFallback(plain, "clipboard HTML could not be inspected safely");
+    }
+  }
+
+  function extractClipboardHtml({
+    plainText,
+    htmlText,
+    documentObject = globalThis.document,
+  } = {}) {
+    let plain;
+    let html;
+    try {
+      plain = String(plainText ?? "").trim();
+      html = String(htmlText ?? "");
+    } catch {
+      return clipboardFallback("", "clipboard data could not be read");
+    }
+    if (!plain) return clipboardFallback(plain, "clipboard text is empty");
+    if (!html) return clipboardFallback(plain, "clipboard HTML is unavailable");
+    if (html.length > MAX_CLIPBOARD_HTML_LENGTH) {
+      return clipboardFallback(plain, "clipboard HTML exceeds the safety limit");
+    }
+
+    try {
+      const inertDocument = documentObject?.implementation?.createHTMLDocument?.("");
+      if (!inertDocument?.createElement || !inertDocument?.createRange) {
+        return clipboardFallback(plain, "an inert HTML parser is unavailable");
+      }
+      const template = inertDocument.createElement("template");
+      // Template contents stay detached from every live document. The extractor
+      // only reads text, tag names, classes, and a small attribute allow-list.
+      template.innerHTML = html;
+      const root = template.content;
+      if (!root) return clipboardFallback(plain, "clipboard HTML is malformed");
+      const range = inertDocument.createRange();
+      range.selectNodeContents(root);
+      return extractClipboardDom({ plainText: plain, root, range });
+    } catch {
+      return clipboardFallback(plain, "clipboard HTML could not be parsed inertly");
     }
   }
 
@@ -810,5 +953,9 @@
     return structured || plain;
   }
 
-  globalThis[API_KEY] = Object.freeze({ getSelectionText });
+  globalThis[API_KEY] = Object.freeze({
+    extractClipboardDom,
+    extractClipboardHtml,
+    getSelectionText,
+  });
 })();

@@ -2,6 +2,9 @@ export const MIXED_OCR_LAYOUT_VERSION = 1;
 
 const MAX_PIXELS = 16 * 1024 * 1024;
 const MAX_DIMENSION = 8_192;
+const MAX_LEADING_COMPONENT_PIXELS = 1_000_000;
+const MAX_LEADING_COMPONENT_WIDTH = 512;
+const MAX_LEADING_SPLIT_CANDIDATES = 6;
 
 export class MixedOcrLayoutError extends Error {
   constructor(message, { code = "MIXED_OCR_LAYOUT_INVALID", details = null } = {}) {
@@ -80,66 +83,178 @@ function rowInk(image, background, contrastThreshold) {
   return { counts, minX, maxX };
 }
 
-function columnInk(image, background, contrastThreshold, region) {
-  const counts = new Uint32Array(region.width);
-  for (let localX = 0; localX < region.width; localX += 1) {
-    const x = region.x + localX;
-    for (let y = region.y; y < region.y + region.height; y += 1) {
-      const offset = (y * image.width + x) * 4;
-      if (image.data[offset + 3] < 32) continue;
-      if (Math.abs(luminance(image.data, offset) - background) < contrastThreshold) continue;
-      counts[localX] += 1;
-    }
-  }
-  return counts;
+function foregroundPixel(image, background, contrastThreshold, x, y) {
+  const offset = (y * image.width + x) * 4;
+  return image.data[offset + 3] >= 32
+    && Math.abs(luminance(image.data, offset) - background) >= contrastThreshold;
 }
 
-function activeColumnRuns(counts, minimumInk) {
-  const runs = [];
-  let start = null;
-  for (let x = 0; x <= counts.length; x += 1) {
-    const active = x < counts.length && counts[x] >= minimumInk;
-    if (active && start === null) start = x;
-    if (!active && start !== null) {
-      runs.push({ left: start, right: x - 1 });
-      start = null;
-    }
-  }
-  return runs;
+function componentScanWidth(region) {
+  const inkHeight = region.bottomInk - region.topInk + 1;
+  return Math.min(
+    region.width,
+    MAX_LEADING_COMPONENT_WIDTH,
+    Math.max(96, Math.ceil(inkHeight * 6)),
+  );
 }
 
-function leadingSplitCandidate(
+function connectedComponents(image, background, contrastThreshold, region) {
+  const width = componentScanWidth(region);
+  const height = region.height;
+  const pixelCount = width * height;
+  if (pixelCount > MAX_LEADING_COMPONENT_PIXELS) return [];
+
+  const visited = new Uint8Array(pixelCount);
+  const queue = new Int32Array(pixelCount);
+  const components = [];
+  for (let start = 0; start < pixelCount; start += 1) {
+    if (visited[start]) continue;
+    const startX = start % width;
+    const startY = Math.floor(start / width);
+    if (!foregroundPixel(
+      image,
+      background,
+      contrastThreshold,
+      region.x + startX,
+      region.y + startY,
+    )) {
+      visited[start] = 1;
+      continue;
+    }
+
+    let head = 0;
+    let tail = 0;
+    let left = startX;
+    let right = startX;
+    let top = startY;
+    let bottom = startY;
+    let area = 0;
+    visited[start] = 1;
+    queue[tail] = start;
+    tail += 1;
+    while (head < tail) {
+      const current = queue[head];
+      head += 1;
+      const x = current % width;
+      const y = Math.floor(current / width);
+      area += 1;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y);
+      for (let deltaY = -1; deltaY <= 1; deltaY += 1) {
+        for (let deltaX = -1; deltaX <= 1; deltaX += 1) {
+          if (deltaX === 0 && deltaY === 0) continue;
+          const nextX = x + deltaX;
+          const nextY = y + deltaY;
+          if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= height) continue;
+          const next = nextY * width + nextX;
+          if (visited[next]) continue;
+          if (!foregroundPixel(
+            image,
+            background,
+            contrastThreshold,
+            region.x + nextX,
+            region.y + nextY,
+          )) {
+            visited[next] = 1;
+            continue;
+          }
+          visited[next] = 1;
+          queue[tail] = next;
+          tail += 1;
+        }
+      }
+    }
+    if (area >= 2 && (right > left || bottom > top)) {
+      components.push({ left, right, top, bottom, area });
+    }
+  }
+  return components;
+}
+
+function horizontalComponentClusters(components) {
+  const sorted = [...components].sort((left, right) => (
+    left.left - right.left
+    || left.top - right.top
+    || left.right - right.right
+  ));
+  const clusters = [];
+  for (const component of sorted) {
+    const previous = clusters.at(-1);
+    if (previous && component.left <= previous.right + 1) {
+      previous.left = Math.min(previous.left, component.left);
+      previous.right = Math.max(previous.right, component.right);
+      previous.top = Math.min(previous.top, component.top);
+      previous.bottom = Math.max(previous.bottom, component.bottom);
+      previous.area += component.area;
+      previous.componentCount += 1;
+    } else {
+      clusters.push({ ...component, componentCount: 1 });
+    }
+  }
+  return clusters;
+}
+
+function median(values) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function leadingSplitCandidates(
   image,
   background,
   contrastThreshold,
   region,
   { standalone = false } = {},
 ) {
-  const counts = columnInk(image, background, contrastThreshold, region);
-  const minimumInk = Math.max(1, Math.floor(region.height * 0.03));
-  const runs = activeColumnRuns(counts, minimumInk);
-  if (runs.length < 2) return null;
+  const components = connectedComponents(image, background, contrastThreshold, region);
+  const clusters = horizontalComponentClusters(components);
+  if (clusters.length < 2) return Object.freeze([]);
 
-  const firstInk = runs[0].left;
-  const lastInk = runs.at(-1).right;
-  const inkHeight = region.bottomInk - region.topInk + 1;
-  const requiredGap = standalone
-    ? Math.max(10, Math.ceil(inkHeight * 0.7))
-    : Math.max(8, Math.ceil(inkHeight * 0.55));
+  const firstInk = clusters[0].left;
+  // regionFromRuns already bounds the complete row. Component analysis is
+  // intentionally limited to its leading edge, but the remainder crop must
+  // retain the whole formula even when it extends beyond that scan window.
+  const lastInk = region.width - 1;
   const totalInkWidth = lastInk - firstInk + 1;
-  for (let index = 0; index + 1 < runs.length; index += 1) {
-    const leftRun = runs[index];
-    const rightRun = runs[index + 1];
-    const gap = rightRun.left - leftRun.right - 1;
+  const candidates = [];
+  let prefixTop = clusters[0].top;
+  let prefixBottom = clusters[0].bottom;
+  const internalGaps = [];
+  for (let index = 0; index + 1 < clusters.length; index += 1) {
+    const leftCluster = clusters[index];
+    const rightCluster = clusters[index + 1];
+    prefixTop = Math.min(prefixTop, leftCluster.top);
+    prefixBottom = Math.max(prefixBottom, leftCluster.bottom);
+    const gap = rightCluster.left - leftCluster.right - 1;
+    const medianInternalGap = median(internalGaps);
+    internalGaps.push(gap);
+    const prefixInkHeight = prefixBottom - prefixTop + 1;
+    const requiredGap = Math.max(
+      standalone ? 4 : 2,
+      Math.ceil(prefixInkHeight * (standalone ? 0.34 : 0.16)),
+    );
     if (gap < requiredGap) continue;
+    // A parenthesized number normally contributes at least three horizontal
+    // components. In that case, the boundary after it must be wider than the
+    // prefix's own character spacing. This is the pixel-level distinction
+    // between a layout-separated label and an attached coefficient such as
+    // `(2)x^2`; absolute 2–12 px thresholds alone cannot provide it.
+    const gapAdvantage = internalGaps.length >= 2 ? gap - medianInternalGap : null;
+    if (gapAdvantage !== null && gapAdvantage < 1) continue;
 
-    const prefixInkWidth = leftRun.right - firstInk + 1;
-    const remainderInkWidth = lastInk - rightRun.left + 1;
-    const prefixMaximum = Math.max(32, Math.ceil(inkHeight * 4.5));
-    const prefixRatioLimit = standalone ? 0.28 : 0.32;
+    const prefixInkWidth = leftCluster.right - firstInk + 1;
+    const remainderInkWidth = lastInk - rightCluster.left + 1;
+    const prefixMaximum = Math.max(48, Math.ceil(prefixInkHeight * 5.5));
+    const prefixRatioLimit = standalone ? 0.3 : 0.36;
     const minimumRemainder = standalone
-      ? Math.max(Math.ceil(inkHeight * 3.5), Math.ceil(prefixInkWidth * 2.5))
-      : Math.max(Math.ceil(inkHeight * 3), prefixInkWidth * 2);
+      ? Math.max(Math.ceil(prefixInkHeight * 2.5), Math.ceil(prefixInkWidth * 2))
+      : Math.max(Math.ceil(prefixInkHeight * 2), Math.ceil(prefixInkWidth * 1.25));
     if (
       prefixInkWidth > prefixMaximum
       || prefixInkWidth > Math.floor(totalInkWidth * prefixRatioLimit)
@@ -148,20 +263,41 @@ function leadingSplitCandidate(
       continue;
     }
 
-    const margin = 2;
-    const prefixLeft = Math.max(0, firstInk - margin);
-    const prefixRight = Math.min(region.width - 1, leftRun.right + margin);
-    const remainderLeft = Math.max(0, rightRun.left - margin);
-    const remainderRight = Math.min(region.width - 1, lastInk + margin);
-    return Object.freeze({
+    // Keep the prefix readable, but give most separator whitespace to the
+    // formula crop. IBEM is sensitive to a formula being tightened directly
+    // to its first ink pixel; ordinary source images retain a left margin.
+    const prefixMargin = Math.min(2, Math.floor((gap - 1) / 3));
+    const remainderMargin = Math.min(12, Math.max(0, gap - prefixMargin - 1));
+    const prefixLeft = Math.max(0, firstInk - 2);
+    const prefixRight = Math.min(region.width - 1, leftCluster.right + prefixMargin);
+    const remainderLeft = Math.max(0, rightCluster.left - remainderMargin);
+    const remainderRight = region.width - 1;
+    const prefixCropTop = Math.max(0, prefixTop - 3);
+    const prefixCropBottom = Math.min(region.height - 1, prefixBottom + 3);
+    if (prefixRight >= remainderLeft) continue;
+    candidates.push(Object.freeze({
       regionIndex: null,
       gap,
       requiredGap,
+      evidence: Object.freeze({
+        componentCount: clusters
+          .slice(0, index + 1)
+          .reduce((sum, cluster) => sum + cluster.componentCount, 0),
+        prefixInkHeight,
+        prefixInkWidth,
+        remainderInkWidth,
+        gapToPrefixHeight: gap / prefixInkHeight,
+        medianInternalGap,
+        gapAdvantage,
+        baselineDelta: Math.abs(prefixBottom - rightCluster.bottom),
+        leftAnchored: firstInk <= 2,
+        standalone,
+      }),
       prefix: Object.freeze({
         x: region.x + prefixLeft,
-        y: region.y,
+        y: region.y + prefixCropTop,
         width: prefixRight - prefixLeft + 1,
-        height: region.height,
+        height: prefixCropBottom - prefixCropTop + 1,
       }),
       remainder: Object.freeze({
         x: region.x + remainderLeft,
@@ -169,9 +305,10 @@ function leadingSplitCandidate(
         width: remainderRight - remainderLeft + 1,
         height: region.height,
       }),
-    });
+    }));
+    if (candidates.length >= MAX_LEADING_SPLIT_CANDIDATES) break;
   }
-  return null;
+  return Object.freeze(candidates);
 }
 
 function activeRowRuns(counts, minimumInk) {
@@ -305,7 +442,7 @@ export function analyzeHorizontalOcrLayout(value, { contrastThreshold = 36 } = {
   if (regions.some((region) => region.width < 3 || region.height < 3 || region.inkPixels < 3)) {
     throw layoutError("行領域が小さすぎて安全に分離できません。", "MIXED_OCR_LAYOUT_AMBIGUOUS");
   }
-  const rawLeadingSplit = leadingSplitCandidate(
+  const rawLeadingSplits = leadingSplitCandidates(
     image,
     background,
     contrastThreshold,
@@ -313,9 +450,9 @@ export function analyzeHorizontalOcrLayout(value, { contrastThreshold = 36 } = {
     { standalone: regions.length === 1 },
   );
   const formulaRegionIndex = regions.length - 1;
-  const formulaLeadingSplit = rawLeadingSplit
-    ? Object.freeze({ ...rawLeadingSplit, regionIndex: formulaRegionIndex })
-    : null;
+  const formulaLeadingSplits = Object.freeze(rawLeadingSplits.map((split) => (
+    Object.freeze({ ...split, regionIndex: formulaRegionIndex })
+  )));
   return Object.freeze({
     version: MIXED_OCR_LAYOUT_VERSION,
     kind: regions.length === 1 ? "single-region" : "separated-regions",
@@ -324,6 +461,7 @@ export function analyzeHorizontalOcrLayout(value, { contrastThreshold = 36 } = {
     backgroundLuminance: background,
     regions: Object.freeze(regions),
     separators: Object.freeze(separators.map((separator) => Object.freeze({ ...separator }))),
-    leadingSplitCandidate: formulaLeadingSplit,
+    leadingSplitCandidate: formulaLeadingSplits[0] ?? null,
+    leadingSplitCandidates: formulaLeadingSplits,
   });
 }

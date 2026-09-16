@@ -1,6 +1,9 @@
 import { analyzeHorizontalOcrLayout } from "./mixed-layout.js";
 
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
+const MAX_LEADING_SPLIT_CANDIDATES = 6;
+const MAX_PROBE_PIXELS = 2 * 1024 * 1024;
+const TARGET_PROBE_HEIGHT = 96;
 const PNG_TYPE = "image/png";
 
 export class MixedOcrSegmentationError extends Error {
@@ -74,8 +77,10 @@ function validBounds(bounds, width, height) {
   );
 }
 
-async function cropBitmap(bitmap, bounds, createCanvas) {
-  const regionCanvas = createCanvas(bounds.width, bounds.height);
+async function cropBitmap(bitmap, bounds, createCanvas, { scale = 1 } = {}) {
+  const outputWidth = bounds.width * scale;
+  const outputHeight = bounds.height * scale;
+  const regionCanvas = createCanvas(outputWidth, outputHeight);
   const regionContext = regionCanvas?.getContext?.("2d");
   if (!regionContext || typeof regionContext.drawImage !== "function") {
     throw segmentError("分離領域用2D contextを利用できません。", "MIXED_OCR_CANVAS_UNAVAILABLE");
@@ -88,10 +93,18 @@ async function cropBitmap(bitmap, bounds, createCanvas) {
     bounds.height,
     0,
     0,
-    bounds.width,
-    bounds.height,
+    outputWidth,
+    outputHeight,
   );
   return canvasPng(regionCanvas);
+}
+
+function probeScale(bounds) {
+  let scale = Math.max(1, Math.min(3, Math.ceil(TARGET_PROBE_HEIGHT / bounds.height)));
+  while (scale > 1 && bounds.width * bounds.height * scale * scale > MAX_PROBE_PIXELS) {
+    scale -= 1;
+  }
+  return scale;
 }
 
 /** Decodes once, detects strong line separators, and returns bounded PNG crops. */
@@ -137,36 +150,51 @@ export async function segmentOcrImageBlob(
         index,
         bounds,
         blob: await cropBitmap(bitmap, bounds, createCanvas),
+        probeBlob: await cropBitmap(bitmap, bounds, createCanvas, {
+          scale: probeScale(bounds),
+        }),
       }));
     }
-    const split = layout.leadingSplitCandidate;
-    let leadingSplit = null;
-    if (split !== null && split !== undefined) {
+    const splits = Array.isArray(layout.leadingSplitCandidates)
+      ? layout.leadingSplitCandidates
+      : layout.leadingSplitCandidate
+        ? [layout.leadingSplitCandidate]
+        : [];
+    if (splits.length > MAX_LEADING_SPLIT_CANDIDATES) {
+      throw segmentError("左端候補領域が多すぎます。", "MIXED_OCR_SEGMENTATION_INVALID");
+    }
+    const leadingSplits = [];
+    for (const split of splits) {
       if (
         split.regionIndex !== regions.length - 1
         || !validBounds(split.prefix, width, height)
         || !validBounds(split.remainder, width, height)
+        || split.prefix.x + split.prefix.width > split.remainder.x
       ) {
         throw segmentError("左端候補領域の位置が不正です。", "MIXED_OCR_SEGMENTATION_INVALID");
       }
-      leadingSplit = Object.freeze({
+      leadingSplits.push(Object.freeze({
         regionIndex: split.regionIndex,
         gap: split.gap,
         requiredGap: split.requiredGap,
+        evidence: split.evidence ?? null,
         prefix: Object.freeze({
           bounds: split.prefix,
-          blob: await cropBitmap(bitmap, split.prefix, createCanvas),
+          blob: await cropBitmap(bitmap, split.prefix, createCanvas, {
+            scale: probeScale(split.prefix),
+          }),
         }),
         remainder: Object.freeze({
           bounds: split.remainder,
           blob: await cropBitmap(bitmap, split.remainder, createCanvas),
         }),
-      });
+      }));
     }
     return Object.freeze({
       layout,
       regions: Object.freeze(regions),
-      leadingSplit,
+      leadingSplit: leadingSplits[0] ?? null,
+      leadingSplits: Object.freeze(leadingSplits),
     });
   } catch (error) {
     if (error?.name === "MixedOcrLayoutError" || error instanceof MixedOcrSegmentationError) {

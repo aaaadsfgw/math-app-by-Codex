@@ -23,11 +23,22 @@ function normalizeAction(value) {
   return SHORTCUT_ACTIONS.has(value) ? value : "answer";
 }
 
-function structuredSelectionInput(selection) {
-  const problemInput = parseCombinedProblemText(selection, { source: "selection" });
+function structuredShortcutInput(text, source) {
+  const problemInput = parseCombinedProblemText(text, { source });
   if (problemInput.status !== "ready") return problemInput;
+  if (source === "clipboard") return problemInput;
   if (!problemInput.questionLabel && !problemInput.instructionText) return null;
   return problemInput;
+}
+
+function verifiedWorkflow(workflow) {
+  return Boolean(
+    workflow?.presentable
+      && workflow?.presentation
+      && workflow?.solverResult?.supported === true
+      && workflow.solverResult.solved === true
+      && workflow.solverResult.verified === true,
+  );
 }
 
 function failureMessage(workflow) {
@@ -50,7 +61,7 @@ export async function getShortcutInput({
 
   const selection = cleanText(await getSelectionText());
   if (selection) {
-    const problemInput = structuredSelectionInput(selection);
+    const problemInput = structuredShortcutInput(selection, "selection");
     return Object.freeze({
       question: selection,
       source: "selection",
@@ -65,11 +76,15 @@ export async function getShortcutInput({
       { code: "EMPTY_INPUT" },
     );
   }
-  return Object.freeze({ question: clipboard, source: "clipboard" });
+  return Object.freeze({
+    question: clipboard,
+    source: "clipboard",
+    problemInput: structuredShortcutInput(clipboard, "clipboard"),
+  });
 }
 
 export function shortcutClipboardOutput(workflow) {
-  if (!workflow?.presentable || !workflow.presentation) return "";
+  if (!verifiedWorkflow(workflow)) return "";
   const output = workflow.outputMode === "answer"
     ? workflow.presentation.finalAnswer
     : workflow.presentation.content;
@@ -91,10 +106,11 @@ export async function runShortcutWorkflow({
   if (typeof solve !== "function") throw new TypeError("solveは関数で指定してください。");
 
   const input = await getShortcutInput({ getSelectionText, readClipboardText });
-  if (input.problemInput?.status === "unsupported") {
+  if (input.problemInput && input.problemInput.status !== "ready") {
+    const invalid = ["invalid", "conflict"].includes(input.problemInput.status);
     throw new ShortcutWorkflowError(
-      cleanText(input.problemInput.error) || "選択した問題を安全に解析できませんでした。",
-      { code: "UNSUPPORTED_INPUT" },
+      cleanText(input.problemInput.error) || "入力した問題を安全に解析できませんでした。",
+      { code: invalid ? "INVALID_INPUT" : "UNSUPPORTED_INPUT" },
     );
   }
   const action = normalizeAction(settings.shortcutAction);
@@ -103,7 +119,7 @@ export async function runShortcutWorkflow({
     symbolicOperations,
   });
 
-  if (!workflow?.presentable) {
+  if (!verifiedWorkflow(workflow)) {
     throw new ShortcutWorkflowError(failureMessage(workflow), {
       code: workflow?.resultKind === "invalid" ? "INVALID_INPUT" : "UNSUPPORTED_INPUT",
       result: workflow,

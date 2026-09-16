@@ -5,6 +5,7 @@ import {
   normalizeInstruction,
 } from "./instruction-normalizer.js";
 import {
+  inspectWeakInlineQuestionLabel,
   isQuestionLabel,
   separateQuestionLabel,
 } from "./question-label.js";
@@ -36,6 +37,8 @@ const MAX_CONDITION_CHARACTERS = 512;
 const CONTROL_CHARACTER = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 const RELATION_CHARACTER = /[=＝<>＜＞≤≥≦≧≠]/u;
 const EQUATION_CHARACTER = /[=＝]/gu;
+const TERMINAL_PROBLEM_STATUSES = new Set(["unsupported", "invalid", "conflict"]);
+const MAX_PROBLEM_ERROR_CHARACTERS = 1_000;
 const JAPANESE_CHARACTER = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 const NON_JAPANESE_RUN = /[^\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu;
 const BARE_SOLVE_INSTRUCTION = /^を?(?:解け|解きなさい|解いてください)[。．.!！?？]*$/u;
@@ -82,6 +85,8 @@ function hasStructuredProblemFields(value) {
       "questionLabel",
       "conditions",
       "schemaVersion",
+      "status",
+      "error",
     ].some((name) => Object.hasOwn(value, name));
   } catch {
     return true;
@@ -209,7 +214,7 @@ function inlineFormulaEvidence(value, { startsLine = false } = {}) {
   if (/^[+-]?(?:\d+(?:\.\d+)?|\(\d+(?:\.\d+)?\))$/u.test(compact)) return false;
   if (/^[A-Za-z]$/u.test(compact)) return startsLine;
   if (/^[A-Za-z]\d+$/u.test(compact)) return startsLine;
-  return /[=+\-*/^<>≤≥≦≧]|(?:sin|cos|tan|log|exp|sqrt)\(/iu.test(compact);
+  return /[=+\-*/^<>≤≥≦≧×∙·・÷−–—⁰¹²³⁴⁵⁶⁷⁸⁹]|(?:sin|cos|tan|log|exp|sqrt)\(/iu.test(compact);
 }
 
 function inlineFormulaFromRun(value) {
@@ -270,6 +275,18 @@ function parseInlineInstruction(line) {
   return unique.length === 1 ? unique[0] : null;
 }
 
+function parseWeakInlineLabeledProblem(line) {
+  const candidate = inspectWeakInlineQuestionLabel(line);
+  if (!candidate) return null;
+  const parsed = parseInlineInstruction(candidate.remainingText);
+  if (!parsed || /^[+\-*/^=<>≤≥≦≧×∙·・÷(（[{]/u.test(parsed.formulaText)) return null;
+  return Object.freeze({
+    questionLabel: candidate.questionLabel,
+    remainingText: candidate.remainingText,
+    parsed,
+  });
+}
+
 /**
  * Parses only strong line-structured evidence. It is intentionally not used
  * for arbitrary legacy strings; callers opt in for a web selection or OCR
@@ -298,10 +315,13 @@ export function parseCombinedProblemText(value, { source = "selection" } = {}) {
   }
 
   const separated = separateQuestionLabel(rawText);
-  const body = separated.remainingText;
+  const weakInline = separated.reason ? parseWeakInlineLabeledProblem(rawText) : null;
+  const body = weakInline?.remainingText ?? separated.remainingText;
   const lines = body.split("\n").map((line) => line.trim()).filter(Boolean);
-  const parsed = parseInstructionPrefix(lines)
+  const parsed = weakInline?.parsed
+    ?? parseInstructionPrefix(lines)
     ?? (lines.length === 1 && !separated.reason ? parseInlineInstruction(lines[0]) : null);
+  const questionLabel = weakInline?.questionLabel ?? separated.questionLabel;
   const recordSource = sourceValue(source, "selection");
   const recordFieldSource = fieldSourceValue(source, "selection");
   if (!parsed) {
@@ -317,7 +337,7 @@ export function parseCombinedProblemText(value, { source = "selection" } = {}) {
     }
     return normalizeProblemInput({
       rawText,
-      questionLabel: separated.questionLabel,
+      questionLabel,
       formulaText: body,
       source: recordSource,
       formulaSource: recordFieldSource,
@@ -325,7 +345,7 @@ export function parseCombinedProblemText(value, { source = "selection" } = {}) {
   }
   return normalizeProblemInput({
     rawText,
-    questionLabel: separated.questionLabel,
+    questionLabel,
     instructionText: parsed.instructionText,
     formulaText: parsed.formulaText,
     source: recordSource,
@@ -373,6 +393,8 @@ export function normalizeProblemInput(value, { source = "manual" } = {}) {
 
   const snapshot = safeFields(value, [
     "schemaVersion",
+    "status",
+    "error",
     "rawText",
     "questionLabel",
     "instructionText",
@@ -398,10 +420,12 @@ export function normalizeProblemInput(value, { source = "manual" } = {}) {
   let questionLabel;
   let instructionText;
   let formulaText;
+  let suppliedError;
   try {
     rawText = cleanText(snapshot.fields.rawText, { preserveLines: true });
     questionLabel = cleanText(snapshot.fields.questionLabel);
     instructionText = cleanText(snapshot.fields.instructionText);
+    suppliedError = cleanText(snapshot.fields.error);
     formulaText = cleanText(
       snapshot.fields.formulaText ?? snapshot.fields.question,
       { preserveLines: true },
@@ -469,6 +493,27 @@ export function normalizeProblemInput(value, { source = "manual" } = {}) {
   if (status === "ready" && conditionsResult.conditions.length > 0) {
     status = "unsupported";
     error = "入力条件を既存solverの検証へ安全に結合できないため、現在は自動実行しません。";
+  }
+
+  const suppliedStatus = snapshot.fields.status;
+  if (
+    status === "ready"
+    && TERMINAL_PROBLEM_STATUSES.has(suppliedStatus)
+  ) {
+    status = suppliedStatus;
+    error = suppliedError && suppliedError.length <= MAX_PROBLEM_ERROR_CHARACTERS
+      && !CONTROL_CHARACTER.test(suppliedError)
+      ? suppliedError
+      : "入力取得時に安全に解釈できなかったため、自動実行しません。";
+  } else if (
+    status === "ready"
+    && suppliedStatus !== undefined
+    && suppliedStatus !== null
+    && suppliedStatus !== ""
+    && suppliedStatus !== "ready"
+  ) {
+    status = "invalid";
+    error = "ProblemInputのstatusが不正です。";
   }
 
   return problemRecord({

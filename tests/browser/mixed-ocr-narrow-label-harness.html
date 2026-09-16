@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Narrow problem-label OCR harness</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+      background: #eef3f9;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      padding: 20px;
+      background: #fff;
+      text-align: center;
+    }
+
+    #ocrCaptureTarget {
+      box-sizing: border-box;
+      width: 600px;
+      height: 220px;
+      padding: 18px 22px;
+      background: #fff;
+      color: #000;
+      text-align: left;
+    }
+
+    .instruction {
+      font: 26px/1.35 "Yu Gothic UI", Meiryo, sans-serif;
+    }
+
+    .formula-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 54px;
+      white-space: nowrap;
+    }
+
+    .question-label {
+      font: 28px/1 "Times New Roman", "Yu Mincho", serif;
+    }
+
+    .formula {
+      display: block;
+      width: 145px;
+      height: 60px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>教材相当の狭い問題番号OCR</h1>
+    <div
+      id="ocrCaptureTarget"
+      data-natural-width="145"
+      data-natural-height="60"
+      data-capture-width="600"
+      data-capture-height="220"
+      data-expected-kind="mixed"
+      data-expected-question-label="(2)"
+      data-expected-instruction="次の式を簡単にせよ"
+      data-expected-solve-instruction="次の式を簡単にせよ"
+      data-expected-formula="x+y"
+      data-expected-intent="simplify"
+      data-expected-answer="x+y"
+    >
+      <div class="instruction">次の式を簡単にせよ</div>
+      <div class="formula-row">
+        <span id="questionLabel" class="question-label">(2)</span>
+        <img
+          class="formula"
+          src="../../vendor/ocr/ibem-im2typst/smoke-formula.png"
+          width="145"
+          height="60"
+          alt="x plus y"
+        >
+      </div>
+    </div>
+  </main>
+  <script>
+    const supportedLabels = Object.freeze({
+      "1": "(1)",
+      "2": "(2)",
+      "10": "(10)",
+      fullwidth2: "（2）",
+    });
+    const requested = new URL(location.href).searchParams.get("label") || "2";
+    const label = supportedLabels[requested] || supportedLabels["2"];
+    document.querySelector("#questionLabel").textContent = label;
+    document.querySelector("#ocrCaptureTarget").dataset.expectedQuestionLabel = label;
+  </script>
+</body>
+</html>

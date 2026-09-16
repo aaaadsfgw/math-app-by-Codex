@@ -5,8 +5,8 @@
 1. Click the Math Study Log toolbar icon, then choose `Side Panelを開く` in the
    small launcher. The Side Panel remains visible while you inspect the current
    web page.
-2. Type a textual mathematics question, or capture selected text from a normal
-   web page.
+2. Type or paste a textual mathematics question, or capture selected text from
+   a normal web page.
 3. Choose answer, hint 1, hint 2, working, or explanation.
 4. Select **解析する**.
 5. Check the verification label and record how independently you solved it.
@@ -170,19 +170,42 @@ notation are still unsupported. On the rational-bound `pi`-slope route,
 ordinary-radian slopes, polynomial or exponential terms, and mixed expressions
 such as `sin(x)+sin(pi*x)` remain unsupported as one whole problem.
 
+## Paste a complete web problem
+
+Paste into the empty main question field, or select the whole current question
+before pasting a replacement. When the clipboard includes matching semantic
+HTML, the Side Panel can preserve supported HTML superscripts/subscripts,
+MathML, and one-to-one KaTeX/MathJax semantics. For example, visible
+`x<sup>2</sup>` may enter the editable formula as `x^2`, and a complete
+`(2) x<sup>2</sup>-5x+6=0 を解け` can populate the problem number,
+instruction, and formula fields separately.
+
+The accompanying plain text is authoritative. If the HTML and plain
+representations do not describe the same complete text, the HTML is malformed
+or unsupported, or extraction is uncertain, the extension pastes the plain
+text unchanged. Plain `x2` is never repaired to `x^2`. Explicit Unicode
+superscripts such as `x²` remain explicit input rather than a guess. Review and
+edit the fields, then choose **解析する** yourself; paste never starts solving
+or changes the clipboard again automatically.
+
 ## Shortcut
 
 Select a question on an HTTP/HTTPS page and press `Ctrl+Shift+Y`
-(`Command+Shift+Y` on macOS). A verified final answer is copied and a toast
-confirms success. If the page selection is empty, this explicit shortcut reads
-the current clipboard as a fallback. Unsupported or invalid input leaves the
+(`Command+Shift+Y` on macOS). A supported, solved, and verified configured
+Answer, Hint 1, Hint 2, or Steps output is copied. If page selection is empty
+or cannot be read, the shortcut uses the current clipboard. On `chrome://`
+pages, extension pages, and DevTools it skips page reading and uses the
+clipboard directly. Those restricted pages cannot receive the extension's
+toast, so the copied result is the success signal. On ordinary web pages the
+toast is best-effort. Unsupported, invalid, or conflicting input leaves the
 clipboard unchanged.
 
 ## Printed math image input
 
 Use the Side Panel OCR action only for a tightly cropped machine-printed formula, or
 for the supported compact layout with one or two short Japanese problem-number
-or instruction lines directly above exactly one formula:
+or instruction lines directly above exactly one formula, optionally with a
+small problem number at the start of the formula row:
 
 1. Start OCR and drag a close rectangle around that bounded content. Do not
    include a diagram, an arbitrary paragraph, an answer, or a second formula.
@@ -197,6 +220,14 @@ or instruction lines directly above exactly one formula:
    variable, and bound, and correct any transcription yourself.
 4. Choose the separate solve action only after all fields match the image.
    Discard the crop instead if the result is uncertain.
+
+A small problem number may share the final row with the formula. The extension
+can consider narrow whitespace before `(1)`, `(2)`, `(10)`, or `（2）`, but it
+removes the prefix only after a separate OCR probe uniquely confirms a complete
+label and the remaining formula is viable. `(2)x^2`, `(2)*(x+1)`, `(1+x)`,
+incomplete parentheses, and any ambiguous candidate stay in the complete
+formula image. Always compare the editable problem-number and formula fields
+with the retained crop.
 
 If recognition or safe layout separation fails, the crop is kept, retry remains
 available, and the editable fields remain available for manual transcription.
@@ -243,7 +274,8 @@ application data.
 
 Printed math OCR is limited to exactly one machine-printed formula, optionally
 with one or two short horizontal Japanese problem-number/instruction lines
-above it, and has experimental accuracy. It does not expand what the
+above it and one independently confirmed problem number at the start of its
+final row, and has experimental accuracy. It does not expand what the
 deterministic solver can solve. Handwriting recognition, page/general OCR,
 diagram-dependent geometry, construction problems, and proof prose are outside
 scope. Current mathematical coverage is listed in

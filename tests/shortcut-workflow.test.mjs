@@ -8,6 +8,12 @@ import {
 } from "../js/shortcut-workflow.js";
 
 function solvedWorkflow(mode = "answer") {
+  const contentByMode = {
+    answer: "x=2",
+    hint1: "両辺を同じ数で割ることを考えます。",
+    hint2: "両辺を2で割る直前まで整理します。",
+    steps: "2x=4\nx=2",
+  };
   return {
     question: "2x=4",
     outputMode: mode,
@@ -15,7 +21,7 @@ function solvedWorkflow(mode = "answer") {
     resultKind: "exact",
     presentable: true,
     presentation: {
-      content: mode === "answer" ? "x=2" : "両辺を同じ数で割ることを考えます。",
+      content: contentByMode[mode] ?? contentByMode.answer,
       finalAnswer: "x=2",
     },
     solverResult: {
@@ -51,7 +57,11 @@ test("選択がなければclipboardから問題を取得する", async () => {
     getSelectionText: async () => "",
     readClipboardText: async () => " 3x=9 ",
   });
-  assert.deepEqual(input, { question: "3x=9", source: "clipboard" });
+  assert.equal(input.question, "3x=9");
+  assert.equal(input.source, "clipboard");
+  assert.equal(input.problemInput.status, "ready");
+  assert.equal(input.problemInput.formulaText, "3x=9");
+  assert.equal(input.problemInput.source, "clipboard");
 });
 
 test("行構造で裏付けられた選択だけをProblemInputへ分離する", async () => {
@@ -85,7 +95,7 @@ test("番号か係数か曖昧な同一行selectionはverified結果にもclipbo
   let clipboardWrites = 0;
   const result = await assert.rejects(
     runShortcutWorkflow({
-      getSelectionText: async () => "(3) 1/x+2/(x+1) を簡単にせよ",
+      getSelectionText: async () => "(3) 1/x+2/(x+1)",
       readClipboardText: async () => "original",
       writeClipboardText: async () => { clipboardWrites += 1; },
       settings: { shortcutAction: "answer", learningMode: "quick" },
@@ -119,28 +129,56 @@ test("小数係数の先頭を問題番号と誤認せずverified結果だけcli
   assert.equal(result.workflow.solverResult.verified, true);
 });
 
-test("plain selectionとclipboardは従来どおり文字列のまま渡す", async () => {
-  const values = [
-    {
-      selection: " x2 + 5x + 2 = 0 ",
-      clipboard: "unused",
-      expected: { question: "x2 + 5x + 2 = 0", source: "selection" },
-    },
-    {
-      selection: "",
-      clipboard: "次の方程式を解け。\n2x=4",
-      expected: { question: "次の方程式を解け。\n2x=4", source: "clipboard" },
-    },
-  ];
+test("plain selectionのx2は従来どおり推測変換せず文字列のまま渡す", async () => {
+  const input = await getShortcutInput({
+    getSelectionText: async () => " x2 + 5x + 2 = 0 ",
+    readClipboardText: async () => "unused",
+  });
+  assert.deepEqual(input, { question: "x2 + 5x + 2 = 0", source: "selection" });
+  assert.equal(Object.hasOwn(input, "problemInput"), false);
+});
 
-  for (const value of values) {
-    const input = await getShortcutInput({
-      getSelectionText: async () => value.selection,
-      readClipboardText: async () => value.clipboard,
-    });
-    assert.deepEqual(input, value.expected);
-    assert.equal(Object.hasOwn(input, "problemInput"), false);
-  }
+test("clipboardの問題全文もProblemInputへ安全に分離する", async () => {
+  const input = await getShortcutInput({
+    getSelectionText: async () => "",
+    readClipboardText: async () => "次の方程式を解け。\n2x=4",
+  });
+  assert.equal(input.question, "次の方程式を解け。\n2x=4");
+  assert.equal(input.source, "clipboard");
+  assert.equal(input.problemInput.status, "ready");
+  assert.equal(input.problemInput.instructionText, "次の方程式を解け");
+  assert.equal(input.problemInput.instructionIntent, "solve_equation");
+  assert.equal(input.problemInput.formulaText, "2x=4");
+  assert.equal(input.problemInput.source, "clipboard");
+  assert.equal(input.problemInput.instructionSource, "clipboard");
+  assert.equal(input.problemInput.formulaSource, "clipboard");
+});
+
+test("同一行clipboardの明確な数式と指示もProblemInputへ分離する", async () => {
+  const input = await getShortcutInput({
+    getSelectionText: async () => "",
+    readClipboardText: async () => "x^2-5x+6=0 を解け",
+  });
+  assert.equal(input.problemInput.status, "ready");
+  assert.equal(input.problemInput.instructionIntent, "solve_equation");
+  assert.equal(input.problemInput.formulaText, "x^2-5x+6=0");
+  assert.equal(input.problemInput.source, "clipboard");
+});
+
+test("clipboardの問題全文を既存quadratic solverへ通しverified answerだけを書く", async () => {
+  const writes = [];
+  const result = await runShortcutWorkflow({
+    getSelectionText: async () => "",
+    readClipboardText: async () => "x^2-5x+6=0 を解け",
+    writeClipboardText: async (text) => writes.push(text),
+    settings: { learningMode: "quick", shortcutAction: "answer" },
+  });
+
+  assert.deepEqual(writes, ["x=2,3"]);
+  assert.equal(result.input.source, "clipboard");
+  assert.equal(result.workflow.problemInput.formulaText, "x^2-5x+6=0");
+  assert.equal(result.workflow.solverResult.solverId, "quadratic-equation");
+  assert.equal(result.workflow.solverResult.verified, true);
 });
 
 test("Quick Modeはコピーしても履歴へ保存しない", async () => {
@@ -263,7 +301,8 @@ test("selectionの明示指示が競合する場合はterminal failureとなりc
         addHistory: async () => { saves += 1; },
         settings: { learningMode: "study", saveHistory: true },
       }),
-      (error) => error.code === "INVALID_INPUT" && error.result?.solverResult?.solverId === "problem-input",
+      (error) => error.code === "INVALID_INPUT"
+        && (!error.result || error.result.solverResult?.solverId === "problem-input"),
     );
     assert.equal(clipboardReads, 0);
     assert.equal(writes, 0);
@@ -292,6 +331,79 @@ test("unsupportedとinvalidはclipboardも履歴も変更しない", async () =>
     );
     assert.equal(writes, 0);
     assert.equal(saves, 0);
+  }
+});
+
+test("clipboard解析でterminal statusになった入力はsolver・clipboard・履歴へ進めない", async () => {
+  for (const [clipboard, expectedCode] of [
+    ["(3) 1/x+2/(x+1)", "UNSUPPORTED_INPUT"],
+    ["2x=4\u0001", "INVALID_INPUT"],
+  ]) {
+    let solves = 0;
+    let writes = 0;
+    let saves = 0;
+    await assert.rejects(
+      runShortcutWorkflow({
+        getSelectionText: async () => "",
+        readClipboardText: async () => clipboard,
+        writeClipboardText: async () => { writes += 1; },
+        addHistory: async () => { saves += 1; },
+        settings: { learningMode: "study", saveHistory: true },
+        solve: async () => {
+          solves += 1;
+          return solvedWorkflow();
+        },
+      }),
+      (error) => error instanceof ShortcutWorkflowError && error.code === expectedCode,
+    );
+    assert.equal(solves, 0);
+    assert.equal(writes, 0);
+    assert.equal(saves, 0);
+  }
+});
+
+test("presentableを偽装しても未検証solver結果はclipboardへ書かない", async () => {
+  let writes = 0;
+  let saves = 0;
+  await assert.rejects(
+    runShortcutWorkflow({
+      getSelectionText: async () => "2x=4",
+      readClipboardText: async () => "unused",
+      writeClipboardText: async () => { writes += 1; },
+      addHistory: async () => { saves += 1; },
+      settings: { learningMode: "study", saveHistory: true },
+      solve: async (_question, { mode }) => {
+        const workflow = solvedWorkflow(mode);
+        return {
+          ...workflow,
+          solverResult: { ...workflow.solverResult, verified: false },
+        };
+      },
+    }),
+    (error) => error instanceof ShortcutWorkflowError && error.code === "UNSUPPORTED_INPUT",
+  );
+  assert.equal(writes, 0);
+  assert.equal(saves, 0);
+});
+
+test("answer・hint1・hint2・stepsの設定値を対応するclipboard出力へ維持する", async () => {
+  const expectedByAction = {
+    answer: "x=2",
+    hint1: "両辺を同じ数で割ることを考えます。",
+    hint2: "両辺を2で割る直前まで整理します。",
+    steps: "2x=4\nx=2",
+  };
+  for (const [shortcutAction, expected] of Object.entries(expectedByAction)) {
+    const writes = [];
+    const result = await runShortcutWorkflow({
+      getSelectionText: async () => "2x=4",
+      readClipboardText: async () => "unused",
+      writeClipboardText: async (text) => writes.push(text),
+      settings: { learningMode: "quick", shortcutAction },
+      solve: async (_question, { mode }) => solvedWorkflow(mode),
+    });
+    assert.equal(result.action, shortcutAction);
+    assert.deepEqual(writes, [expected]);
   }
 });
 

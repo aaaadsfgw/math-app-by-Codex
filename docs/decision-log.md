@@ -804,3 +804,94 @@ the four-field UI, instruction/formula edit provenance, explicit solve,
 Study/Quick behavior, and
 cleanup. It did not establish exact OCR for a rendered fraction or measure
 Worker/WASM peak memory, so user review remains mandatory.
+
+## D-033: Treat page integration as optional for the global solve shortcut
+
+**Status:** accepted
+**Date:** 2026-09-14
+
+The shortcut command is coordinated independently from page injection. On an
+HTTP/HTTPS tab it still attempts structured selection first and then the
+clipboard. If selection messaging fails, or if the invoking context is a
+`chrome://` page, extension page, DevTools page, missing tab, or another
+non-injectable context, it skips page selection and toast injection and runs the
+same offscreen clipboard workflow. Toasts are best-effort feedback only: toast
+failure cannot undo or misclassify an already verified clipboard write.
+
+A single command-wide in-flight guard prevents overlapping invocations even
+when tab identity changes. Clipboard text is compiled through the common
+`ProblemInput` boundary, every non-ready status is terminal, and output is
+written only when the workflow is presentable and the underlying solver result
+is separately `supported`, `solved`, and `verified`. Quick/Study mode and the
+configured Answer, Hint 1, Hint 2, or Steps action remain unchanged.
+
+The offscreen reader still prefers the asynchronous Clipboard API. A
+permission-scoped `execCommand("paste")` path is used only when that API cannot
+read because the hidden document is not focused; it is a narrow compatibility
+fallback rather than a second parsing path.
+
+Requiring an injectable active tab was rejected because it needlessly disabled
+the offscreen clipboard capability. Simulating a success toast on restricted
+pages was also rejected: it would require page access that Chrome intentionally
+withholds and is not part of the mathematical safety boundary.
+
+## D-034: Preserve semantic math from paste only when HTML and plain text correspond
+
+**Status:** accepted
+**Date:** 2026-09-14
+
+The Side Panel may inspect `text/html` only during an explicit user paste into
+an empty main question field or over its complete selection. Clipboard markup is
+parsed in a detached inert document and read through the same bounded
+HTML/MathML/KaTeX/MathJax serializer as web selection. Structure is admitted
+only when the serializer's complete source-text signature equals the normalized
+`text/plain` representation. Otherwise the complete plain representation is
+used unchanged. The HTML is never attached to a live document, and page code,
+scripts, external resources, and renderer APIs are never executed.
+
+The acquired text then enters `parseCombinedProblemText` and
+`normalizeProblemInput`, remains editable, and never invokes the solver from
+the paste event. Explicit superscript/subscript structure and Unicode
+superscript characters can therefore be preserved, while plain `x2` remains
+plain `x2`. Unsupported, invalid, and conflicting acquisition statuses are
+retained across normalization.
+
+Trusting hidden MathML merely because it is near visible clipboard text was
+rejected because unrelated markup could change the problem. Reconstructing
+missing structure from plain characters and partially merging HTML with plain
+text were rejected for the same reason. Disabling HTML paste entirely was not
+selected because a strict whole-input correspondence check recovers proven
+structure without weakening the plain-text fallback.
+
+## D-035: Isolate narrow same-row OCR labels with bounded component evidence
+
+**Status:** accepted for experimental local use
+**Date:** 2026-09-14
+
+The final OCR row uses a bounded 8-connected-component scan to propose at most
+six prefix/remainder boundaries. Its minimum gap is relative to the observed
+prefix glyph height rather than the height of the entire row, so textbook gaps
+of only a few pixels can be considered without being declared labels from
+layout alone. For a multi-component parenthesized prefix, the candidate boundary
+must also be wider than the prefix's own character spacing, so normal
+side-bearing in `(2)x^2` is not treated as a layout separator. Candidate prefix
+crops are vertically tightened and safely upscaled for independent Japanese
+OCR; the remainder keeps ordinary left whitespace for IBEM.
+
+A split is used only when exactly one candidate produces an exact recognized
+question label, the candidate's component count can account for every digit
+and delimiter (or a non-decomposable label is independently corroborated
+above), and any stacked label agrees. Zero candidates, multiple exact
+candidates, probe failure, disagreement, an unreadable formula remainder, or a
+remainder beginning with a definite binary continuation restores the complete
+formula row. The candidate remains editable and unconfirmed, and solving still
+requires the separate explicit action.
+
+A fixed large column-gap threshold was rejected because fraction rows make the
+row height unrelated to the small label glyphs. Deleting a leading `(N)` with a
+text regex, accepting the first plausible component boundary, or trusting OCR
+that visually completes a cropped parenthesis were rejected because they can
+change `(2)x^2`, `(2)*(x+1)`, `(1+x)(1-x)`, or `f((2+x))` into a different
+problem. Fresh isolated Chrome 152 flows on 2026-09-14 captured real pixels and
+passed `(1)`, `(2)`, `(10)`, and `（2）` beside the packaged `x+y` formula,
+through editable candidate and explicit verified solve.

@@ -11,6 +11,7 @@ import {
   normalizeProblemInput,
   parseCombinedProblemText,
 } from "./problem/problem-input.js";
+import { acquirePastedProblem } from "./problem/paste-input.js";
 import {
   getSettings,
   saveSettings,
@@ -83,6 +84,8 @@ let preservedConditions = [];
 let preservedInstructionIntent = null;
 let instructionSource = "none";
 let formulaSource = "manual";
+let preservedProblemStatus = "ready";
+let preservedProblemError = "";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -100,6 +103,8 @@ function clearStructuredInputState(question, source) {
   preservedInstructionIntent = null;
   instructionSource = "none";
   formulaSource = normalizedFieldSource(source, "manual");
+  preservedProblemStatus = "ready";
+  preservedProblemError = "";
   elements.questionLabelInput.value = "";
   elements.instructionInput.value = "";
   if (elements.problemMetaDetails) elements.problemMetaDetails.open = false;
@@ -113,6 +118,8 @@ function restoreStructuredInput(problemInput, fallbackQuestion, source) {
   preservedInstructionIntent = normalized.instructionIntent;
   instructionSource = normalized.instructionSource;
   formulaSource = normalized.formulaSource;
+  preservedProblemStatus = normalized.status;
+  preservedProblemError = normalized.error;
   elements.questionLabelInput.value = normalized.questionLabel;
   elements.instructionInput.value = normalized.instructionText;
   elements.questionInput.value = normalized.formulaText;
@@ -134,6 +141,8 @@ function currentStructuredProblemInput() {
 
   return normalizeProblemInput({
     rawText: originalProblemText || elements.questionInput.value,
+    status: preservedProblemStatus,
+    error: preservedProblemError,
     questionLabel,
     instructionText,
     instructionIntent: preservedInstructionIntent,
@@ -719,6 +728,8 @@ function handleManualInput(event) {
     || cleanText(elements.instructionInput.value)
     || preservedConditions.length > 0
   ) structuredInputActive = true;
+  preservedProblemStatus = "ready";
+  preservedProblemError = "";
   pendingParentHistoryId = null;
   setInputSource("manual");
   resetAttempt();
@@ -726,6 +737,39 @@ function handleManualInput(event) {
   updateClassification();
   clearError();
   setAppState("入力中");
+}
+
+function pasteReplacesWholeQuestion() {
+  const value = String(elements.questionInput.value ?? "");
+  if (!value.trim()) return true;
+  try {
+    return Number(elements.questionInput.selectionStart) === 0
+      && Number(elements.questionInput.selectionEnd) === value.length;
+  } catch {
+    return false;
+  }
+}
+
+function handleQuestionPaste(event) {
+  if (!pasteReplacesWholeQuestion()) return;
+  const acquired = acquirePastedProblem(event?.clipboardData);
+  if (!acquired.handled || !acquired.problemInput) return;
+
+  event.preventDefault();
+  const { problemInput } = acquired;
+  setQuestion(problemInput.formulaText, {
+    source: "clipboard",
+    problemInput,
+  });
+  if (problemInput.status === "ready") {
+    clearError();
+    setAppState(
+      acquired.extraction.usedStructure ? "数式構造を保持して貼り付け" : "問題文を貼り付け",
+      "success",
+    );
+  } else {
+    showError(problemInput.error || "貼り付けた問題を安全に分離できませんでした。編集して確認してください。");
+  }
 }
 
 async function initialize() {
@@ -743,6 +787,7 @@ async function initialize() {
   elements.questionLabelInput.addEventListener("input", handleManualInput);
   elements.instructionInput.addEventListener("input", handleManualInput);
   elements.questionInput.addEventListener("input", handleManualInput);
+  elements.questionInput.addEventListener("paste", handleQuestionPaste);
   elements.selectionButton.addEventListener("click", () => void loadSelection());
   elements.ocrButton.addEventListener("click", () => void startOcrCapture());
   elements.outputActionButtons.forEach((button) => {
