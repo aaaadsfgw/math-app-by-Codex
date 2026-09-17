@@ -1,5 +1,6 @@
 import { classifyCategory } from "./category-classifier.js";
 import { compileProblemInput } from "./problem/problem-input.js";
+import { compileStructuredProblemSet } from "./problem/structured-input.js";
 import { presentSolution, OUTPUT_MODES } from "./solution-presenter.js";
 import { solveQuestionAsync } from "./solver/index.js";
 import { failedResult, unsupportedResult } from "./solver/utils.js";
@@ -55,6 +56,18 @@ function problemInputFailure(compilation) {
   });
 }
 
+function structuredInputFailure(compilation) {
+  const base = compilation.kind === "invalid"
+    ? failedResult("structured-input", compilation.error)
+    : unsupportedResult(compilation.error);
+  return Object.freeze({
+    ...base,
+    solverId: "structured-input",
+    recognized: true,
+    retryable: false,
+  });
+}
+
 function workflowResult({
   question,
   outputMode,
@@ -62,10 +75,14 @@ function workflowResult({
   solverResult,
   presentation = null,
   problemInput = null,
+  problemSet = null,
+  structuredProblem = null,
 }) {
   return Object.freeze({
     question,
     problemInput,
+    problemSet,
+    structuredProblem,
     outputMode,
     classification,
     solverResult,
@@ -77,8 +94,8 @@ function workflowResult({
 
 /**
  * Runs the shared deterministic solve pipeline without reading or writing storage.
- * Unsupported and invalid solver results are returned unchanged and are never
- * passed to the presenter.
+ * Every acquisition path first crosses StructuredProblemSet safety checks. Only
+ * one ready item is compiled for the existing solver pipeline in Phase A.
  */
 export async function solveWorkflow(
   questionValue,
@@ -94,14 +111,34 @@ export async function solveWorkflow(
   if (typeof classifier !== "function") throw new TypeError("classifierは関数で指定してください。");
   if (typeof presenter !== "function") throw new TypeError("presenterは関数で指定してください。");
 
-  const compilation = compileProblemInput(questionValue);
-  const problemInput = compilation.problemInput;
-  const question = problemInput.formulaText;
+  const structuredCompilation = compileStructuredProblemSet(questionValue);
+  const problemSet = structuredCompilation.problemSet;
+  const structuredProblem = structuredCompilation.problem;
+  const problemInput = structuredCompilation.problemInput
+    ?? structuredProblem?.legacyProblemInput
+    ?? null;
+  const question = cleanText(structuredProblem?.formulaText ?? problemInput?.formulaText);
   const outputMode = normalizedOutputMode(mode);
-  if (!compilation.ok) {
+
+  if (!structuredCompilation.ok) {
     return workflowResult({
       question,
       problemInput,
+      problemSet,
+      structuredProblem,
+      outputMode,
+      classification: null,
+      solverResult: structuredInputFailure(structuredCompilation),
+    });
+  }
+
+  const compilation = compileProblemInput(structuredCompilation.problemInput);
+  if (!compilation.ok) {
+    return workflowResult({
+      question,
+      problemInput: compilation.problemInput,
+      problemSet,
+      structuredProblem,
       outputMode,
       classification: null,
       solverResult: problemInputFailure(compilation),
@@ -114,7 +151,9 @@ export async function solveWorkflow(
   } catch (error) {
     return workflowResult({
       question,
-      problemInput,
+      problemInput: compilation.problemInput,
+      problemSet,
+      structuredProblem,
       outputMode,
       classification: null,
       solverResult: workflowFailure(
@@ -144,7 +183,9 @@ export async function solveWorkflow(
   if (!presentableSolverResult(solverResult)) {
     return workflowResult({
       question,
-      problemInput,
+      problemInput: compilation.problemInput,
+      problemSet,
+      structuredProblem,
       outputMode,
       classification,
       solverResult,
@@ -160,7 +201,9 @@ export async function solveWorkflow(
     });
     return workflowResult({
       question,
-      problemInput,
+      problemInput: compilation.problemInput,
+      problemSet,
+      structuredProblem,
       outputMode,
       classification,
       solverResult,
@@ -169,7 +212,9 @@ export async function solveWorkflow(
   } catch (error) {
     return workflowResult({
       question,
-      problemInput,
+      problemInput: compilation.problemInput,
+      problemSet,
+      structuredProblem,
       outputMode,
       classification,
       solverResult: workflowFailure(
@@ -204,6 +249,8 @@ export function presentWorkflowResult(
   return workflowResult({
     question: cleanText(solvedWorkflow.question),
     problemInput: solvedWorkflow.problemInput || null,
+    problemSet: solvedWorkflow.problemSet || null,
+    structuredProblem: solvedWorkflow.structuredProblem || null,
     outputMode,
     classification: solvedWorkflow.classification,
     solverResult: solvedWorkflow.solverResult,

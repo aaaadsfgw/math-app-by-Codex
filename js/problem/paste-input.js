@@ -4,6 +4,7 @@ import {
   normalizeProblemInput,
   parseCombinedProblemText,
 } from "./problem-input.js";
+import { normalizeStructuredProblemSet } from "./structured-input.js";
 
 function readClipboardType(clipboardData, type) {
   try {
@@ -44,6 +45,7 @@ export function acquirePastedProblem(
       handled: false,
       extraction: plainExtraction("", "clipboard text is empty"),
       problemInput: null,
+      problemSet: null,
     });
   }
 
@@ -74,10 +76,19 @@ export function acquirePastedProblem(
     instructionSource: parsed.instructionText ? "clipboard" : "none",
     formulaSource: "clipboard",
   });
+  const acquisitionWarnings = extraction.fallbackReason
+    ? [String(extraction.fallbackReason)]
+    : [];
+  const problemSet = normalizeStructuredProblemSet(problemInput, {
+    source: "clipboard",
+    formulaStructure: extraction.usedStructure ? "semantic" : "plain",
+    warnings: acquisitionWarnings,
+  });
 
   return Object.freeze({
     handled: true,
     extraction,
     problemInput,
+    problemSet,
   });
 }
