@@ -178,7 +178,14 @@ test("mixed同一行の位置分離された(2)だけをquestionLabelへ移し�
   }, { symbolicOperations });
   assert.equal(leaked.solverResult.exactAnswer, "2*(2*x+1)/(x*(x+1))");
 
-  const corrected = await solveWorkflow(output.structuredCandidate, { symbolicOperations });
+  const unconfirmed = await solveWorkflow(output.structuredCandidate, { symbolicOperations });
+  assert.equal(unconfirmed.presentable, false);
+  assert.equal(unconfirmed.structuredProblem.recognitionStatus, "candidate");
+
+  const corrected = await solveWorkflow(output.structuredCandidate, {
+    symbolicOperations,
+    ocrConfirmed: true,
+  });
   assert.equal(corrected.presentable, true, corrected.solverResult.error);
   assert.equal(corrected.solverResult.solverId, "algebra-transformation");
   assert.equal(corrected.solverResult.exactAnswer, "(3*x+1)/(x*(x+1))");

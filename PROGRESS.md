@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-14
+Last updated: 2026-09-20
 
 ## Repository checkpoint
 
@@ -9,6 +9,45 @@ Last updated: 2026-09-14
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
 - Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
 - Working milestone: problem acquisition, staged learning records, and analytics
+
+## 2026-09-20: Phase A structured-input boundary review and hardening
+
+- Reviewed remote branch head `3c8449e` and the complete Phase A change from
+  base `3f5330a`. The first full run exposed two regressions: explicit Unicode
+  superscripts were flattened into ambiguous plain digits, and legacy
+  `ProblemInput` terminal failures changed error identity.
+- Made schema-v1 `StructuredProblemSet` the fail-closed acquisition boundary.
+  Canonical top-level fields now drive the legacy solver adapter; unknown
+  schema/status/recognition values, hostile accessors, sparse or oversized
+  item sets, unconfirmed OCR, and structure-losing plain input stop before
+  classification or solving. Unicode superscripts remain explicit, while
+  plain `x2` and group-plus-digit forms are never repaired by inference.
+- Preserved set/item terminal codes, recognition state, warnings, semantic
+  provenance, stable order, and legacy failure identity across repeat
+  normalization. A raw payload cannot confirm its own OCR data; only trusted
+  session authority from the explicit confirmation flow may release it.
+- Applied a shared instruction to a single item only when the item has no
+  instruction text or intent of its own. Multiple items remain independent and
+  non-executable in Phase A; operation-resolution policy and multi-problem
+  execution remain deferred.
+- Connected semantic paste through the Side Panel and `LearningSession`,
+  invalidated the acquisition snapshot on manual edits, retained terminal
+  `ProblemInput` status/error/instruction status through storage, and added an
+  input-revision guard so a late solve cannot populate a newer input's cache or
+  history.
+- `npm.cmd test` passed 897 tests with zero failures, including the 5,500-case
+  generated evaluation corpus. `npm.cmd run check` passed for 295 files,
+  17 HTML files, 221 JS/MJS files, and 13 CSS files.
+- Disposable Chrome 152 input-entry smokes passed semantic HTML paste,
+  explicit solve, plain ambiguous rejection, HTTP selection shortcut, and the
+  `chrome://version` clipboard-only shortcut. Clipboard preservation and empty
+  Quick history were verified by the harness.
+- A separate Chrome 153 OCR action-flow rerun was attempted twice. Both runs
+  stopped before recognition at the existing screenshot-fixture assertion
+  because the crop contained 2,866 magenta background pixels. No OCR candidate,
+  solve, history, or clipboard action occurred. The trusted-confirmation bridge
+  is covered by integration tests, but a fresh end-to-end OCR browser pass on
+  Chrome 153 remains an evidence gap.
 
 ## 2026-09-14: demo input hardening across OCR, paste, and global shortcut
 
@@ -824,6 +863,18 @@ Last updated: 2026-09-14
 
 ## Last verified commands
 
+- `npm.cmd test` - 897 passed, 0 failed on 2026-09-20, including the
+  5,500-case generated evaluation corpus and Phase A structured-input,
+  provenance, OCR-confirmation, storage, and stale-result regressions.
+- `npm.cmd run check` - passed for 295 files, 17 HTML, 221 JS/MJS, and 13 CSS
+  files on 2026-09-20.
+- `npm.cmd run test:browser:inputs -- 9333 . --allow-storage-reset` and the
+  `--shortcut=chrome` variant - isolated Chrome 152 passed semantic paste,
+  ambiguous plain rejection, HTTP selection, and restricted-page clipboard
+  shortcut flows on 2026-09-19.
+- `npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset --quick-only`
+  - attempted twice in isolated Chrome 153 on 2026-09-20; both runs stopped at
+  the pre-recognition crop-color assertion described above.
 - `npm.cmd test` - 829 passed, 0 failed on 2026-09-12, including 5,500
   generated evaluation cases plus the OCR label, inline instruction,
   clipboard-safety, and deterministic learning-output regressions.

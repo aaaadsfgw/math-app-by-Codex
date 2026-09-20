@@ -31,6 +31,22 @@ The Digicon learning workflow additionally requires automated coverage for:
   conflict detection, terminal intent dispatch with no solver fallback, and
   preservation of unsupported/invalid/conflict acquisition statuses through
   repeat normalization;
+- schema-v1 `StructuredProblemSet` normalization and idempotence, canonical
+  top-level fields overriding a stale legacy adapter, independent set/item
+  terminal states, stable item order/provenance, bounded containers, hostile
+  property access, and rejection of unknown schema, status, and recognition
+  values before classifier or solver calls;
+- OCR candidate gating in which serializable `confirmed` or `ocrConfirmed`
+  claims cannot confirm themselves, while only trusted learning-session
+  authority can admit explicitly confirmed OCR into the solve workflow;
+- fail-closed plain `x2` and group-plus-digit cases alongside preserved Unicode
+  superscripts, safe single-item shared-instruction application, item-level
+  instruction precedence, terminal shared-instruction conflict, and
+  multi-item preservation without concatenation or execution;
+- popup-to-session transfer of semantic-paste `problemSet`, invalidation on any
+  manual edit or replacement input, terminal status/error/instruction-status
+  storage round trips, imported OCR downgrade, and late-result guards that keep
+  an old solve from the new input's cache or history identity;
 - one-line Japanese/formula separation for solve, differentiate, expand,
   factor, and simplify, plus negative cases for quantities, prose operands,
   multiple formula runs, extra operations, `x2`, and ambiguous `(N)` prefixes;
@@ -127,8 +143,11 @@ covers that primary path.
 6. Paste a complete HTML problem containing `x<sup>2</sup>` into an empty Side
    Panel field. Confirm the editable fields contain the preserved exponent and
    no result appears until **解析する**. Repeat with mismatching HTML/plain
-   clipboard data and with literal `x2`; confirm the complete plain text is
-   preserved and no exponent is guessed.
+   clipboard data, literal `x2`, and explicit Unicode `x²` / `(x-3)²`; confirm
+   complete plain text is preserved, no exponent is guessed for `x2`, and the
+   explicit Unicode exponent still reaches the verified solver. Before solving
+   one structured paste, edit the formula manually and confirm only the edited
+   current fields are solved, with no stale pasted formula reused.
 7. Open History and Analytics and confirm source, viewed stages, Hint 1/2,
    Steps, direct Answer rate, understanding, and review priority agree with the
    Study attempt. Confirm Quick interactions are absent.
@@ -140,7 +159,10 @@ covers that primary path.
    separately from solver verification.
    Also crop a clearly separated single row `(2) 1/x+2/(x+1)` and confirm the
    label and formula fields are separated without solving until the explicit
-   confirmation action. A row beginning `(1+x)` must remain mathematical text.
+   confirmation action. After recognition, open or return to the Side Panel
+   without confirming and verify that no result or pending auto-solve appears;
+   then repeat the capture and use the explicit confirmation action. A row
+   beginning `(1+x)` must remain mathematical text.
 
 ## Unpacked-Chrome printed-formula OCR smoke test
 

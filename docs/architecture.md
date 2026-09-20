@@ -94,6 +94,45 @@ raw/status metadata. A legacy string remains one formula string and is not
 reinterpreted as Japanese prose. This preserves all pre-existing solver entry
 points.
 
+Phase A places a schema-v1 `StructuredProblemSet` acquisition boundary above
+that adapter. Each item exposes canonical top-level problem fields; its
+`legacyProblemInput` is derived from those fields for existing solvers. If the
+two representations differ, the canonical top-level value wins, so an edited
+formula cannot be paired with stale nested solver input. Set-level and
+item-level terminal status, terminal code, recognition status, warnings, and
+provenance are retained independently. An unknown schema version, status, or
+recognition value, or an object that cannot be read safely, is terminal before
+classification or solver invocation.
+
+OCR confirmation is session authority rather than serializable input data. A
+raw object cannot confirm itself with `recognitionStatus: "confirmed"` or an
+embedded `ocrConfirmed` field. OCR source/provenance and recognition candidates
+remain pending unless the trusted learning session supplies confirmation from
+the explicit confirmation flow. Imported pending OCR keeps its text and
+provenance but still loses confirmation and auto-solve capability.
+
+The structural-loss gate fails closed for plain `x2` and a closing group
+followed directly by digits. It first uses the established notation normalizer,
+which expands explicit Unicode superscripts before compatibility normalization;
+therefore `x²` and `(x-3)²` retain their exponent meaning while `x2` is never
+repaired by inference. For a single item with no item instruction, a shared
+instruction is normalized and compiled against that same formula. An item
+instruction takes precedence, and an unsupported or conflicting shared
+instruction is terminal. Multiple items keep independent order, identity,
+provenance, and terminal state, but Phase A does not concatenate or execute
+them; compilation returns a multiple-problem terminal result.
+
+Semantic paste hands both the editable `ProblemInput` and its
+`StructuredProblemSet` from the Side Panel to `LearningSession`. Manual editing
+discards the acquired set and rebuilds from the current editable fields.
+Session identity includes the normalized set, and an input revision guard
+prevents a late asynchronous solve from populating the cache or history for a
+newer input. Storage retains `ProblemInput` status, error, and instruction
+status so a pending terminal input cannot become ready during a round trip.
+This Phase A boundary only carries the recognized operation signal;
+operation-resolution policy remains Phase B, and multi-problem execution
+remains deferred.
+
 The instruction normalizer is independent of formula parsing. It emits only
 `simplify`, `expand`, `factor`, `solve_equation`, `differentiate`, `integrate`,
 `definite_integral`, `limit`, `tangent`, `normal`, `monotonicity`, `extrema`, or

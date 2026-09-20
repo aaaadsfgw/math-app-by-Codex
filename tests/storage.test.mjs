@@ -303,10 +303,13 @@ test("historyは構造化ProblemInputとprovenanceを正規化して保持する
   assert.equal(record.ocrConfirmed, true);
   assert.deepEqual(record.problemInput, {
     schemaVersion: 1,
+    status: "ready",
+    error: "",
     rawText: "次の方程式を解け\n2x=4",
     questionLabel: "(1)",
     instructionText: "次の方程式を解け",
     instructionIntent: "solve_equation",
+    instructionStatus: "recognized",
     formulaText: "2x=4",
     conditions: [],
     source: "manual",
@@ -569,6 +572,32 @@ test("pending questionはProblemInputを保持しfield provenance由来OCRにも
   assert.deepEqual(await takePendingQuestion(), confirmed);
 });
 
+test("pending ProblemInputはterminal statusとerrorをreadyへ昇格させず保持する", async () => {
+  const pending = await setPendingQuestion({
+    source: "clipboard",
+    problemInput: {
+      status: "unsupported",
+      error: "取得時の安全確認で自動実行を停止しました。",
+      rawText: "方程式を解け\n2x=4",
+      instructionText: "方程式を解け",
+      formulaText: "2x=4",
+      source: "clipboard",
+      instructionSource: "clipboard",
+      formulaSource: "clipboard",
+    },
+  });
+
+  assert.equal(pending.problemInput.status, "unsupported");
+  assert.equal(pending.problemInput.error, "取得時の安全確認で自動実行を停止しました。");
+  assert.equal(pending.problemInput.instructionStatus, "recognized");
+
+  const restored = await getPendingQuestion();
+  assert.equal(restored.problemInput.status, "unsupported");
+  assert.equal(restored.problemInput.error, pending.problemInput.error);
+  assert.equal(restored.problemInput.instructionStatus, "recognized");
+  assert.deepEqual(await takePendingQuestion(), restored);
+});
+
 test("unconfirmed or non-OCR pending questions cannot request automatic solving", async () => {
   const unconfirmed = await setPendingQuestion({
     question: "x=1",
@@ -601,6 +630,8 @@ test("imported pending text cannot restore OCR confirmation or automatic solving
       requestedMode: "answer",
       autoSolve: true,
       problemInput: {
+        status: "unsupported",
+        error: "インポート前から自動実行対象外です。",
         rawText: "画像の生OCR",
         instructionText: "方程式を解け",
         formulaText: "x^2 = 4",
@@ -617,6 +648,8 @@ test("imported pending text cannot restore OCR confirmation or automatic solving
   assert.equal(pending.ocrConfirmed, false);
   assert.equal(pending.requestedMode, "answer");
   assert.equal(pending.autoSolve, false);
+  assert.equal(pending.problemInput.status, "unsupported");
+  assert.equal(pending.problemInput.error, "インポート前から自動実行対象外です。");
   assert.equal(pending.problemInput.rawText, "画像の生OCR");
   assert.equal(pending.problemInput.instructionSource, "ocr");
   assert.equal(pending.problemInput.formulaSource, "ocr");

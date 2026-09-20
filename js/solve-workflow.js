@@ -101,6 +101,7 @@ export async function solveWorkflow(
   questionValue,
   {
     mode = "answer",
+    ocrConfirmed = false,
     symbolicOperations,
     solver = solveQuestionAsync,
     classifier = classifyCategory,
@@ -111,13 +112,17 @@ export async function solveWorkflow(
   if (typeof classifier !== "function") throw new TypeError("classifierは関数で指定してください。");
   if (typeof presenter !== "function") throw new TypeError("presenterは関数で指定してください。");
 
-  const structuredCompilation = compileStructuredProblemSet(questionValue);
+  const structuredCompilation = compileStructuredProblemSet(questionValue, {
+    // Confirmation is session authority. A serializable input object must not
+    // be able to confirm itself by setting an `ocrConfirmed` property.
+    ocrConfirmed: ocrConfirmed === true,
+  });
   const problemSet = structuredCompilation.problemSet;
   const structuredProblem = structuredCompilation.problem;
   const problemInput = structuredCompilation.problemInput
     ?? structuredProblem?.legacyProblemInput
     ?? null;
-  const question = cleanText(structuredProblem?.formulaText ?? problemInput?.formulaText);
+  const question = cleanText(problemInput?.formulaText ?? structuredProblem?.formulaText);
   const outputMode = normalizedOutputMode(mode);
 
   if (!structuredCompilation.ok) {
@@ -128,7 +133,9 @@ export async function solveWorkflow(
       structuredProblem,
       outputMode,
       classification: null,
-      solverResult: structuredInputFailure(structuredCompilation),
+      solverResult: structuredCompilation.failureSource === "problem-input"
+        ? problemInputFailure(structuredCompilation)
+        : structuredInputFailure(structuredCompilation),
     });
   }
 

@@ -20,6 +20,23 @@ test("popupは任意の問題番号・指示と数式をProblemInputとしてlea
   assert.match(script, /learningSession\.setInput\(\{[\s\S]*?question,[\s\S]*?\.\.\.\(problemInput \? \{ problemInput \} : \{\}\),[\s\S]*?source:\s*currentInputSource/u);
 });
 
+test("構造付きpasteはproblemSetをsessionまで保持し、手編集と別入力で破棄する", async () => {
+  const script = await source("js/popup.js");
+  const clear = script.match(/function clearStructuredInputState\([\s\S]*?\n\}/u)?.[0] ?? "";
+  const setter = script.match(/function setQuestion\([\s\S]*?\n\}/u)?.[0] ?? "";
+  const runner = script.match(/async function runOutputMode\([\s\S]*?\n\}/u)?.[0] ?? "";
+  const manual = script.match(/function handleManualInput\([\s\S]*?\n\}/u)?.[0] ?? "";
+  const paste = script.match(/function handleQuestionPaste\([\s\S]*?\n\}/u)?.[0] ?? "";
+
+  assert.match(script, /let activeProblemSet\s*=\s*null/u);
+  assert.match(clear, /activeProblemSet\s*=\s*null/u);
+  assert.match(setter, /activeProblemSet\s*=\s*null[\s\S]*?problemSet[\s\S]*?activeProblemSet\s*=\s*problemSet/u);
+  assert.match(runner, /learningSession\.setInput\(\{[\s\S]*?activeProblemSet\s*\?\s*\{ problemSet:\s*activeProblemSet \}/u);
+  assert.match(manual, /activeProblemSet\s*=\s*null/u);
+  assert.match(paste, /const \{ problemInput, problemSet \}\s*=\s*acquired/u);
+  assert.match(paste, /setQuestion\([\s\S]*?problemInput,[\s\S]*?problemSet,/u);
+});
+
 test("structured pendingを各入力欄へ復元し、OCR autoSolveを確認済みOCRだけに限定する", async () => {
   const script = await source("js/popup.js");
   const restore = script.match(/function restoreStructuredInput\([\s\S]*?\n\}/u)?.[0] ?? "";

@@ -78,6 +78,7 @@ let analysisRunning = false;
 let selectionLoading = false;
 let learningModeSaving = false;
 let questionRevision = 0;
+let activeProblemSet = null;
 let structuredInputActive = false;
 let originalProblemText = "";
 let preservedConditions = [];
@@ -97,6 +98,7 @@ function normalizedFieldSource(value, fallback = "manual") {
 }
 
 function clearStructuredInputState(question, source) {
+  activeProblemSet = null;
   structuredInputActive = false;
   originalProblemText = String(question ?? "").trim();
   preservedConditions = [];
@@ -299,14 +301,17 @@ function setQuestion(
     parentHistoryId = null,
     ocrConfirmed = false,
     problemInput = null,
+    problemSet = null,
   } = {},
 ) {
+  activeProblemSet = null;
   if (problemInput && typeof problemInput === "object") {
     restoreStructuredInput(problemInput, value, source);
   } else {
     elements.questionInput.value = String(value ?? "");
     clearStructuredInputState(value, source);
   }
+  if (problemSet && typeof problemSet === "object") activeProblemSet = problemSet;
   pendingParentHistoryId = cleanText(parentHistoryId) || null;
   setInputSource(source, { ocrConfirmed });
   resetAttempt();
@@ -422,6 +427,7 @@ async function runOutputMode(requestedMode) {
   const inputChanged = learningSession.setInput({
     question,
     ...(problemInput ? { problemInput } : {}),
+    ...(activeProblemSet ? { problemSet: activeProblemSet } : {}),
     source: currentInputSource,
     parentHistoryId: pendingParentHistoryId,
     ocrUsed: currentInputSource === "ocr",
@@ -473,6 +479,7 @@ async function runOutputMode(requestedMode) {
     });
     setAppState("完了", "success");
   } catch (error) {
+    if (revisionAtStart !== questionRevision || error?.code === "STALE_INPUT_RESULT") return;
     showError(errorMessage(error, "解析中にエラーが発生しました。"));
   } finally {
     analysisRunning = false;
@@ -714,6 +721,7 @@ function listenForPendingQuestion() {
 
 function handleManualInput(event) {
   const target = event?.currentTarget ?? event?.target ?? null;
+  activeProblemSet = null;
   if (target === elements.questionInput) {
     formulaSource = "manual";
   } else if (target === elements.instructionInput) {
@@ -756,10 +764,11 @@ function handleQuestionPaste(event) {
   if (!acquired.handled || !acquired.problemInput) return;
 
   event.preventDefault();
-  const { problemInput } = acquired;
+  const { problemInput, problemSet } = acquired;
   setQuestion(problemInput.formulaText, {
     source: "clipboard",
     problemInput,
+    problemSet,
   });
   if (problemInput.status === "ready") {
     clearError();

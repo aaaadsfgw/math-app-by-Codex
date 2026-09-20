@@ -895,3 +895,40 @@ change `(2)x^2`, `(2)*(x+1)`, `(1+x)(1-x)`, or `f((2+x))` into a different
 problem. Fresh isolated Chrome 152 flows on 2026-09-14 captured real pixels and
 passed `(1)`, `(2)`, `(10)`, and `（2）` beside the packaged `x+y` formula,
 through editable candidate and explicit verified solve.
+
+## D-036: Establish StructuredProblemSet v1 as the Phase A safety boundary
+
+**Status:** accepted
+**Date:** 2026-09-19
+
+Phase A introduces a schema-v1 `StructuredProblemSet` above the existing
+`ProblemInput` contract. Canonical item fields are authoritative and the legacy
+adapter is rebuilt from them; a stale nested formula cannot override an edited
+top-level formula. Set and item terminal states remain terminal, and unknown
+schema versions, status values, recognition values, malformed containers, and
+unsafe property access are rejected before classification or solving.
+
+Recognition data cannot attest to its own confirmation. A serialized
+`recognitionStatus: "confirmed"` or `ocrConfirmed` claim does not unlock the
+solver. Only confirmation authority supplied by the trusted learning session
+after the explicit OCR confirmation flow can move an OCR candidate forward.
+Pending storage retains terminal `ProblemInput` status, error, and instruction
+status, while imported OCR confirmation and auto-solve claims remain
+downgraded.
+
+Plain structure-losing `x2` and a group followed directly by digits fail
+closed. Explicit Unicode superscripts are expanded through the existing
+notation normalizer before compatibility normalization, so `x²` remains an
+explicit exponent rather than becoming `x2`. A shared instruction may apply to
+one item only when that item has no instruction of its own and the combined
+`ProblemInput` compiles safely. Multiple items retain separate order,
+provenance, warnings, and terminal state, but Phase A rejects execution instead
+of concatenating them.
+
+The Side Panel carries a pasted problem set into `LearningSession`; manual
+editing clears that acquisition snapshot and re-normalizes the current fields.
+The session compares the structured input as part of attempt identity and uses
+an input revision guard so a late solve cannot be cached or recorded as the
+newer problem. This decision defines the Phase A data and safety boundary only.
+It does not implement Phase B operation routing, Phase C OCR arbitration, Phase
+D learning-workflow removal, or Phase E multi-problem execution.

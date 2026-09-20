@@ -351,10 +351,13 @@ function storedProblemInput(value, { source = "manual" } = {}) {
   }
   return {
     schemaVersion: normalized.schemaVersion,
+    status: normalized.status,
+    error: normalized.error,
     rawText: normalized.rawText,
     questionLabel: normalized.questionLabel,
     instructionText: normalized.instructionText,
     instructionIntent: normalized.instructionIntent,
+    instructionStatus: normalized.instructionStatus,
     formulaText: normalized.formulaText,
     conditions: [...normalized.conditions],
     source: normalized.source,

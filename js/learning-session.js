@@ -4,6 +4,7 @@ import {
   solveWorkflow,
 } from "./solve-workflow.js";
 import { normalizeProblemInput } from "./problem/problem-input.js";
+import { normalizeStructuredProblemSet } from "./problem/structured-input.js";
 import {
   addHistory,
   recordOutputView,
@@ -22,6 +23,14 @@ function normalizedStructuredInput(value, source) {
   return problemInput;
 }
 
+function normalizedProblemSet(value, source, ocrConfirmed) {
+  if (value === undefined || value === null) return null;
+  return normalizeStructuredProblemSet(value, {
+    source,
+    ocrConfirmed: ocrConfirmed === true,
+  });
+}
+
 function isOcrProblemInput(problemInput) {
   return Boolean(
     problemInput
@@ -33,27 +42,62 @@ function isOcrProblemInput(problemInput) {
   );
 }
 
+function isOcrProblemSet(problemSet) {
+  if (!problemSet) return false;
+  const recognitionStatuses = new Set(["candidate", "confirmed", "recognition_error"]);
+  const confirmationStatuses = new Set(["unconfirmed", "pending_confirmation"]);
+  const provenanceUsesOcr = (fieldProvenance) => Boolean(
+    fieldProvenance
+      && Object.values(fieldProvenance).some((field) => field?.source === "ocr"),
+  );
+  return Boolean(
+    problemSet.source === "ocr"
+      || recognitionStatuses.has(problemSet.recognitionStatus)
+      || confirmationStatuses.has(problemSet.status)
+      || problemSet.terminalCode === "ocr_unconfirmed"
+      || problemSet.items?.some((item) => (
+        item.source === "ocr"
+        || recognitionStatuses.has(item.recognitionStatus)
+        || confirmationStatuses.has(item.status)
+        || item.terminalCode === "ocr_unconfirmed"
+        || provenanceUsesOcr(item.fieldProvenance)
+        || isOcrProblemInput(item.legacyProblemInput)
+      )),
+  );
+}
+
 function normalizeInput(input = {}) {
   const requestedSource = cleanText(input.source);
-  const problemInput = normalizedStructuredInput(
-    input.problemInput,
+  const trustedOcrConfirmation = input.ocrConfirmed === true;
+  const problemSet = normalizedProblemSet(
+    input.problemSet,
     requestedSource || "manual",
+    trustedOcrConfirmation,
   );
-  const question = problemInput?.formulaText || cleanText(input.question);
+  const singleProblem = problemSet?.items?.length === 1 ? problemSet.items[0] : null;
+  const problemInput = singleProblem?.legacyProblemInput ?? normalizedStructuredInput(
+    input.problemInput,
+    requestedSource || problemSet?.source || "manual",
+  );
+  const question = problemInput?.formulaText
+    || cleanText(input.question)
+    || cleanText(problemSet?.items?.[0]?.formulaText);
   if (!question) throw new TypeError("問題文が空です。");
-  const source = requestedSource || problemInput?.source || "manual";
+  const source = requestedSource || problemSet?.source || problemInput?.source || "manual";
   const ocrUsed = (
     source === "ocr"
     || input.ocrUsed === true
+    || isOcrProblemSet(problemSet)
     || isOcrProblemInput(problemInput)
   );
   return Object.freeze({
     question,
     problemInput,
+    problemSet,
     source,
     parentHistoryId: cleanText(input.parentHistoryId) || null,
     ocrUsed,
-    ocrConfirmed: ocrUsed && input.ocrConfirmed === true,
+    ocrConfirmed: ocrUsed && trustedOcrConfirmation,
   });
 }
 
@@ -79,12 +123,74 @@ function sameProblemInput(left, right) {
     && left.conditions.every((condition, index) => condition === right.conditions[index]);
 }
 
+function sameTextArray(left, right) {
+  if (left === right) return true;
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
+
+function sameFieldProvenance(left, right) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  return ["questionLabel", "instructionText", "formulaText", "conditions"].every((field) => (
+    left[field]?.source === right[field]?.source
+      && left[field]?.structure === right[field]?.structure
+  ));
+}
+
+function sameStructuredProblem(left, right) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  const fields = [
+    "schemaVersion",
+    "id",
+    "order",
+    "status",
+    "terminalCode",
+    "error",
+    "questionLabel",
+    "instructionText",
+    "instructionIntent",
+    "formulaText",
+    "source",
+    "recognitionStatus",
+    "confirmationRequired",
+  ];
+  return fields.every((field) => left[field] === right[field])
+    && sameTextArray(left.conditions, right.conditions)
+    && sameTextArray(left.acquisitionWarnings, right.acquisitionWarnings)
+    && sameTextArray(left.warnings, right.warnings)
+    && sameFieldProvenance(left.fieldProvenance, right.fieldProvenance)
+    && sameProblemInput(left.legacyProblemInput, right.legacyProblemInput);
+}
+
+function sameProblemSet(left, right) {
+  if (left === right) return true;
+  if (!left || !right || left.items?.length !== right.items?.length) return false;
+  const fields = [
+    "schemaVersion",
+    "status",
+    "terminalCode",
+    "error",
+    "sharedInstructionText",
+    "sharedInstructionIntent",
+    "source",
+    "recognitionStatus",
+    "confirmationRequired",
+  ];
+  return fields.every((field) => left[field] === right[field])
+    && sameTextArray(left.warnings, right.warnings)
+    && sameTextArray(left.acquisitionWarnings, right.acquisitionWarnings)
+    && left.items.every((item, index) => sameStructuredProblem(item, right.items[index]));
+}
+
 function sameInput(left, right) {
   return Boolean(
     left
       && right
       && left.question === right.question
       && sameProblemInput(left.problemInput, right.problemInput)
+      && sameProblemSet(left.problemSet, right.problemSet)
       && left.source === right.source
       && left.parentHistoryId === right.parentHistoryId
       && left.ocrUsed === right.ocrUsed
@@ -113,6 +219,7 @@ export class LearningSession {
     this._present = present;
     this._addHistory = addHistoryRecord;
     this._recordView = recordView;
+    this._inputRevision = 0;
     this.clear();
   }
 
@@ -128,6 +235,7 @@ export class LearningSession {
   }
 
   clear() {
+    this._inputRevision += 1;
     this._input = null;
     this._baseWorkflow = null;
     this._historyId = null;
@@ -138,12 +246,25 @@ export class LearningSession {
   setInput(input) {
     const normalized = normalizeInput(input);
     if (sameInput(this._input, normalized)) return false;
+    this._inputRevision += 1;
     this._input = normalized;
     this._baseWorkflow = null;
     this._historyId = null;
     this._learningMode = null;
     this._viewedModes = [];
     return true;
+  }
+
+  _isCurrentInput(input, revision) {
+    return this._input === input && this._inputRevision === revision;
+  }
+
+  _assertCurrentInput(input, revision) {
+    if (this._isCurrentInput(input, revision)) return;
+    const error = new Error("解析中に入力が変更されたため、古い結果を破棄しました。");
+    error.name = "LearningSessionError";
+    error.code = "STALE_INPUT_RESULT";
+    throw error;
   }
 
   changeLearningMode(learningMode) {
@@ -159,28 +280,47 @@ export class LearningSession {
 
   async _workflowForMode(mode, symbolicOperations) {
     if (!this._input) throw new TypeError("問題文を先に設定してください。");
-    if (this._input.ocrUsed && !this._input.ocrConfirmed) {
+    const inputSnapshot = this._input;
+    const inputRevision = this._inputRevision;
+    if (inputSnapshot.ocrUsed && !inputSnapshot.ocrConfirmed) {
       const error = new Error("画像から読み取った問題文を確認してから解析してください。");
       error.name = "LearningSessionError";
       error.code = "OCR_CONFIRMATION_REQUIRED";
       throw error;
     }
     if (!this._baseWorkflow) {
-      const workflow = await this._solve(this._input.problemInput ?? this._input.question, {
-        mode,
-        symbolicOperations,
-      });
+      const workflow = await this._solve(
+        inputSnapshot.problemSet ?? inputSnapshot.problemInput ?? inputSnapshot.question,
+        {
+          mode,
+          symbolicOperations,
+          ocrConfirmed: inputSnapshot.ocrConfirmed,
+        },
+      );
+      this._assertCurrentInput(inputSnapshot, inputRevision);
       if (workflow?.solverResult?.retryable !== true) {
         this._baseWorkflow = workflow;
       }
-      return Object.freeze({ workflow, solvedFresh: true });
+      return Object.freeze({
+        workflow,
+        solvedFresh: true,
+        inputSnapshot,
+        inputRevision,
+      });
     }
     if (!this._baseWorkflow.presentable) {
-      return Object.freeze({ workflow: this._baseWorkflow, solvedFresh: false });
+      return Object.freeze({
+        workflow: this._baseWorkflow,
+        solvedFresh: false,
+        inputSnapshot,
+        inputRevision,
+      });
     }
     return Object.freeze({
       workflow: this._present(this._baseWorkflow, mode),
       solvedFresh: false,
+      inputSnapshot,
+      inputRevision,
     });
   }
 
@@ -195,7 +335,12 @@ export class LearningSession {
   ) {
     const normalizedLearningMode = learningMode === "quick" ? "quick" : "study";
     this.changeLearningMode(normalizedLearningMode);
-    const { workflow, solvedFresh } = await this._workflowForMode(mode, symbolicOperations);
+    const {
+      workflow,
+      solvedFresh,
+      inputSnapshot,
+      inputRevision,
+    } = await this._workflowForMode(mode, symbolicOperations);
     if (!workflow?.presentable) {
       return Object.freeze({
         workflow,
@@ -209,31 +354,39 @@ export class LearningSession {
     let historyError = null;
     if (normalizedLearningMode === "study" && saveHistory) {
       const isNewView = !this._viewedModes.includes(workflow.outputMode);
-      if (isNewView) this._viewedModes.push(workflow.outputMode);
+      const viewedModes = isNewView
+        ? [...this._viewedModes, workflow.outputMode]
+        : [...this._viewedModes];
+      if (isNewView) this._viewedModes = viewedModes;
+      let historyStillCurrent = this._isCurrentInput(inputSnapshot, inputRevision);
       try {
-        if (this._historyId && isNewView) {
-          historyRecord = await this._recordView(this._historyId, workflow.outputMode, {
+        const existingHistoryId = this._historyId;
+        if (historyStillCurrent && existingHistoryId && isNewView) {
+          historyRecord = await this._recordView(existingHistoryId, workflow.outputMode, {
             output: workflow.presentation.content,
           });
-          if (!historyRecord) this._historyId = null;
+          historyStillCurrent = this._isCurrentInput(inputSnapshot, inputRevision);
+          if (historyStillCurrent && !historyRecord) this._historyId = null;
         }
-        if (!this._historyId) {
+        if (historyStillCurrent && !this._historyId) {
           const historyPayload = createHistoryRecordPayload(workflow, {
-            source: this._input.source,
-            parentHistoryId: this._input.parentHistoryId,
+            source: inputSnapshot.source,
+            parentHistoryId: inputSnapshot.parentHistoryId,
             selfAssessment: selfAssessment ?? defaultAssessment(workflow.outputMode),
             additionalFields: {
               learningMode: "study",
-              entryPoint: this._input.source === "review" ? "review" : "popup",
-              usage: { viewedModes: [...this._viewedModes] },
-              ocrUsed: this._input.ocrUsed,
-              ocrConfirmed: this._input.ocrConfirmed,
+              entryPoint: inputSnapshot.source === "review" ? "review" : "popup",
+              usage: { viewedModes },
+              ocrUsed: inputSnapshot.ocrUsed,
+              ocrConfirmed: inputSnapshot.ocrConfirmed,
             },
           });
-          historyRecord = await this._addHistory(this._input.problemInput
-            ? { ...historyPayload, problemInput: this._input.problemInput }
+          const solvedProblemInput = workflow.problemInput ?? inputSnapshot.problemInput;
+          historyRecord = await this._addHistory(solvedProblemInput
+            ? { ...historyPayload, problemInput: solvedProblemInput }
             : historyPayload);
-          this._historyId = historyRecord?.id || null;
+          historyStillCurrent = this._isCurrentInput(inputSnapshot, inputRevision);
+          if (historyStillCurrent) this._historyId = historyRecord?.id || null;
         }
       } catch (error) {
         historyError = error;
