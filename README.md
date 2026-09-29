@@ -393,7 +393,7 @@ bounds themselves contain `pi`.
 
 Requirements: Node.js 20 or newer.
 
-The unpacked extension requires Chrome 114 or newer because the main workspace
+The unpacked extension requires Chrome 116 or newer because the main workspace
 uses the Chrome Side Panel API.
 
 ```powershell

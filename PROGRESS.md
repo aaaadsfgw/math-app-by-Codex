@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-20
+Last updated: 2026-09-29
 
 ## Repository checkpoint
 
@@ -9,6 +9,14 @@ Last updated: 2026-09-20
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
 - Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
 - Working milestone: problem acquisition, staged learning records, and analytics
+
+## 2026-09-29: Chrome Side Panel minimum-version alignment
+
+- Raised `minimum_chrome_version` from 114 to 116 to match the
+  `chrome.sidePanel.open()` launcher requirement, and updated the unavailable-API
+  guidance, current requirements documentation, test plan, and contract checks.
+- `npm.cmd test` passed 897 tests with zero failures. `npm.cmd run check` passed
+  for 295 files, 17 HTML files, 221 JS/MJS files, and 13 CSS files.
 
 ## 2026-09-20: Phase A structured-input boundary review and hardening
 

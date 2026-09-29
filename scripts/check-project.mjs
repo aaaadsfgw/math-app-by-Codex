@@ -128,7 +128,7 @@ let manifest;
 try {
   manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
   assert(manifest.manifest_version === 3, 'manifest_version must be 3');
-  assert(Number(manifest.minimum_chrome_version) >= 114, 'minimum_chrome_version must support the side panel and offscreen documents');
+  assert(Number(manifest.minimum_chrome_version) >= 116, 'minimum_chrome_version must support the side panel and offscreen documents');
   assert(manifest.incognito === 'not_allowed', 'incognito must remain disabled for the shared offscreen preview boundary');
   assert(
     manifest.content_security_policy?.extension_pages === "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",

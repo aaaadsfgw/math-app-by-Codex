@@ -102,7 +102,7 @@ The Digicon learning workflow additionally requires automated coverage for:
   with per-fraction and whole-expression equivalence checks, retained domain
   exclusions, fallback on verification failure, and answer-leak regressions for
   short, expression-valued, and multiple-solution answers;
-- manifest checks that Chrome 114 is the minimum for the Side Panel and incognito use stays
+- manifest checks that Chrome 116 is the minimum for the Side Panel and incognito use stays
   disabled for the shared offscreen-preview boundary, while the extension CSP
   permits only the packaged WASM runtime and no remote script or host access.
 
@@ -243,7 +243,7 @@ action-driven flow above, and its reported provider
 must be checked in the JSON output (a WebGPU initialization error is expected
 only in the separately forced-fallback profile).
 
-1. Load the unpacked extension in Chrome 114 or newer. Confirm no model, script,
+1. Load the unpacked extension in Chrome 116 or newer. Confirm no model, script,
    or data request leaves the extension.
 2. Open an ordinary HTTP/HTTPS page with a clear, machine-printed single
    formula, open the Side Panel, start OCR, and drag a close crop around that formula.

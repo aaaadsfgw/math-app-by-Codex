@@ -206,7 +206,7 @@ checks OCR, chooses a hint, and reaches the verified answer. It keeps the
 historical popup selectors and learning-session coordinator, so this is a
 presentation and hosting change, not a second solver path. Optional problem
 metadata and utility navigation are collapsed until needed; the input, staged
-output actions, and result remain in one compact vertical flow. Chrome 114 or
+output actions, and result remain in one compact vertical flow. Chrome 116 or
 newer is required for this host.
 
 The session record contains routing metadata, a capture ID, phase, expiry,
@@ -300,7 +300,7 @@ instruction/formula values still come from OCR or were manually changed.
 Recognition alone cannot set `ocrConfirmed`, solve, write history, or change
 the clipboard.
 
-Chrome 114 is the minimum version for the Side Panel and offscreen boundaries, and incognito use
+Chrome 116 is the minimum version for the Side Panel and offscreen boundaries, and incognito use
 is disabled while the offscreen preview is shared by the regular extension
 profile. Real unpacked-Chrome checks remain mandatory for capture pixels,
 offscreen Blob sharing, WebGPU, WASM fallback, cancellation, and extension CSP.

@@ -12,7 +12,7 @@ function setLauncherError(message) {
 
 async function openWorkspace() {
   if (typeof chrome.sidePanel?.open !== "function") {
-    setLauncherError("このChromeではSide Panelを利用できません。Chrome 114以降でお試しください。");
+    setLauncherError("このChromeではSide Panelを利用できません。Chrome 116以降でお試しください。");
     return false;
   }
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
