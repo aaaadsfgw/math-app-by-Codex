@@ -123,7 +123,10 @@ test("認識だけでは保存も解答開始もせず、明示操作だけが�
   assert.match(submission, /setPendingQuestion\(\{[\s\S]*?source:\s*["']ocr["'][\s\S]*?ocrConfirmed:\s*true[\s\S]*?requestedMode:\s*["']answer["'][\s\S]*?autoSolve:\s*true/u);
   assert.match(submission, /setPendingQuestion\(\{[\s\S]*?question,[\s\S]*?problemInput,[\s\S]*?source:\s*["']ocr["']/u);
   assert.match(submission, /location\.replace\(["']popup\.html["']\)/u);
-  assert.match(submission, /await discardPreview\(\)[\s\S]*?await setPendingQuestion/u);
+  assert.match(
+    submission,
+    /await discardPreview\(\{ requireActive: true \}\)[\s\S]*?await setPendingQuestion/u,
+  );
 });
 
 test("数式OCRと手修正の由来を分離し、4項目をProblemInputへ渡す", async () => {

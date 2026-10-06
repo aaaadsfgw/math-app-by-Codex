@@ -77,8 +77,20 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 chrome.runtime.onMessage.addListener(createOcrCaptureRuntimeListener(ocrCaptureController));
 
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  void ocrCaptureController.handleTabActivated(activeInfo).catch((error) => {
+    console.warn("Could not clean OCR capture after active tab changed", error);
+  });
+});
+
 chrome.tabs.onRemoved.addListener((tabId) => {
   void ocrCaptureController.handleTabRemoved(tabId).catch((error) => {
     console.warn("Could not clean OCR preview after confirmation tab closed", error);
+  });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  void ocrCaptureController.handleTabUpdated(tabId, changeInfo).catch((error) => {
+    console.warn("Could not clean OCR capture after source navigation", error);
   });
 });

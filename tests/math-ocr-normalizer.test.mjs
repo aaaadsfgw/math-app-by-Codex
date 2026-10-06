@@ -28,6 +28,17 @@ test("IBEMの安全な分数・根号表現を既存solver向けに変換する"
   assert.deepEqual(result.warnings, []);
 });
 
+test("IBEMの関係演算子を囲む既知の整列markerだけを除去する", () => {
+  const normalized = normalizeMathOcrCandidate("((x)/(2)) & = & 3");
+  assert.equal(normalized.text, "((x)/(2)) = 3");
+  const result = solveQuestion(normalized.text);
+  assert.equal(result.supported, true, result.error);
+  assert.equal(result.solved, true, result.error);
+  assert.equal(result.answer, "x=6");
+  assert.equal(result.verified, true);
+  assert.equal(normalizeMathOcrCandidate("A & B").text, "A & B");
+});
+
 test("積・除算記号を明示演算子へ変換する", () => {
   const result = normalizeMathOcrCandidate("2 times x + 6 div 3");
   assert.equal(result.text, "2 * x + 6 / 3");

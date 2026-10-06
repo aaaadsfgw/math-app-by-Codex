@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -17,6 +18,7 @@ import {
 const PAGE_URL = ["https:", "//example.invalid/problem"].join("");
 const EXTENSION_ORIGIN = ["chrome-extension:", "//test-extension"].join("");
 const NOW = Date.parse("2026-09-02T00:00:00.000Z");
+const backgroundSource = await readFile(new URL("../js/background.js", import.meta.url), "utf8");
 
 function message(type, extra = {}) {
   return { target: "math-study-log-background", protocolVersion: 1, type, ...extra };
@@ -45,6 +47,8 @@ function fakeEnvironment({
   previewMetadataPatch = null,
   recognitionGate = null,
   recognitionOutputPatch = null,
+  previewGate = null,
+  cancelMessageGate = null,
 } = {}) {
   let clock = NOW;
   const calls = {
@@ -76,6 +80,9 @@ function fakeEnvironment({
       },
       async sendMessage(tabId, payload, options) {
         calls.tabMessages.push({ tabId, payload, options });
+        if (payload.type === "CANCEL_OCR_CAPTURE" && cancelMessageGate) {
+          await cancelMessageGate;
+        }
         if (payload.type === "BEGIN_OCR_SELECTION") {
           return { ok: true, captureId: payload.captureId };
         }
@@ -121,6 +128,7 @@ function fakeEnvironment({
     calls.offscreen.push({ type, payload });
     if (type === CREATE_OCR_CAPTURE_PREVIEW) {
       if (failPreviewCreation) throw new Error("preview crop failed");
+      if (previewGate) await previewGate;
       const preview = {
         previewId: payload.previewId,
         previewUrl: "blob:preview-1",
@@ -439,6 +447,105 @@ test("capture中の同一URL reloadは元documentへの完了確認で拒否す�
   assert.equal(await environment.store.get(), null);
 });
 
+test("選択中に同じwindowの別tabがactiveになるとoverlayとsessionを即時破棄する", async () => {
+  const environment = fakeEnvironment();
+  await start(environment);
+
+  assert.equal(
+    await environment.controller.handleTabActivated({ windowId: 4, tabId: 13 }),
+    true,
+  );
+  assert.equal(await environment.store.get(), null);
+  assert.equal(environment.calls.captures.length, 0);
+  assert.equal(environment.calls.tabMessages.at(-1).payload.type, "CANCEL_OCR_CAPTURE");
+  assert.equal(environment.calls.tabMessages.at(-1).payload.captureId, "capture-1");
+});
+
+test("選択中のsource navigationもoverlayとsessionをcapture ID付きで即時破棄する", async () => {
+  const environment = fakeEnvironment();
+  await start(environment);
+
+  assert.equal(
+    await environment.controller.handleTabUpdated(12, {
+      url: ["https:", "//example.invalid/next"].join(""),
+    }),
+    true,
+  );
+  assert.equal(await environment.store.get(), null);
+  assert.equal(environment.calls.tabMessages.at(-1).payload.type, "CANCEL_OCR_CAPTURE");
+  assert.equal(environment.calls.tabMessages.at(-1).payload.captureId, "capture-1");
+});
+
+test("navigation中のdocument通知が保留されてもsession authorityを先に破棄する", async () => {
+  let releaseCancelMessage;
+  const cancelMessageGate = new Promise((resolve) => { releaseCancelMessage = resolve; });
+  const environment = fakeEnvironment({ cancelMessageGate });
+  await start(environment);
+
+  const cleanup = environment.controller.handleTabUpdated(12, { status: "loading" });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(await environment.store.get(), null);
+  assert.equal(environment.calls.tabMessages.at(-1).payload.type, "CANCEL_OCR_CAPTURE");
+
+  releaseCancelMessage();
+  assert.equal(await cleanup, true);
+});
+
+test("preview前のsource navigationはsessionを即時破棄し遅延cropも復活させない", async () => {
+  let releasePreview;
+  const previewGate = new Promise((resolve) => { releasePreview = resolve; });
+  const environment = fakeEnvironment({ previewGate });
+  await start(environment);
+
+  const submission = submit(environment);
+  for (
+    let attempt = 0;
+    attempt < 20
+      && !environment.calls.offscreen.some(({ type }) => type === CREATE_OCR_CAPTURE_PREVIEW);
+    attempt += 1
+  ) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  assert.equal(
+    environment.calls.offscreen.some(({ type }) => type === CREATE_OCR_CAPTURE_PREVIEW),
+    true,
+  );
+  assert.equal((await environment.store.get())?.phase, "capturing");
+  assert.equal(
+    await environment.controller.handleTabUpdated(12, { status: "loading" }),
+    true,
+  );
+  assert.equal(await environment.store.get(), null);
+
+  releasePreview();
+  await assert.rejects(submission, /OCR画像の取得に失敗しました/u);
+  assert.equal(environment.previews.size, 0);
+  assert.equal(await environment.store.get(), null);
+});
+
+test("unrelated tab lifecycle eventsとpreview確定後のsource更新は現在previewを破棄しない", async () => {
+  const environment = fakeEnvironment();
+  await start(environment);
+  assert.equal(
+    await environment.controller.handleTabActivated({ windowId: 4, tabId: 12 }),
+    false,
+  );
+  assert.equal(await environment.controller.handleTabUpdated(12, { title: "updated" }), false);
+  await submit(environment);
+
+  assert.equal(await environment.controller.handleTabUpdated(12, { status: "loading" }), false);
+  assert.equal((await environment.store.get())?.phase, "preview");
+  assert.equal(environment.previews.size, 1);
+});
+
+test("backgroundはtab activation・remove・navigationをcapture controllerへ接続する", () => {
+  assert.match(backgroundSource, /chrome\.tabs\.onActivated\.addListener/u);
+  assert.match(backgroundSource, /ocrCaptureController\.handleTabActivated\(activeInfo\)/u);
+  assert.match(backgroundSource, /chrome\.tabs\.onRemoved\.addListener/u);
+  assert.match(backgroundSource, /chrome\.tabs\.onUpdated\.addListener/u);
+  assert.match(backgroundSource, /ocrCaptureController\.handleTabUpdated\(tabId, changeInfo\)/u);
+});
+
 test("選択中にsession期限が切れてもoverlayとmetadataを残さない", async () => {
   const environment = fakeEnvironment();
   await start(environment);
@@ -679,6 +786,20 @@ test("期限後の破棄はidempotent成功として確認ページを閉じら�
   assert.deepEqual(discarded, { discarded: false, alreadyFinished: true });
   assert.equal(await environment.store.get(), null);
   assert.equal(environment.previews.size, 0);
+});
+
+test("active metadataだけ残りpreviewを実際に破棄できない場合はconfirmation authorityを返さない", async () => {
+  const environment = fakeEnvironment();
+  await start(environment);
+  await submit(environment);
+  environment.previews.clear();
+
+  const discarded = await environment.controller.handleMessage(
+    message("DISCARD_OCR_CAPTURE", { captureId: "capture-1" }),
+    confirmationSender(),
+  );
+  assert.deepEqual(discarded, { discarded: false, alreadyFinished: true });
+  assert.equal(await environment.store.get(), null);
 });
 
 test("session破棄後に遅れて返るOCR結果を受け入れない", async () => {

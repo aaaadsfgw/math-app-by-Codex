@@ -6,6 +6,7 @@ const SUPERSCRIPT_SEQUENCE = /[⁰¹²³⁴⁵⁶⁷⁸⁹]+/gu;
 const UNSUPPORTED_SUPERSCRIPT = /[\u2070-\u209F\u00B2\u00B3\u00B9]/u;
 const EXPONENT_BASE_CHARACTER = /[\p{L}\p{N})\]}]/u;
 const KNOWN_STANDALONE_ARTIFACT = /(?<![A-Za-z0-9._])zws(?=$|[ \t\n])/gu;
+const KNOWN_ALIGNMENT_RELATION = /(?<!\S)&[ \t]*(<=|>=|=|<|>)[ \t]*&(?=\s|$)/gu;
 const CLEAR_NUMERIC_VARIABLE_PRODUCT = /(\d+(?:\.\d+)?|\.\d+)([ \t]+)([A-Za-z])/gu;
 const SAFE_COEFFICIENT_PREFIX = /[([,{+\-*=<>;]/u;
 const SAFE_VARIABLE_SUFFIX = /[)\]},;+\-*/^=<>\n]/u;
@@ -247,7 +248,9 @@ function normalizeSafeMathGlyphs(text, warnings) {
 }
 
 function removeKnownStandaloneArtifacts(text) {
-  return text.replace(KNOWN_STANDALONE_ARTIFACT, "");
+  return text
+    .replace(KNOWN_STANDALONE_ARTIFACT, "")
+    .replace(KNOWN_ALIGNMENT_RELATION, "$1");
 }
 
 function unwrapKnownWholeFormulaWrapper(text) {

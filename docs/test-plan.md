@@ -68,7 +68,7 @@ The Digicon learning workflow additionally requires automated coverage for:
 - v2 UI selector, label, source, OCR-state, editable-candidate, explicit-solve,
   and staged-metric contracts;
 - OCR crop geometry including reverse drags, viewport clipping, minimum size,
-  actual screenshot scaling, malformed dimensions, and empty crops.
+  actual screenshot scaling, malformed dimensions, and empty crops;
 - OCR protocol/session validation including message direction, sender tab,
   main-frame document ID, source URL, expiry, phase transitions, duplicate
   submission, and a storage schema that rejects image data;
@@ -166,6 +166,8 @@ covers that primary path.
 
 ## Unpacked-Chrome printed-formula OCR smoke test
 
+### Automated CDP-driven real-browser E2E
+
 Use only an isolated disposable Chrome profile with DevTools remote debugging
 enabled. The flow test clears the extension's local and session storage in that
 profile. Do not point it at a daily-use Chrome profile. Node tests alone cannot
@@ -181,11 +183,31 @@ terminal:
 
 ```powershell
 npm.cmd run test:browser:serve
-npm.cmd run test:browser:ocr-flow -- 9333 --allow-storage-reset
-npm.cmd run test:browser:ocr-mixed-flow -- 9333 --allow-storage-reset
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset
+npm.cmd run test:browser:ocr-mixed-flow -- 9333 . webgpu --allow-storage-reset
 npm.cmd run test:browser:selection -- 9333
 npm.cmd run test:browser:inputs -- 9333 --allow-storage-reset
 ```
+
+For the full stabilization matrix, keep the normal top-left flow above and run
+the remaining directions and cancellation/lifecycle cases separately:
+
+```powershell
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --drag-bottom-right
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --drag-top-right
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --drag-bottom-left
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --tiny-drag
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --escape-cancel
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --tab-switch
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --navigation
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset --quick-only --session-expiry
+```
+
+The centered fixture and visual viewport must remain unchanged for four
+consecutive samples after Side Panel docking. The harness then measures both
+again after the overlay is installed, immediately before the trusted pointer
+drag, and verifies that the stored capture viewport matches. Keep the existing
+magenta-pixel crop assertion; do not loosen it to hide a geometry race.
 
 The flow loads the current unpacked directory, triggers the real browser action,
 performs trusted pointer and keyboard input, and verifies Study and Quick from
@@ -205,8 +227,28 @@ fallback. The matching integration test connects the structured result to the
 verified shortcut solver. On
 2026-09-10, all three scripts passed in isolated headless Chrome 152. The same run's
 engine smoke recognized the Japanese instruction and `x+y` mixed fixture and
-separately exercised explicit WebGPU and WASM formula OCR. This is not evidence
-that arbitrary fonts/layouts or a rendered fraction image transcribe exactly.
+separately exercised explicit WebGPU and WASM formula OCR. At that date, those
+results did not establish exact transcription of a rendered fraction image.
+
+On 2026-10-06, the current unpacked extension passed the automated suite in
+official Chrome 154.0.8037.92. WebGPU completed Study and Quick flows, all four
+drag directions, and the mixed fixture. Tiny-drag, Esc, tab-switch, navigation,
+and session-expiry cases captured no screenshot, opened no confirmation, left
+history/pending state and clipboard contents unchanged, and cleared the session
+and overlay. The input and selection smokes also passed. These are CDP-driven
+action tests against a real browser process, not a separate human-operated
+interactive pass.
+
+The canvas-rendered vertical-fraction fixture is an additional full-flow case:
+
+```powershell
+npm.cmd run test:browser:ocr-flow -- 9333 . webgpu "http://127.0.0.1:8765/tests/browser/fraction-ocr-capture-harness.html" --allow-storage-reset --quick-only
+```
+
+On 2026-10-06 it captured 290 x 120 pixels with zero magenta pixels,
+recognized `X/2=3` exactly as `((X)/(2)) = 3`, and reached verified `x=6` only
+after explicit confirmation. This proves that controlled fixture, not general
+accuracy across arbitrary fonts, fraction layouts, image quality, or notation.
 
 The input-entry smoke copies a real HTML `sup` selection, pastes through the
 Side Panel event, proves that the result remains editable and unsolved until an
@@ -242,6 +284,21 @@ two Worker recognitions to verify warm-session reuse. It complements the full
 action-driven flow above, and its reported provider
 must be checked in the JSON output (a WebGPU initialization error is expected
 only in the separately forced-fallback profile).
+
+To exercise the complete action-driven route with WebGPU disabled, start the
+isolated browser on a separate port and require the reported WASM provider:
+
+```powershell
+npm.cmd run test:browser:ocr-flow -- 9334 . wasm --allow-storage-reset --quick-only
+```
+
+This forced-WASM flow passed in official Chrome 154 on 2026-10-06. Exact peak
+Worker/WASM memory remains unmeasured.
+
+### Manual interactive checklist
+
+The following is a separate human-operated check. It was not performed as part
+of the 2026-10-06 automated browser run.
 
 1. Load the unpacked extension in Chrome 116 or newer. Confirm no model, script,
    or data request leaves the extension.

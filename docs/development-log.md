@@ -1,5 +1,38 @@
 # Development log
 
+## 2026-10-06: final OCR browser stabilization
+
+- Traced the Chrome 153 magenta-crop failure to the browser harness, not crop
+  arithmetic or Chrome screenshot scaling. The harness measured a centered
+  fixture while the Side Panel was still docking: the viewport changed from
+  1782 to 1396 CSS pixels, moving the target about 193 pixels and leaving the
+  stale drag over the fixture border and background. It now requires four
+  consecutive stable viewport/target samples and remeasures immediately before
+  the drag. The existing less-than-five-percent magenta assertion was retained;
+  successful runs measured zero magenta pixels.
+- Bound pre-preview capture authority to the source-tab lifecycle. Tab changes
+  and source navigation clear the stored session before best-effort overlay
+  cleanup, preventing a delayed navigation message from preserving or reviving
+  a stale crop. Completed previews remain governed by their confirmation tab
+  and ten-minute expiry.
+- Required an actual active-preview discard before confirmation can create
+  pending solver input. An already-finished preview cannot grant authority, and
+  a page-local grant permits only a retry after actual disposal succeeded but a
+  pending-storage write failed.
+- Let unknown one-region Japanese-like OCR fall through to formula recognition
+  unless it is a complete supported operation instruction. Added a narrow
+  normalizer for symmetric Typst relation alignment markers such as `& = &`.
+- Added a real canvas-rendered vertical-fraction fixture. Official Chrome 154
+  recognized `X/2=3` as `((X)/(2)) = 3`; the separate confirmation action then
+  reached the deterministic verified answer `x=6`. The crop was 290 x 120 with
+  zero magenta pixels and no injected OCR candidate.
+- Action-driven unpacked-Chrome runs passed normal WebGPU Study/Quick, forced
+  WASM, all four drag directions, tiny-drag, Esc, tab-switch, navigation, and
+  expiry cancellation, mixed OCR, structured selection, and paste/clipboard/
+  shortcut regressions. These were automated CDP-driven real-browser checks;
+  no separate human interactive pass was claimed. The Node suite passed 908 of
+  908 tests.
+
 ## 2026-09-11: OCR label isolation and deterministic learning steps
 
 - Added a two-evidence gate for same-row OCR problem numbers: a strong

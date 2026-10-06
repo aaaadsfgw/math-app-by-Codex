@@ -932,3 +932,31 @@ an input revision guard so a late solve cannot be cached or recorded as the
 newer problem. This decision defines the Phase A data and safety boundary only.
 It does not implement Phase B operation routing, Phase C OCR arbitration, Phase
 D learning-workflow removal, or Phase E multi-problem execution.
+
+## D-037: Bind OCR confirmation to live preview disposal and source lifecycle
+
+**Status:** accepted
+**Date:** 2026-10-06
+
+Before a preview exists, changing the active tab or starting navigation in the
+source tab invalidates the capture session before best-effort content-script
+cleanup. This ordering prevents a navigation-stalled message from preserving
+stale authority or allowing a delayed crop to become usable. A completed
+preview is independent of the source document and remains governed by its
+confirmation tab, expiry, replacement, or explicit discard.
+
+The confirmation page may create a confirmed pending problem only after the
+offscreen document reports that it actually discarded the currently active
+preview. An idempotent `alreadyFinished` result closes an obsolete flow but does
+not grant confirmation authority. When actual disposal succeeds but the
+subsequent pending-storage write fails transiently, a page-local, non-persistent
+grant permits retry without attempting to recover authority from an already
+destroyed preview.
+
+Single-region Japanese OCR is an instruction preflight only when the complete
+text normalizes to a supported operation. Unknown Japanese-like text falls
+through to formula OCR so a hallucinated prose fragment cannot suppress a
+valid formula candidate. Typst alignment markers are removed only as a
+symmetric pair around one standalone relation. These narrow fallbacks preserve
+the editable, unconfirmed candidate boundary and never infer mathematical
+meaning from solver acceptance.

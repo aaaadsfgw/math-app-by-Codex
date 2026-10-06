@@ -210,6 +210,18 @@ cancellation, timeout, disposal, and late results. Manual adversarial UI cases,
 exact rendered-fraction evidence, and Worker/WASM peak-memory measurement remain
 tracked release-evidence gaps, so the feature remains experimental.
 
+Status update (2026-10-06): official Chrome 154 passed the complete
+action-driven flow with WebGPU and with WebGPU disabled to force the packaged
+WASM provider. A browser-canvas vertical fraction `X/2=3` produced the exact
+candidate `((X)/(2)) = 3`; only the separate confirmation action reached the
+deterministic verified answer `x=6`. The 290 x 120 crop contained zero magenta
+pixels. Automated real-browser cases also passed all four drag directions,
+tiny-drag, Esc, tab-switch, navigation, and session-expiry cleanup. This is one
+controlled printed-fraction example and does not establish accuracy across
+arbitrary fractions, fonts, layouts, or images. A separate human interactive
+pass and exact Worker/WASM peak-memory measurement were not performed, so the
+feature remains experimental and every candidate still requires review.
+
 ## Unsupported OCR scope
 
 The IBEM formula path supports only one tightly cropped, machine-printed formula whose

@@ -59,6 +59,7 @@ let recognitionRunning = false;
 let discarding = false;
 let submitting = false;
 let previewDiscarded = false;
+let confirmationAuthorized = false;
 let recognitionRevision = 0;
 let previewExpiryTimer = null;
 let rawOcrText = "";
@@ -204,6 +205,11 @@ function markManualEdit(field) {
 
 function updateActionStates() {
   const pageLocked = discarding || submitting;
+  const canConfirmCandidate = confirmationAuthorized || (
+    recognitionAvailable
+    && !previewDiscarded
+    && captureId !== null
+  );
   elements.recognizeButton.disabled = (
     pageLocked
     || recognitionRunning
@@ -216,6 +222,7 @@ function updateActionStates() {
   elements.solveButton.disabled = (
     pageLocked
     || recognitionRunning
+    || !canConfirmCandidate
     || !candidateCanSubmit()
   );
   elements.discardButton.disabled = pageLocked;
@@ -626,8 +633,15 @@ async function cancelRecognition({ silent = false } = {}) {
   }
 }
 
-async function discardPreview() {
-  if (previewDiscarded || captureId === null) return;
+async function discardPreview({ requireActive = false } = {}) {
+  if (previewDiscarded || captureId === null) {
+    if (requireActive && !confirmationAuthorized) {
+      const error = new Error("OCRプレビューの確認期限が切れたか、別の画像選択へ置き換えられました。");
+      error.code = "OCR_CAPTURE_CONFIRMATION_STALE";
+      throw error;
+    }
+    return;
+  }
   const response = await sendBackgroundMessage(
     captureMessage(DISCARD_OCR_CAPTURE, captureId),
   );
@@ -635,10 +649,22 @@ async function discardPreview() {
     const reported = cleanText(response?.error?.message);
     throw new Error(reported || "プレビューを破棄できませんでした。");
   }
+  const discarded = response.result?.discarded === true;
+  const alreadyFinished = response.result?.discarded === false
+    && response.result?.alreadyFinished === true;
+  if (!discarded && !alreadyFinished) {
+    throw new Error("プレビューの破棄結果を確認できませんでした。");
+  }
   previewDiscarded = true;
   recognitionAvailable = false;
   clearPreviewExpiryTimer();
   clearPreviewSource();
+  if (requireActive && !discarded) {
+    const error = new Error("OCRプレビューの確認期限が切れたか、別の画像選択へ置き換えられました。");
+    error.code = "OCR_CAPTURE_CONFIRMATION_STALE";
+    throw error;
+  }
+  if (requireActive) confirmationAuthorized = true;
 }
 
 function closeConfirmationPage() {
@@ -687,6 +713,14 @@ async function discardAndClose() {
 
 async function solveCandidate() {
   if (submitting || discarding || recognitionRunning) return;
+  if (
+    !confirmationAuthorized
+    && (!recognitionAvailable || previewDiscarded || captureId === null)
+  ) {
+    setRecognitionError("このOCRプレビューは確認できません。画像をもう一度選択してください。");
+    updateActionStates();
+    return;
+  }
   if (!validCandidate(elements.candidateInput.value)) {
     setRecognitionError("確認する数式を入力してください。");
     elements.candidateInput.focus();
@@ -728,7 +762,7 @@ async function solveCandidate() {
   elements.solveHelp.textContent = "確認済みの問題文を数式エンジンへ渡す準備をしています…";
   setMessage("画像を破棄し、確認済みの問題文を準備しています…");
   try {
-    await discardPreview();
+    await discardPreview({ requireActive: true });
     await setPendingQuestion({
       question,
       problemInput,

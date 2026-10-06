@@ -222,6 +222,14 @@ same-URL reload races during the screenshot boundary. A tab switch, navigation,
 expiry, invalid phase, malformed PNG, size limit, or crop failure cancels the
 capture instead of using a different image.
 
+Before a preview exists, a source-tab activation change or source navigation
+invalidates the stored session first and only then performs best-effort overlay
+and preview cleanup. This order prevents a navigation-stalled content-script
+message from leaving stale capture authority usable. Once the session reaches
+the preview phase, source navigation does not discard the separately tracked
+confirmation preview; its own expiry, replacement, confirmation-tab closure,
+or explicit discard remains responsible for cleanup.
+
 The offscreen document accepts only an inline PNG Data URL from
 `captureVisibleTab`, checks the PNG header and decoded bitmap dimensions, and
 maps CSS coordinates from the real bitmap X/Y scale rather than trusting DPR.
@@ -231,6 +239,14 @@ The background tracks and verifies the confirmation tab ID. The page receives
 the same ten-minute expiry, removes its image source at that boundary, and
 requests idempotent discard and closure so a previously decoded image does not
 remain visible.
+
+Explicit OCR confirmation receives authority only when the offscreen document
+reports that it actually discarded the active preview. An idempotent
+`alreadyFinished` result may close an obsolete page but cannot create a
+confirmed pending problem. After a successful discard the confirmation page
+keeps page-local authority long enough to retry a transient pending-storage
+write without asking a nonexistent preview to grant authority again. This
+authority is never serialized or recovered after the page closes.
 
 Recognition lazy-loads the pinned `dbcccc/IBEM-im2typst` deployment at revision
 `a7ced2309da108a911fa6880055a165264872a84` through the packaged ONNX Runtime
@@ -252,9 +268,11 @@ segmenter never labels a region as prose or formula from pixels. For two or
 three regions, all upper crops must independently produce Japanese/label
 evidence before the final crop is passed to IBEM. If Japanese recognition
 fails or an upper crop instead looks like another formula, IBEM is not run.
-For one region, Japanese recognition is a preflight: a Japanese-only result is
-shown with an empty formula field, while a non-Japanese result uses the
-established formula-only IBEM path.
+For one region, Japanese recognition is a preflight: only a complete,
+recognized supported operation instruction is shown with an empty formula
+field. Unknown Japanese-like output, including OCR hallucinations produced from
+math glyphs, falls through to the established formula-only IBEM path rather
+than suppressing formula recognition.
 
 Inside the final formula row, a bounded 8-connected-component scan may emit at
 most six possible boundaries after a short left prefix. Gap size is measured
@@ -290,6 +308,9 @@ serialized queue.
 Image byte, decoded-pixel, dimension, crop, token, and output limits apply
 before or during recognition. Model output is checked against the bundled
 output policy and converted conservatively to the solver's text notation.
+The normalizer removes Typst alignment ampersands only when they symmetrically
+surround one standalone relation such as `& = &`; a generic `A & B` remains
+unsupported instead of being rewritten.
 Ambiguous glyphs are never guessed. A provider error, missing end token,
 repetition guard, malformed/unbalanced output, unsupported symbol, timeout, or
 user cancellation produces no pending question and no solver call. Even a
@@ -311,9 +332,19 @@ behavior, preview cleanup,
 and the established formula-only WebGPU/WASM routes. The Japanese fixture was
 observed at about 283 ms on a fresh run and about 30--35 ms warm. The measured
 page heap does not include the Worker/WASM peak, so a precise peak-memory value
-is still unknown. A rendered fraction image has not been recognized exactly in
-this browser evidence; deterministic fraction integration tests do not replace
-that acquisition test, and manual candidate correction remains required.
+is still unknown. On 2026-10-06, the current official Chrome 154 passed the
+action-driven WebGPU and forced-WASM flows, all four drag directions, and
+tiny-drag, Esc, tab-switch, navigation, and expiry cancellation. A real
+browser-canvas vertical fraction `X/2=3` produced the exact editable candidate
+`((X)/(2)) = 3`; separate explicit confirmation reached the deterministic,
+verified answer `x=6`, with a 290 x 120 crop and zero magenta pixels. This is
+one controlled acquisition case, not a general accuracy claim for arbitrary
+fractions, fonts, layouts, or photographs, and user review remains mandatory.
+The earlier Chrome 153 magenta failure was traced to the browser harness
+measuring the centered fixture before asynchronous Side Panel docking changed
+the viewport from 1782 to 1396 CSS pixels. The harness now waits for four
+consecutive stable geometry samples and remeasures immediately before dragging;
+the crop-color assertion itself remains unchanged.
 On 2026-09-14, separate fresh Chrome 152 profiles also passed real
 screenshot-to-explicit-solve flows for narrow same-row `(1)`, `(2)`, `(10)`,
 and `（2）` labels beside the packaged `x+y` formula. Separate real-command

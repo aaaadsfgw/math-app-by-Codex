@@ -393,6 +393,23 @@ test("日本語だけの単一領域はinstruction-only候補となりformula OC
   assert.equal(calls.formula, 0);
 });
 
+test("単一数式の日本語OCR誤認は命令と断定せずformula OCRへ戻す", async () => {
+  const { instance, calls } = engine({
+    regionCount: 1,
+    japanese: [japaneseOutput("っデニ3")],
+    formula: formulaOutput("((X)/(2)) = 3"),
+  });
+  const output = await instance.recognize(png());
+  assert.equal(output.recognitionKind, "formula-only");
+  assert.equal(output.text, "((X)/(2)) = 3");
+  assert.equal(output.structuredCandidate.instructionText, "");
+  assert.equal(output.structuredCandidate.instructionIntent, null);
+  assert.equal(output.structuredCandidate.formulaText, "((X)/(2)) = 3");
+  assert.equal(output.confirmationRequired, true);
+  assert.equal(output.verified, false);
+  assert.deepEqual(calls, { formula: 1, japanese: 1 });
+});
+
 test("単一行の数式と対応済み日本語指示は構造を分けて未確認候補にする", async () => {
   const { instance, calls } = engine({
     regionCount: 1,

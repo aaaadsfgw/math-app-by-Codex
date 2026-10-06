@@ -1,6 +1,6 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-09-29
+Last updated: 2026-10-06
 
 ## Repository checkpoint
 
@@ -9,6 +9,40 @@ Last updated: 2026-09-29
 - Starting commit: `ef80cda Build initial Math Study Log AI prototype`
 - Digicon workflow base: `52aa204 Add exact polynomial concavity analysis`
 - Working milestone: problem acquisition, staged learning records, and analytics
+
+## 2026-10-06: OCR final browser stabilization
+
+- Traced the Chrome 153 crop failure to the browser harness measuring its
+  centered fixture before Side Panel docking had finished. The viewport width
+  changed from 1,782 to 1,396 CSS pixels, moving the fixture 193 pixels left;
+  the stale drag rectangle therefore included the fixture's magenta surround
+  and accounts for the observed 2,866 magenta pixels. The production crop
+  scaling, device-pixel ratio, rounding, and overlay paint were not the cause.
+- Stabilized the real-browser harness without weakening the crop assertion. It
+  now requires four consecutive stable fixture/viewport samples after the Side
+  Panel opens, then measures again after the overlay is installed immediately
+  before the trusted pointer drag. Successful crops still require less than
+  five percent magenta; the current successful fixtures contained zero.
+- Hardened the capture lifecycle for source-tab activation and navigation,
+  invalidating session authority before best-effort overlay/preview cleanup.
+  Explicit OCR confirmation now requires an actual preview discard before it
+  can authorize a solve, while a transient storage failure may be retried
+  without granting authority to a stale preview.
+- Current official Chrome 154.0.8037.92 passed CDP-driven unpacked-extension
+  WebGPU flows in Study and Quick Mode, all four drag directions, tiny-drag,
+  Esc, tab-switch, navigation, expiry, mixed OCR, structured selection, and
+  paste/clipboard/shortcut scenarios. The cancellation cases performed no
+  screenshot capture or confirmation, preserved history, pending state, and
+  clipboard contents, and cleared the session and overlay.
+- A real canvas-rendered vertical fraction `X/2=3` produced the exact editable
+  candidate `((X)/(2)) = 3`. Only the separate confirmation action passed it to
+  the deterministic solver, which returned verified `x=6`; the 290 x 120 crop
+  contained zero magenta pixels and its preview was revoked. A separately
+  GPU-disabled run reported the WASM provider and completed the same explicit
+  confirmation/verified-solve boundary.
+- `npm.cmd test` passed 908 tests with zero failures. The browser results above
+  are automated, action-driven tests in a real Chrome process; a separate
+  human-operated interactive pass was not performed.
 
 ## 2026-09-29: Chrome Side Panel minimum-version alignment
 
@@ -859,18 +893,43 @@ Last updated: 2026-09-29
 
 ## Remaining validation
 
-- The primary toolbar-driven capture/confirmation/solve release blocker is
-  closed by the reproducible browser smoke. Final release checking still needs
-  the manual adversarial UI cases in `docs/test-plan.md`, including tiny and
-  reverse drags, Esc/tab-switch/expiry cancellation, and a full capture flow in
-  a forced-WASM profile. Their individual protocol, cleanup, and provider paths
-  are already covered automatically.
-- Exact peak Worker/WASM memory remains unmeasured, and an actual
-  rendered fraction has not yet been transcribed exactly in the browser; both
-  remain release evidence gaps rather than reasons to relax confirmation.
+- The automated real-browser suite now covers tiny and reverse drags,
+  Esc/tab-switch/navigation/expiry cancellation, and a full forced-WASM
+  capture flow. A separate human-operated interactive pass through the manual
+  checklist in `docs/test-plan.md` has not been performed.
+- Exact peak Worker/WASM memory remains unmeasured. The exact `X/2=3` browser
+  result proves one controlled vertical-fraction fixture, not general accuracy
+  across arbitrary fonts, fraction layouts, image quality, or notation. These
+  limits are reasons to retain editable review and explicit confirmation.
 
 ## Last verified commands
 
+- `npm.cmd test` - 908 passed, 0 failed on 2026-10-06.
+- `npm.cmd run check` - passed for 296 files, 18 HTML, 221 JS/MJS, and
+  13 CSS files on 2026-10-06.
+- `npm.cmd run test:browser:ocr-flow -- 9333 . webgpu --allow-storage-reset` -
+  official Chrome 154 passed Study and Quick capture, 290 x 120 crops with zero
+  magenta pixels, editable confirmation, explicit verified solve, mode-specific
+  history, and preview revocation on 2026-10-06.
+- The same OCR flow with `--drag-bottom-right`, `--drag-top-right`, and
+  `--drag-bottom-left` passed alongside the default direction. Separate runs
+  with `--tiny-drag`, `--escape-cancel`, `--tab-switch`, `--navigation`, and
+  `--session-expiry` passed their no-capture/no-confirmation and cleanup checks.
+- `npm.cmd run test:browser:ocr-mixed-flow -- 9333 . webgpu
+  --allow-storage-reset --quick-only` passed the real mixed instruction/label
+  fixture in official Chrome 154 on 2026-10-06.
+- `npm.cmd run test:browser:ocr-flow -- 9333 . webgpu
+  "http://127.0.0.1:8765/tests/browser/fraction-ocr-capture-harness.html"
+  --allow-storage-reset --quick-only` recognized `((X)/(2)) = 3`, then returned
+  verified `x=6` only after explicit confirmation on 2026-10-06.
+- `npm.cmd run test:browser:ocr-flow -- 9334 . wasm --allow-storage-reset
+  --quick-only` passed with the reported WASM provider in GPU-disabled official
+  Chrome 154 on 2026-10-06.
+- `npm.cmd run test:browser:inputs -- 9334 . --allow-storage-reset`, its
+  clipboard/restricted/unsupported shortcut variants, and
+  `npm.cmd run test:browser:selection -- 9334` passed the real-browser input,
+  clipboard-preservation, and 10/10 structured-selection scenarios in official
+  Chrome 154 on 2026-10-06.
 - `npm.cmd test` - 897 passed, 0 failed on 2026-09-20, including the
   5,500-case generated evaluation corpus and Phase A structured-input,
   provenance, OCR-confirmation, storage, and stale-result regressions.

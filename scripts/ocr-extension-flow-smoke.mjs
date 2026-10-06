@@ -2,7 +2,19 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 
 const rawArguments = process.argv.slice(2);
-const supportedFlags = new Set(["--allow-storage-reset", "--mixed", "--quick-only"]);
+const supportedFlags = new Set([
+  "--allow-storage-reset",
+  "--mixed",
+  "--quick-only",
+  "--drag-bottom-right",
+  "--drag-top-right",
+  "--drag-bottom-left",
+  "--tiny-drag",
+  "--escape-cancel",
+  "--tab-switch",
+  "--navigation",
+  "--session-expiry",
+]);
 const unknownFlags = rawArguments.filter(
   (argument) => argument.startsWith("--") && !supportedFlags.has(argument),
 );
@@ -12,6 +24,19 @@ if (unknownFlags.length > 0) {
 const allowStorageReset = rawArguments.includes("--allow-storage-reset");
 const useMixedFixture = rawArguments.includes("--mixed");
 const quickOnly = rawArguments.includes("--quick-only");
+const dragFlags = ["--drag-bottom-right", "--drag-top-right", "--drag-bottom-left"]
+  .filter((flag) => rawArguments.includes(flag));
+if (dragFlags.length > 1) throw new TypeError("Specify at most one reverse-drag option.");
+const dragDirection = dragFlags[0]?.slice("--drag-".length) || "top-left";
+const scenarioFlags = [
+  "--tiny-drag",
+  "--escape-cancel",
+  "--tab-switch",
+  "--navigation",
+  "--session-expiry",
+].filter((flag) => rawArguments.includes(flag));
+if (scenarioFlags.length > 1) throw new TypeError("Specify at most one OCR edge-case scenario.");
+const edgeScenario = scenarioFlags[0]?.slice(2) || "success";
 if (!allowStorageReset) {
   throw new Error(
     "Refusing to clear extension test storage without --allow-storage-reset. "
@@ -282,9 +307,28 @@ async function replaceInput(protocol, selector, text) {
   );
 }
 
-async function dragSelection(protocol, rect) {
-  const start = { x: rect.left, y: rect.top };
-  const end = { x: rect.right, y: rect.bottom };
+async function dragSelection(protocol, rect, direction = "top-left") {
+  const corners = Object.freeze({
+    "top-left": Object.freeze([
+      { x: rect.left, y: rect.top },
+      { x: rect.right, y: rect.bottom },
+    ]),
+    "bottom-right": Object.freeze([
+      { x: rect.right, y: rect.bottom },
+      { x: rect.left, y: rect.top },
+    ]),
+    "top-right": Object.freeze([
+      { x: rect.right, y: rect.top },
+      { x: rect.left, y: rect.bottom },
+    ]),
+    "bottom-left": Object.freeze([
+      { x: rect.left, y: rect.bottom },
+      { x: rect.right, y: rect.top },
+    ]),
+  });
+  const points = corners[direction];
+  if (!points) throw new TypeError(`Unsupported drag direction: ${direction}`);
+  const [start, end] = points;
   await protocol.send("Input.dispatchMouseEvent", {
     type: "mouseMoved",
     ...start,
@@ -323,6 +367,43 @@ async function dragSelection(protocol, rect) {
     clickCount: 1,
     pointerType: "mouse",
   });
+}
+
+async function pressEscape(protocol) {
+  await protocol.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown",
+    key: "Escape",
+    code: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+  await protocol.send("Input.dispatchKeyEvent", {
+    type: "keyUp",
+    key: "Escape",
+    code: "Escape",
+    windowsVirtualKeyCode: 27,
+    nativeVirtualKeyCode: 27,
+  });
+}
+
+async function clipboardRead(browser, targetId, protocol) {
+  await browser.send("Target.activateTarget", { targetId });
+  await protocol.send("Page.bringToFront").catch(() => undefined);
+  return String(await evaluate(
+    protocol,
+    "navigator.clipboard['readText']()",
+    { userGesture: true },
+  ));
+}
+
+async function clipboardWrite(browser, targetId, protocol, value) {
+  await browser.send("Target.activateTarget", { targetId });
+  await protocol.send("Page.bringToFront").catch(() => undefined);
+  return evaluate(
+    protocol,
+    `navigator.clipboard['writeText'](${JSON.stringify(value)}).then(() => true)`,
+    { userGesture: true },
+  );
 }
 
 async function storageItems(storageProtocol, storageArea, keys) {
@@ -495,15 +576,21 @@ async function fixtureGeometry(sourceProtocol) {
       const target = document.querySelector("#ocrCaptureTarget");
       if (!target) return null;
       const image = target instanceof HTMLImageElement ? target : target.querySelector("img");
-      if (!(image instanceof HTMLImageElement)) return null;
-      try { await image.decode(); } catch { return null; }
+      if (image instanceof HTMLImageElement) {
+        try { await image.decode(); } catch { return null; }
+      } else {
+        try { await document.fonts?.ready; } catch { return null; }
+      }
       const rect = target.getBoundingClientRect();
       const expectedNaturalWidth = Number(target.dataset.naturalWidth || 145);
       const expectedNaturalHeight = Number(target.dataset.naturalHeight || 60);
       if (
-        !image.complete
-        || image.naturalWidth !== expectedNaturalWidth
-        || image.naturalHeight !== expectedNaturalHeight
+        image instanceof HTMLImageElement
+        && (
+          !image.complete
+          || image.naturalWidth !== expectedNaturalWidth
+          || image.naturalHeight !== expectedNaturalHeight
+        )
       ) return null;
       return {
         left: rect.left,
@@ -528,6 +615,37 @@ async function fixtureGeometry(sourceProtocol) {
     })()`),
     { timeoutMs: 10_000, label: "fixture image" },
   );
+}
+
+function stableGeometryKey(geometry) {
+  return JSON.stringify([
+    geometry.left,
+    geometry.top,
+    geometry.right,
+    geometry.bottom,
+    geometry.width,
+    geometry.height,
+    geometry.viewportWidth,
+    geometry.viewportHeight,
+    geometry.devicePixelRatio,
+  ]);
+}
+
+async function waitForStableFixtureGeometry(sourceProtocol) {
+  let previousKey = "";
+  let stableSamples = 0;
+  return waitFor(async () => {
+    const geometry = await fixtureGeometry(sourceProtocol);
+    const key = stableGeometryKey(geometry);
+    if (key === previousKey) stableSamples += 1;
+    else stableSamples = 1;
+    previousKey = key;
+    return stableSamples >= 4 ? geometry : null;
+  }, {
+    timeoutMs: 15_000,
+    intervalMs: 100,
+    label: "stable OCR fixture geometry after Side Panel resize",
+  });
 }
 
 async function previewEvidence(confirmProtocol) {
@@ -582,6 +700,7 @@ async function runFlowUnsafe({
   sourceTarget,
   chromeVersion,
   storageProtocol,
+  storageTargetId,
   openedProtocols,
   flowTargetIds,
 }) {
@@ -592,6 +711,8 @@ async function runFlowUnsafe({
   const historyBefore = historySnapshot.length;
   assert.equal(beforeLocal.pendingQuestion, undefined);
   await setStorageItems(storageProtocol, "local", { settings: settingsFor(learningMode) });
+  const clipboardSentinel = `math-study-log-ocr-${edgeScenario}-${Date.now()}`;
+  await clipboardWrite(browser, storageTargetId, storageProtocol, clipboardSentinel);
 
   const sourceProtocol = await connectTarget(sourceTarget);
   openedProtocols.push(sourceProtocol);
@@ -654,11 +775,26 @@ async function runFlowUnsafe({
     { label: "Side Panel launcher button" },
   );
   await clickElement(launcherProtocol, "#openPanelButton");
-  const popupTarget = await waitForTarget(
-    (target) => target.type === "page"
-      && target.url === extensionPageUrl(extensionId, POPUP_PATH),
-    { timeoutMs: 10_000, label: "Side Panel workspace" },
-  );
+  const popupTarget = await waitFor(async () => {
+    const target = (await listTargets()).find(
+      (candidate) => candidate.type === "page"
+        && candidate.url === extensionPageUrl(extensionId, POPUP_PATH),
+    );
+    if (target) return target;
+    if (!launcherProtocol.closed) {
+      const launcherState = await evaluate(launcherProtocol, `(() => ({
+        status: document.querySelector("#launcherStatus")?.textContent?.trim() || "",
+        error: document.querySelector("#launcherStatus")?.classList.contains("danger-text") === true,
+        buttonDisabled: document.querySelector("#openPanelButton")?.disabled,
+      }))()`);
+      if (launcherState.error) {
+        const failure = new Error(`Side Panel launcher failed: ${JSON.stringify(launcherState)}`);
+        failure.fatal = true;
+        throw failure;
+      }
+    }
+    return null;
+  }, { timeoutMs: 30_000, label: "Side Panel workspace" });
   flowTargetIds.add(popupTarget.id);
   const popupProtocol = await connectTarget(popupTarget);
   openedProtocols.push(popupProtocol);
@@ -676,11 +812,10 @@ async function runFlowUnsafe({
     })()`),
     { label: "OCR action button" },
   );
-  await delay(100);
-  // Opening the Side Panel narrows the source page viewport. Measure the
-  // fixture after that resize so the synthetic drag stays inside the visible
-  // page area in headless Chromium as it does for a real user.
-  const geometry = await fixtureGeometry(sourceProtocol);
+  // Opening the Side Panel narrows the source page viewport asynchronously.
+  // Wait for the centered fixture and viewport to stop moving instead of
+  // relying on a fixed delay that can retain pre-dock coordinates.
+  let geometry = await waitForStableFixtureGeometry(sourceProtocol);
   assert.equal(geometry.width, geometry.expectedWidth);
   assert.equal(geometry.height, geometry.expectedHeight);
   assert.ok(
@@ -800,8 +935,113 @@ async function runFlowUnsafe({
     { timeoutMs: 10_000, label: "trusted selection overlay" },
   );
 
+  // Re-read immediately before the trusted drag. Service-worker wake-up and
+  // overlay injection above can outlast the Side Panel's dock animation on a
+  // newly created Chrome profile.
+  geometry = await waitForStableFixtureGeometry(sourceProtocol);
+  assert.equal(geometry.width, geometry.expectedWidth);
+  assert.equal(geometry.height, geometry.expectedHeight);
+  assert.ok(
+    geometry.left >= 0
+      && geometry.top >= 0
+      && geometry.right <= geometry.viewportWidth
+      && geometry.bottom <= geometry.viewportHeight,
+    `The OCR fixture must remain visible before the drag: ${JSON.stringify(geometry)}`,
+  );
   const targetsBeforeSelection = new Set((await listTargets()).map(({ id }) => id));
-  await dragSelection(sourceProtocol, geometry);
+  if (edgeScenario !== "success") {
+    if (edgeScenario === "tiny-drag") {
+      await dragSelection(sourceProtocol, {
+        left: geometry.left + 4,
+        top: geometry.top + 4,
+        right: geometry.left + 12,
+        bottom: geometry.top + 12,
+      });
+      const afterTinyDrag = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
+      assert.equal(afterTinyDrag[OCR_SESSION_KEY]?.phase, "selecting");
+      const tinyTrace = await evaluate(
+        workerProtocol,
+        "structuredClone(globalThis.__mathStudyLogOcrFlowCaptureTraceV3)",
+      );
+      assert.equal(tinyTrace.calls.length, 0);
+      await pressEscape(sourceProtocol);
+    } else if (edgeScenario === "escape-cancel") {
+      await pressEscape(sourceProtocol);
+    } else if (edgeScenario === "tab-switch") {
+      const switched = await browser.send("Target.createTarget", { url: "about:blank" });
+      flowTargetIds.add(switched.targetId);
+      await browser.send("Target.activateTarget", { targetId: switched.targetId });
+    } else if (edgeScenario === "navigation") {
+      const navigatedUrl = new URL(sourceTarget.url);
+      navigatedUrl.searchParams.set("navigated", String(Date.now()));
+      await sourceProtocol.send("Page.navigate", { url: navigatedUrl.href });
+    } else if (edgeScenario === "session-expiry") {
+      await setStorageItems(storageProtocol, "session", {
+        [OCR_SESSION_KEY]: {
+          ...selectingSession,
+          expiresAt: Date.now() - 1,
+        },
+      });
+      await dragSelection(sourceProtocol, geometry, dragDirection);
+    } else {
+      throw new TypeError(`Unsupported OCR edge-case scenario: ${edgeScenario}`);
+    }
+
+    try {
+      await waitFor(async () => {
+        const sessionData = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
+        return sessionData[OCR_SESSION_KEY] === undefined;
+      }, { timeoutMs: 10_000, label: `${edgeScenario} OCR session cleanup` });
+    } catch (error) {
+      const sessionData = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
+      throw new Error(`${error.message} Diagnostics: ${JSON.stringify({
+        session: sessionData[OCR_SESSION_KEY],
+      })}`, { cause: error });
+    }
+    await waitFor(async () => {
+      if (sourceProtocol.closed) return true;
+      return evaluate(
+        sourceProtocol,
+        "!document.getElementById('math-study-log-ocr-capture-overlay-v1')",
+      ).catch(() => edgeScenario === "navigation");
+    }, { timeoutMs: 10_000, label: `${edgeScenario} overlay cleanup` });
+    await delay(300);
+
+    const captureTrace = await evaluate(
+      workerProtocol,
+      "structuredClone(globalThis.__mathStudyLogOcrFlowCaptureTraceV3)",
+    );
+    assert.equal(captureTrace.calls.length, 0);
+    const newConfirmationTargets = (await listTargets()).filter(
+      (target) => !targetsBeforeSelection.has(target.id)
+        && target.url.startsWith(extensionPageUrl(extensionId, `${CONFIRM_PATH}?captureId=`)),
+    );
+    assert.deepEqual(newConfirmationTargets, []);
+    const finalLocal = await storageItems(storageProtocol, "local", ["history", "pendingQuestion"]);
+    assert.deepEqual(
+      Array.isArray(finalLocal.history) ? finalLocal.history : [],
+      historySnapshot,
+    );
+    assert.equal(finalLocal.pendingQuestion, undefined);
+    assert.equal(
+      await clipboardRead(browser, storageTargetId, storageProtocol),
+      clipboardSentinel,
+    );
+    return Object.freeze({
+      chromeVersion,
+      learningMode,
+      scenario: edgeScenario,
+      captureCount: 0,
+      confirmationOpened: false,
+      historyBefore,
+      historyAfter: historyBefore,
+      pendingQuestionCreated: false,
+      clipboardPreserved: true,
+      sessionCleared: true,
+      overlayCleared: true,
+    });
+  }
+  await dragSelection(sourceProtocol, geometry, dragDirection);
   const confirmTarget = await waitForTarget(
     (target) => !targetsBeforeSelection.has(target.id)
       && target.url.startsWith(extensionPageUrl(extensionId, `${CONFIRM_PATH}?captureId=`)),
@@ -835,6 +1075,19 @@ async function runFlowUnsafe({
   const previewSession = previewSessionData[OCR_SESSION_KEY];
   assert.equal(previewSession?.phase, "preview");
   assertMetadataOnlySession(previewSession);
+  assert.deepEqual(
+    {
+      width: previewSession.viewport.width,
+      height: previewSession.viewport.height,
+      devicePixelRatio: previewSession.viewport.devicePixelRatio,
+    },
+    {
+      width: geometry.viewportWidth,
+      height: geometry.viewportHeight,
+      devicePixelRatio: geometry.devicePixelRatio,
+    },
+    "The drag must use the final stable viewport measured after Side Panel docking.",
+  );
   const confirmationTabId = await evaluate(
     confirmProtocol,
     "chrome.tabs.getCurrent().then((tab) => tab?.id ?? null)",
@@ -891,6 +1144,9 @@ async function runFlowUnsafe({
         panelHidden: document.querySelector("#candidatePanel")?.hidden,
         errorHidden: document.querySelector("#recognitionError")?.hidden,
         error: document.querySelector("#recognitionError")?.textContent || "",
+        recognitionStatus: document.querySelector("#recognitionStatus")?.textContent || "",
+        progressHidden: document.querySelector("#recognitionProgress")?.hidden,
+        recognizeText: document.querySelector("#recognizeButton")?.textContent || "",
         provider: document.querySelector("#providerInfo")?.textContent || "",
         backend: document.querySelector("#backendInfo")?.textContent || "",
         model: document.querySelector("#modelInfo")?.textContent || "",
@@ -898,6 +1154,18 @@ async function runFlowUnsafe({
       }))()`);
       if (!state.errorHidden && state.error) {
         const failure = new Error(`${state.error} Preview: ${JSON.stringify(preview)}`);
+        failure.fatal = true;
+        throw failure;
+      }
+      if (
+        !state.panelHidden
+        && state.progressHidden
+        && state.recognitionStatus === "候補を確認してください"
+        && !state.candidate
+      ) {
+        const failure = new Error(
+          `OCR completed without a formula candidate: ${JSON.stringify(state)}`,
+        );
         failure.fatal = true;
         throw failure;
       }
@@ -937,6 +1205,18 @@ async function runFlowUnsafe({
   assert.equal(afterRecognition.pendingQuestion, undefined);
   const recognitionSession = await storageItems(storageProtocol, "session", [OCR_SESSION_KEY]);
   assert.equal(recognitionSession[OCR_SESSION_KEY]?.phase, "preview");
+  const beforeConfirmationUi = await evaluate(popupProtocol, `(() => ({
+    resultHidden: document.querySelector("#resultPanel")?.hidden,
+    result: document.querySelector("#resultOutput")?.textContent || "",
+    verification: document.querySelector("#verificationBadge")?.textContent || "",
+  }))()`);
+  assert.equal(beforeConfirmationUi.resultHidden, true);
+  assert.equal(beforeConfirmationUi.result, "");
+  assert.equal(beforeConfirmationUi.verification, "");
+  assert.equal(
+    await clipboardRead(browser, storageTargetId, storageProtocol),
+    clipboardSentinel,
+  );
 
   const testQuestion = geometry.expectedAnswer
     ? Object.freeze({ question: geometry.expectedFormula, expectedAnswer: geometry.expectedAnswer })
@@ -1059,6 +1339,8 @@ async function runFlowUnsafe({
   return Object.freeze({
     chromeVersion,
     learningMode,
+    scenario: edgeScenario,
+    dragDirection,
     provider,
     recognized: recognition.candidate,
     recognitionKind: geometry.expectedKind,
@@ -1081,6 +1363,7 @@ async function runFlowUnsafe({
       darkPixels: preview.darkPixels,
       magentaPixels: preview.magentaPixels,
     }),
+    recognitionHadNoSolveOrClipboardEffect: true,
     previewRevoked: true,
   });
 }
@@ -1106,6 +1389,8 @@ const browserVersion = await readJson("/json/version");
 const browser = openProtocol(browserVersion.webSocketDebuggerUrl);
 const createdTargetIds = [];
 let storageProtocol = null;
+let storageTargetId = null;
+let originalClipboard = null;
 
 try {
   const fixtureResponse = await fetch(fixtureUrl);
@@ -1127,9 +1412,14 @@ try {
     enabled: true,
   };
   if (!extension?.id) throw new Error("The unpacked extension could not be loaded.");
+  await browser.send("Browser.grantPermissions", {
+    origin: extensionPageUrl(extension.id, "/"),
+    permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"],
+  });
 
   const inspectorUrl = extensionPageUrl(extension.id, "/settings.html");
   const inspector = await browser.send("Target.createTarget", { url: inspectorUrl });
+  storageTargetId = inspector.targetId;
   createdTargetIds.push(inspector.targetId);
   const inspectorTarget = await waitForTarget(
     (target) => target.id === inspector.targetId && target.url === inspectorUrl,
@@ -1153,6 +1443,7 @@ try {
     return environment;
   }, { timeoutMs: 10_000, label: "extension storage inspector readiness" });
   assert.equal(inspectorEnvironment.runtimeId, extension.id);
+  originalClipboard = await clipboardRead(browser, storageTargetId, storageProtocol);
   await evaluate(storageProtocol, `(async () => {
     await Promise.all([chrome.storage.local.clear(), chrome.storage.session.clear()]);
     await chrome.storage.local.set({ settings: ${JSON.stringify(settingsFor("study"))} });
@@ -1177,6 +1468,7 @@ try {
       sourceTarget,
       chromeVersion: browserVersion.Browser,
       storageProtocol,
+      storageTargetId,
     }));
   }
 
@@ -1194,6 +1486,14 @@ try {
   }, null, 2));
   process.exitCode = 1;
 } finally {
+  if (storageProtocol && storageTargetId && originalClipboard !== null) {
+    await clipboardWrite(
+      browser,
+      storageTargetId,
+      storageProtocol,
+      originalClipboard,
+    );
+  }
   storageProtocol?.close();
   for (const targetId of createdTargetIds) {
     await browser.send("Target.closeTarget", { targetId }).catch(() => undefined);

@@ -147,9 +147,11 @@ function singleRegionJapanese(output) {
     });
   }
   const separated = separateQuestionLabel(rawText);
+  const instructionText = normalizedText(separated.remainingText);
+  if (normalizeInstruction(instructionText).status !== "recognized") return null;
   return Object.freeze({
     questionLabel: separated.questionLabel,
-    instructionText: normalizedText(separated.remainingText),
+    instructionText,
     formulaText: "",
     rawText,
     inlineFormula: false,

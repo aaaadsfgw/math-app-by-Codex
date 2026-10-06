@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rendered fraction OCR harness</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, sans-serif;
+      color: #172033;
+      background: #eef3f9;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      width: min(720px, calc(100vw - 64px));
+      padding: 32px;
+      border: 1px solid #c5d0df;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgb(23 32 51 / 12%);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
+
+    p {
+      margin: 0 0 28px;
+      color: #526071;
+    }
+
+    .target-frame {
+      position: absolute;
+      top: 300px;
+      left: 0;
+      padding: 20px;
+      border: 3px dashed #5577aa;
+      border-radius: 12px;
+      background: #ff00ff;
+    }
+
+    #ocrCaptureTarget {
+      box-sizing: border-box;
+      width: 290px;
+      height: 120px;
+      display: block;
+      background: #fff;
+    }
+
+    small {
+      display: block;
+      margin-top: 18px;
+      color: #677487;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rendered fraction OCR harness</h1>
+    <p>マゼンタ色を含めず、白い数式領域だけを選択してください。</p>
+    <div class="target-frame">
+      <canvas
+        id="ocrCaptureTarget"
+        width="290"
+        height="120"
+        data-natural-width="290"
+        data-natural-height="120"
+        data-capture-width="290"
+        data-capture-height="120"
+        data-expected-kind="formula-only"
+        data-expected-formula="((X)/(2)) = 3"
+        data-expected-answer="x=6"
+        role="img"
+        aria-label="capital X over two equals three"
+      ></canvas>
+    </div>
+    <small>Expected normalized OCR candidate: ((X)/(2)) = 3</small>
+  </main>
+  <script>
+    const targetFrame = document.querySelector(".target-frame");
+    const positionTargetFrame = () => {
+      const centeredLeft = Math.floor((window.innerWidth - targetFrame.offsetWidth) / 2);
+      targetFrame.style.left = `${Math.max(32, centeredLeft)}px`;
+    };
+    window.addEventListener("resize", positionTargetFrame);
+    positionTargetFrame();
+
+    const canvas = document.querySelector("#ocrCaptureTarget");
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#000";
+    context.textAlign = "center";
+    context.textBaseline = "alphabetic";
+
+    const numerator = "X";
+    const denominator = "2";
+    const tail = "= 3";
+    context.font = 'italic 42px "Times New Roman"';
+    const numeratorWidth = context.measureText(numerator).width;
+    context.font = '42px "Times New Roman"';
+    const denominatorWidth = context.measureText(denominator).width;
+    const fractionWidth = Math.max(numeratorWidth, denominatorWidth) + 16;
+    const tailWidth = context.measureText(tail).width;
+    const left = (canvas.width - fractionWidth - 18 - tailWidth) / 2;
+    const fractionCenter = left + fractionWidth / 2;
+
+    context.font = 'italic 42px "Times New Roman"';
+    context.fillText(numerator, fractionCenter, 48);
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(left, 57);
+    context.lineTo(left + fractionWidth, 57);
+    context.stroke();
+    context.font = '42px "Times New Roman"';
+    context.fillText(denominator, fractionCenter, 99);
+    context.textAlign = "left";
+    context.fillText(tail, left + fractionWidth + 18, 77);
+  </script>
+</body>
+</html>

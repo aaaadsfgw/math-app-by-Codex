@@ -237,16 +237,23 @@ The runtime, three local WASM feature builds, Japanese data, licenses, retained
 MIT/BSD bundle dependency notices, and asset manifest total 14,385,195 bytes
 (about 14.4 MB decimal / 13.7 MiB). No asset is downloaded at runtime. Japanese
 recognition is WASM-only; formula recognition
-continues to prefer WebGPU and fall back to WASM. In the latest isolated
-headless Chrome 152 checks, the packaged path captured real screenshot pixels,
-separated narrow same-row `(1)`, `(2)`, `(10)`, and `（2）` labels from the
-`x+y` formula, kept the candidate editable, and reached the verified result
-only after the explicit solve action.
+continues to prefer WebGPU and fall back to WASM. In automated, CDP-driven
+unpacked-extension checks on 2026-10-06, official Chrome 154.0.8037.92 captured
+real screenshot pixels and passed WebGPU Study/Quick flows, all four drag
+directions, mixed OCR, input, structured selection, and cancellation/lifecycle
+scenarios. A separately GPU-disabled action flow reported the WASM provider and
+also reached a verified result only after the explicit confirmation action.
+A separate human-operated interactive pass was not performed in that run.
+A real canvas-rendered vertical fraction `X/2=3` was transcribed exactly as
+`((X)/(2)) = 3`; after explicit confirmation, the deterministic solver returned
+verified `x=6`. Its 290 x 120 crop contained zero magenta pixels.
 A fresh Japanese run took about 283 ms and a warm rerun about 30--35 ms in
-that fixture. The available page-heap delta is only a partial measurement and
-does not include the Worker/WASM peak, so no precise peak-memory claim is made.
-Exact recognition of a rendered fraction image has not been established; the
-candidate must still be reviewed and corrected before solving.
+the earlier Chrome 152 fixture. The available page-heap delta is only a partial
+measurement and does not include the Worker/WASM peak, so no precise
+peak-memory claim is made.
+The one controlled fraction result does not establish general accuracy for
+arbitrary fonts, layouts, image quality, or notation; every candidate must still
+be reviewed and corrected when needed before solving.
 
 For logarithmic equations, write an explicit integer base as `log_2(x)` or
 `log₂(x)`. Bare `log(x)` and `ln(x)` both mean the natural logarithm, matching

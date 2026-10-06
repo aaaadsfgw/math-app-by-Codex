@@ -403,6 +403,10 @@ export function createOcrCaptureController({
       discardPreview = new Set(["capturing", "preview"]).has(session.phase),
     } = {},
   ) {
+    // Invalidate the authority first. A document that is navigating away can
+    // leave tabs.sendMessage pending, and cleanup must not keep a stale
+    // capture session usable while best-effort UI/preview cleanup waits.
+    await sessionStore.clear({ captureId: session.captureId });
     if (notifyDocument) {
       try {
         await sendDocumentMessage(session, CANCEL_OCR_CAPTURE, { reason: "capture-cleanup" });
@@ -412,7 +416,6 @@ export function createOcrCaptureController({
     }
     if (session.phase === "preview") await cancelRecognitionBestEffort();
     if (discardPreview) await discardPreviewBestEffort(session.captureId);
-    await sessionStore.clear({ captureId: session.captureId });
   }
 
   async function cleanupPreviousSession() {
@@ -874,8 +877,9 @@ export function createOcrCaptureController({
       throw controllerError("破棄できるOCR previewがありません。", "OCR_CAPTURE_PHASE_MISMATCH");
     }
     let discardError = null;
+    let previewDiscarded = false;
     try {
-      await offscreenRequest(
+      previewDiscarded = await offscreenRequest(
         DISCARD_OCR_CAPTURE_PREVIEW,
         { previewId: session.captureId },
         { timeoutMs: 5_000, extensionApi },
@@ -890,6 +894,9 @@ export function createOcrCaptureController({
         "OCR_CAPTURE_PREVIEW_DISCARD_FAILED",
         discardError,
       );
+    }
+    if (previewDiscarded !== true) {
+      return Object.freeze({ discarded: false, alreadyFinished: true });
     }
     return Object.freeze({ discarded: true });
   }
@@ -914,8 +921,59 @@ export function createOcrCaptureController({
     return true;
   }
 
+  async function handleTabActivated(activeInfo) {
+    const tabId = activeInfo?.tabId;
+    const windowId = activeInfo?.windowId;
+    if (
+      !Number.isSafeInteger(tabId)
+      || tabId < 0
+      || !Number.isSafeInteger(windowId)
+      || windowId < 0
+    ) {
+      return false;
+    }
+    let session;
+    try {
+      session = await sessionStore.get({ clearExpired: false });
+    } catch (error) {
+      if (error?.code === "OCR_CAPTURE_SESSION_CORRUPT") return false;
+      throw error;
+    }
+    if (
+      !session
+      || session.phase === "preview"
+      || session.windowId !== windowId
+      || session.tabId === tabId
+    ) {
+      return false;
+    }
+    await cleanupSession(session, { discardPreview: true });
+    return true;
+  }
+
+  async function handleTabUpdated(tabId, changeInfo) {
+    if (!Number.isSafeInteger(tabId) || tabId < 0) return false;
+    const navigationStarted = changeInfo?.status === "loading"
+      || typeof changeInfo?.url === "string";
+    if (!navigationStarted) return false;
+    let session;
+    try {
+      session = await sessionStore.get({ clearExpired: false });
+    } catch (error) {
+      if (error?.code === "OCR_CAPTURE_SESSION_CORRUPT") return false;
+      throw error;
+    }
+    if (!session || session.phase === "preview" || session.tabId !== tabId) {
+      return false;
+    }
+    await cleanupSession(session, { discardPreview: true });
+    return true;
+  }
+
   return Object.freeze({
+    handleTabActivated,
     handleTabRemoved,
+    handleTabUpdated,
     async handleMessage(value, sender = {}) {
       let message;
       try {
