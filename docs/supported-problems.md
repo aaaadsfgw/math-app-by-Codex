@@ -370,3 +370,40 @@ are limited to absolute exponent 4, and exact constant-side base powers to 32.
 An identity may retain at most one genuinely quadratic positivity condition;
 forms requiring the exact intersection of unrelated quadratic-root families
 are reported as unsupported rather than approximated.
+
+## 2026-11-05: Junior-high textbook calculation input
+
+Bare expressions use the existing verified algebra adapter without adding =0.
+Examples: 3+5 -> 8; (-3)+(-7) -> -10; (-4)*(-5) -> 20;
+2/3+1/4 -> 11/12; 3x+5x -> 8*x; 2(x+3)-x -> x+6;
+(x+2)(x+3) -> x^2+5*x+6; sqrt(12) -> 2√3.
+Finite decimals are passed to CAS as exact fractions. Constant square roots
+reuse the quadratic algebra core and verify squared value and nonnegative sign.
+Original denominator restrictions and the nonzero base condition of x^0 remain.
+
+Labels (1), （1）, ①–⑳, 1., 1), 問1, 問題1 are separated with structural
+evidence. Weak labels require a separate line, an instruction, or whitespace
+followed by a complete digit-led calculation. (2) 2x+3x yields 5*x, while
+(2)x², (1/2)x, (1)+3 and 1.5+2 remain mathematics. (2) x² and (2) (x+1)
+remain ambiguous. Multiple questions and remaining circled labels are rejected.
+
+Closed Japanese sentence prefixes for calculation, simplification, expansion,
+factorization and equation solving are supported. Generic 計算せよ maps to the
+existing simplify intent only with one complete supported expression. It does
+not select a method for equations, prose or multiple expressions. The 13 intents,
+ProblemInput/StructuredProblemSet schemas and explicit OCR confirmation remain.
+
+The new bare algebra profile is bounded to one variable, intermediate degree
+at most four, literal powers from -2 to 2, and denominator factors at most
+quadratic. Numeric arithmetic supports bounded integer powers. Multiple variables
+without an explicit operation, general function evaluation, variable radicals
+and compound radicals remain outside this new profile. Explicit polynomial
+operations and existing equation/calculus solvers remain available.
+
+OCR circled-label separation uses agreeing full-row and isolated-prefix readings
+with existing component, spacing, left-edge and baseline evidence, or independent
+upper-label corroboration. Unknown readings preserve the full formula crop.
+Chrome 157 recognized （2）3x+2x and solved 5*x after confirmation. A printed
+① (-3)+5 fixture separated ① but misread the formula as (3)+S. This is a known
+transcription limitation; no correction is guessed. Editing to (-3)+5 before
+confirmation passed both Study and Quick. OCR is not mathematical verification.

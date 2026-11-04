@@ -291,6 +291,9 @@ export async function solveAlgebraTransformation(
         solverId: ALGEBRA_TRANSFORMATION_SOLVER_ID,
       });
     }
+    if (/sqrt\(/u.test(parsed.cas)) {
+      return failedResult(ALGEBRA_TRANSFORMATION_SOLVER_ID, "文字を含む平方根や複数の根号の計算は、実数の定義域を厳密に検証できないため自動実行しません。");
+    }
     const exactCas = serializeExactArithmetic(parsed.ast);
     const answer = String(await transform(exactCas)).trim();
     if (!answer) {

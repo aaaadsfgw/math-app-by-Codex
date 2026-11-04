@@ -46,7 +46,7 @@ function recognitionKindOutput({
   const formulaText = normalizedText(formulaOutput?.text);
   const rawFormulaText = normalizedText(formulaOutput?.rawText ?? formulaText);
   const firstJapanese = japaneseOutputs[0] ?? null;
-  const instruction = normalizeInstruction(instructionText);
+  const instruction = normalizeInstruction(instructionText, { formulaText });
   return Object.freeze({
     text: formulaText,
     rawText: rawFormulaText,
@@ -187,7 +187,7 @@ function segmentedLeadingSplits(segmented) {
 
 function labelMatchesComponentEvidence(label, split, corroboratingLabel = "") {
   const componentCount = Number(split?.evidence?.componentCount);
-  if (!Number.isInteger(componentCount) || componentCount < 1) return true;
+  if (!Number.isInteger(componentCount) || componentCount < 1) return false;
   const compact = normalizedText(label).normalize("NFKC").replace(/\s+/gu, "");
   const parenthesized = compact.match(/^\((\d{1,3})\)$/u);
   if (parenthesized) {
@@ -197,6 +197,8 @@ function labelMatchesComponentEvidence(label, split, corroboratingLabel = "") {
   }
   const dotted = compact.match(/^(\d{1,3})\.$/u);
   if (dotted) return componentCount >= dotted[1].length + 1;
+  const closing = compact.match(/^(\d{1,3})\)$/u);
+  if (closing) return componentCount >= closing[1].length + 1;
   // A single connected glyph can be hallucinated as a circled problem number
   // by isolated OCR. Non-decomposable label styles are accepted only when an
   // independently recognized instruction already contains the same label.
@@ -204,6 +206,20 @@ function labelMatchesComponentEvidence(label, split, corroboratingLabel = "") {
     corroboratingLabel
     && comparableQuestionLabel(corroboratingLabel) === comparableQuestionLabel(label)
   );
+}
+
+function corroboratedCircledLabel(label, split, rowText) {
+  if (!/^[①-⑳]$/u.test(label)) return false;
+  const evidence = split?.evidence;
+  // Keep glyph identity before NFKC: a plain digit, O, or (1) cannot attest
+  // to a circled number. The row and isolated-prefix recognitions must agree,
+  // and the existing component scan must show a separated same-height prefix.
+  return separateQuestionLabel(rowText).questionLabel === label
+    && evidence?.leftAnchored === true
+    && evidence.componentCount >= 2
+    && evidence.prefixInkHeight > 0
+    && evidence.baselineDelta <= evidence.prefixInkHeight / 2
+    && split.gap >= split.requiredGap;
 }
 
 function baseLeadingInspection({ instruction, fullFormulaBlob, probeOutputs = [], warnings = [] }) {
@@ -227,6 +243,7 @@ async function inspectLeadingQuestionLabel({
   japaneseRecognizer,
   options,
   fullFormulaBlob = segmented.regions.at(-1).blob,
+  fullRowOutput = null,
 }) {
   const splits = segmentedLeadingSplits(segmented).filter(
     (split) => split?.regionIndex === segmented.regions.length - 1,
@@ -236,17 +253,25 @@ async function inspectLeadingQuestionLabel({
   const probeOutputs = [];
   const exactLabels = [];
   let probeFailed = false;
+  let rowOutput = fullRowOutput;
+  let rowProbed = fullRowOutput !== null;
   for (const split of splits) {
     try {
       const output = await japaneseRecognizer.recognize(split.prefix.blob, options);
       probeOutputs.push(output);
       const detectedLabel = normalizedText(output?.text);
       if (!isQuestionLabel(detectedLabel)) continue;
+      if (/^[①-⑳]$/u.test(detectedLabel) && !instruction.questionLabel && !rowProbed) {
+        rowProbed = true;
+        const row = segmented.regions.at(-1);
+        rowOutput = await japaneseRecognizer.recognize(row.probeBlob ?? row.blob, options);
+        probeOutputs.push(rowOutput);
+      }
       if (!labelMatchesComponentEvidence(
         detectedLabel,
         split,
         instruction.questionLabel,
-      )) continue;
+      ) && !corroboratedCircledLabel(detectedLabel, split, rowOutput?.text)) continue;
       if (
         instruction.questionLabel
         && comparableQuestionLabel(instruction.questionLabel) !== comparableQuestionLabel(detectedLabel)
@@ -381,6 +406,7 @@ export function createMixedOcrEngine({
             },
             japaneseRecognizer,
             options,
+            fullRowOutput: japaneseOutput,
             // Without a confirmed label, a single-region image remains the
             // original trusted user crop. Tightening ordinary formulas to ink
             // bounds changes IBEM's input distribution.

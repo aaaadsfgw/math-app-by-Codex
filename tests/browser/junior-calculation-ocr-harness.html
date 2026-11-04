@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>中学計算 OCR fixture</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef3f9; }
+    #ocrCaptureTarget { box-sizing: border-box; width: 600px; height: 220px; padding: 18px 22px; background: white; color: black; }
+    .instruction { font: 26px/1.35 "Yu Gothic UI", Meiryo, sans-serif; }
+    .formula-row { display: flex; align-items: center; gap: 12px; margin-top: 54px; white-space: nowrap; }
+    #questionLabel { font: 32px/1 "Yu Mincho", "Times New Roman", serif; }
+    #formula { font: 38px/1 "Times New Roman", serif; }
+  </style>
+</head>
+<body>
+  <div id="ocrCaptureTarget" data-natural-width="600" data-natural-height="220"
+    data-capture-width="600" data-capture-height="220" data-expected-kind="mixed"
+    data-expected-question-label="（2）" data-expected-instruction="次の式を計算しなさい"
+    data-expected-solve-instruction="次の式を計算しなさい" data-expected-formula="3*x+2*x"
+    data-expected-intent="simplify" data-expected-answer="5*x">
+    <div class="instruction">次の式を計算しなさい</div>
+    <div class="formula-row"><span id="questionLabel">（2）</span><span id="formula">3x+2x</span></div>
+  </div>
+  <script>
+    const examples = {
+      circled1: ["①", "(-3)+5", "2"],
+      "circled1-correction": ["①", "(-3)+5", "2"],
+      circled3: ["③", "2(x+3)-x", "x+6"],
+    };
+    const selected = examples[new URL(location.href).searchParams.get("case")];
+    if (selected) {
+      const [label, formula, answer] = selected;
+      document.querySelector("#questionLabel").textContent = label;
+      document.querySelector("#formula").textContent = formula;
+      Object.assign(document.querySelector("#ocrCaptureTarget").dataset, {
+        expectedQuestionLabel: label, expectedFormula: formula, expectedAnswer: answer,
+      });
+    }
+    // This font exposes a real model transcription error. Keep its exact raw
+    // candidate visible in the correction scenario; the harness must edit it
+    // before confirmation. The ordinary circled1 scenario still requires exact OCR.
+    if (new URL(location.href).searchParams.get("case") === "circled1-correction") {
+      document.querySelector("#ocrCaptureTarget").dataset.expectedRecognition = "(3)+S";
+    }
+  </script>
+</body>
+</html>

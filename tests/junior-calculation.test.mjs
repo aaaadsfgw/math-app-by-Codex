@@ -22,6 +22,7 @@ test("等号なしの基本計算は有理数と式として検証し、=0を補
     assert.equal(result.presentable, true, input);
     assert.equal(result.solverResult.verified, true, input);
     assert.equal(result.solverResult.exactAnswer, expected, input);
+    if (!input.includes("=")) assert.equal(result.classification.primary, "式の計算", input);
   }
 });
 
@@ -79,6 +80,8 @@ test("日本語指示を単一の式へ結び付け、明示された操作を�
     ["次の方程式を解きなさい。x²-5x+6=0", "x=2,3", "solve_equation"],
     ["次の式を計算しなさい。\n√12", "2√3", "simplify"],
     ["3+5 を計算せよ", "8", "simplify"],
+    ["次の式を計算しなさい。\n① 3+5", "8", "simplify"],
+    ["次の式を計算しなさい。(2) 2x+3x", "5*x", "simplify"],
   ]) {
     const result = await solveWorkflow(input, { symbolicOperations });
     assert.equal(result.presentable, true, input);
@@ -88,5 +91,8 @@ test("日本語指示を単一の式へ結び付け、明示された操作を�
   for (const input of ["計算せよ。x=2", "計算せよ。3+", "計算せよ。3+5,2+4", "計算せよ。3+5\n2+4", "計算せよ。りんご3個と5個", "次の式を2倍して計算せよ。3+5", "次の式を2倍して展開せよ。3+5", "次の式を展開しなさい。x=2", "次の方程式を解きなさい。x²-5x+6"]) {
     const result = await solveWorkflow(input, { symbolicOperations });
     assert.equal(result.presentable, false, input);
+  }
+  for (const input of ["次の式を簡単にしなさい。sqrt(x)^2", "① 次の式を計算しなさい。② 3+5", "次の式を計算しなさい。\n(2) x²"]) {
+    assert.equal((await solveWorkflow(input, { symbolicOperations })).presentable, false, input);
   }
 });

@@ -457,3 +457,32 @@ that does not require extension APIs. Serve the repository locally, open the
 harness, and require all rows to show `PASS` with no browser console errors.
 This validates the bundled module worker and symbolic operations but does not
 replace the unpacked Chrome test above.
+
+## 2026-11-05 textbook input validation
+
+Baseline 908 tests; final 915 tests passed, including the existing 5,500-case
+corpus. New junior-calculation tests cover exact bare arithmetic, fractions,
+polynomials, roots, labels, instructions, domain errors, multiple questions and
+false numerical CAS results. Existing confirmation and stale-result tests pass.
+
+Chrome 157.0.8103.38: input-entry smoke passed 25 new UI cases plus semantic
+paste, plain x2 rejection and HTTP selection shortcut. Selection smoke passed
+10 cases. Real WebGPU screenshot/crop/OCR/confirmation flows passed Study and
+Quick for junior-calculation-ocr-harness.html: （2）3x+2x -> 5*x. Study adds one
+history record; Quick adds none. Recognition changes neither result nor clipboard.
+The circled1 exact OCR scenario failed: (-3)+5 was read as (3)+S. The separate
+circled1-correction scenario asserts that exact raw misreading, edits it to
+(-3)+5, then confirms and verifies 2 in both modes. Both crops had zero magenta
+pixels and previews were revoked. These are automated real-browser tests, not a
+human-operated visual audit. WASM was not rerun in this checkpoint.
+
+Reproduce using a fresh disposable Chrome profile per OCR command, the existing
+loopback fixture server, and --enable-unsafe-extension-debugging:
+
+    node scripts/input-entry-extension-smoke.mjs 9345 . --allow-storage-reset
+    node scripts/selection-browser-smoke.mjs 9345
+    node scripts/ocr-extension-flow-smoke.mjs 9345 . webgpu http://127.0.0.1:8765/tests/browser/junior-calculation-ocr-harness.html --allow-storage-reset
+    node scripts/ocr-extension-flow-smoke.mjs 9347 . webgpu http://127.0.0.1:8765/tests/browser/junior-calculation-ocr-harness.html?case=circled1-correction --allow-storage-reset
+
+Future work: evaluate real textbook fonts/scans, minus and 5/S transcription,
+compound radicals with exact verification, and broader multi-variable bare input.

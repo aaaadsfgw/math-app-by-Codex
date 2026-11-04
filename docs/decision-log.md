@@ -960,3 +960,21 @@ valid formula candidate. Typst alignment markers are removed only as a
 symmetric pair around one standalone relation. These narrow fallbacks preserve
 the editable, unconfirmed candidate boundary and never infer mathematical
 meaning from solver acceptance.
+
+## D-038: Bounded textbook calculation input
+
+**Status:** accepted
+**Date:** 2026-11-05
+
+Reuse the combined-input parser, 13 intents, exact rational/quadratic core and
+asynchronous algebra adapter. Bare expressions mean simplification, never an
+implicit equation. Generic calculation needs one complete supported expression;
+explicit operations remain terminal. Preserve raw input, provenance and original
+domain restrictions. Do not normalize remaining circled labels into operands.
+
+Same-row OCR circled labels need independent matching row/prefix recognition and
+pixel-layout evidence. Missing component evidence cannot authorize removal.
+Recognition remains editable and unconfirmed. A known real OCR misreading of
+(-3)+5 is covered by a separate explicit correction scenario; the exact-OCR
+scenario still asserts the original formula and is not reported as passing.
+No AI answer generation, external API, dependencies or permissions were added.

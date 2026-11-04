@@ -50,6 +50,7 @@ function engine({
   leadingSplit = false,
   leadingSplitCount = leadingSplit ? 1 : 0,
   leadingComponentCounts = [],
+  leadingEvidence = [],
 } = {}) {
   const calls = { formula: 0, japanese: 0 };
   const observed = { formulaBlob: null, formulaBlobs: [] };
@@ -58,9 +59,8 @@ function engine({
   const remainderBlobs = Array.from({ length: leadingSplitCount }, () => png());
   const leadingSplits = prefixBlobs.map((prefixBlob, index) => ({
     regionIndex: regionCount - 1,
-    ...(Number.isInteger(leadingComponentCounts[index])
-      ? { evidence: { componentCount: leadingComponentCounts[index] } }
-      : {}),
+    evidence: { componentCount: leadingComponentCounts[index] ?? 4 },
+    ...(leadingEvidence[index] ? { evidence: leadingEvidence[index], gap: 8, requiredGap: 6 } : {}),
     prefix: { blob: prefixBlob },
     remainder: { blob: remainderBlobs[index] },
   }));
@@ -279,6 +279,55 @@ test("単一componentを丸数字へ補完したOCRだけでは同一行labelに
   assert.equal(output.structuredCandidate.questionLabel, "");
   assert.equal(output.structuredCandidate.formulaText, "(2)*x^2");
   assert.equal(observed.formulaBlob, regionBlobs.at(-1));
+});
+
+test("丸数字は行全体・独立領域・位置証拠が一致した時だけ分離し確認後に解く", async () => {
+  const evidence = { componentCount: 2, leftAnchored: true, prefixInkHeight: 20, baselineDelta: 2 };
+  for (const [label, formula, answer] of [["①", "(-3)+5", "2"], ["②", "3x+2x", "5*x"], ["③", "2(x+3)-x", "x+6"]]) {
+    const { instance, observed, remainderBlob } = engine({
+      regionCount: 1,
+      japanese: [japaneseOutput(`${label} ${formula}`), japaneseOutput(label)],
+      formula: formulaOutput(formula), leadingSplit: true, leadingEvidence: [evidence],
+    });
+    const output = await instance.recognize(png());
+    assert.equal(output.structuredCandidate.questionLabel, label);
+    assert.equal(observed.formulaBlob, remainderBlob);
+    assert.equal(output.verified, false);
+    const pending = await solveWorkflow(output.structuredCandidate, { symbolicOperations });
+    assert.equal(pending.presentable, false);
+    const confirmed = await solveWorkflow(output.structuredCandidate, { symbolicOperations, ocrConfirmed: true });
+    assert.equal(confirmed.solverResult.exactAnswer, answer);
+    assert.equal(confirmed.presentable, true);
+  }
+  for (const [row, candidateEvidence] of [
+    ["O (-3)+5", evidence], ["1 (-3)+5", evidence], ["② (-3)+5", evidence],
+    ["① (-3)+5", { ...evidence, componentCount: 1 }],
+    ["① (-3)+5", { ...evidence, baselineDelta: 20 }],
+    ["① (-3)+5", { ...evidence, leftAnchored: false }],
+  ]) {
+    const originalBlob = png();
+    const { instance, observed } = engine({
+      regionCount: 1, japanese: [japaneseOutput(row), japaneseOutput("①")],
+      formula: formulaOutput("(1)*(-3)+5"), leadingSplit: true, leadingEvidence: [candidateEvidence],
+    });
+    const output = await instance.recognize(originalBlob);
+    assert.equal(output.structuredCandidate.questionLabel, "", row);
+    assert.equal(observed.formulaBlob, originalBlob, row);
+    assert.equal(output.confirmationRequired, true);
+  }
+});
+
+test("OCRの一般計算指示を数式と結合しても認識だけでは実行しない", async () => {
+  const { instance } = engine({
+    regionCount: 2, japanese: [japaneseOutput("次の式を計算しなさい。"), japaneseOutput("（2）")],
+    formula: formulaOutput("3x+2x"), leadingSplit: true, leadingComponentCounts: [3],
+  });
+  const output = await instance.recognize(png());
+  assert.equal(output.structuredCandidate.instructionIntent, "simplify");
+  assert.equal(output.structuredCandidate.questionLabel, "（2）");
+  assert.equal((await solveWorkflow(output.structuredCandidate, { symbolicOperations })).presentable, false);
+  const result = await solveWorkflow(output.structuredCandidate, { symbolicOperations, ocrConfirmed: true });
+  assert.equal(result.solverResult.exactAnswer, "5*x");
 });
 
 test("分離後の数式が二項演算子開始または認識失敗なら元画像へ戻す", async () => {

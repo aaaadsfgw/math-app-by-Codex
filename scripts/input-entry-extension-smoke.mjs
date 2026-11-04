@@ -431,6 +431,42 @@ try {
   }, { timeoutMs: 20_000, label: "ambiguous plain rejection" });
   assert.equal(plainRejected.resultHidden, true);
 
+  // Exercise the actual editable Side Panel, module Worker, explicit solve,
+  // and presentation gate for textbook input. Fresh pages avoid stale metadata.
+  const textbookCases = [
+    ["3+5", "8"], ["(-3)+(-7)", "-10"], ["(-4)*(-5)", "20"],
+    ["2/3+1/4", "11/12"], ["3x+5x", "8*x"], ["2(x+3)-x", "x+6"],
+    ["(x+2)(x+3)", "x^2+5*x+6"], ["√12", "2√3"], ["x²-5x+6=0", "x=2,3"],
+    ["(2) 2x+3x", "5*x"], ["① 3+5", "8"], ["1. 3+5", "8"], ["1) 3+5", "8"],
+    ["② 次の式を計算しなさい。(-3)+5", "2"],
+    ["次の式を展開しなさい。(x+2)(x+3)", "x^2+5*x+6"],
+    ["次の式を因数分解しなさい。x²-5x+6", "(x-3)*(x-2)"],
+    ["(2)x²", "2*x^2"], ["(1)+3", "4"], ["1.5+2", "7/2"],
+    ["計算せよ。x=2", null], ["① 3+5 ② 2+4", null], ["(2) x²", null],
+    ["3+", null], ["0*(1/0)", null], ["sqrt(x^2)", null],
+  ];
+  for (const [question, answer] of textbookCases) {
+    const page = await createPage(browser, extensionUrl(extensionId, "/popup.html?textbook=1"), openedTargetIds, openedProtocols);
+    await waitFor(async () => evaluate(page.protocol, "Boolean(document.querySelector('#questionInput'))"), { label: "textbook panel" });
+    await clickElement(page.protocol, "#questionInput");
+    await page.protocol.send("Input.insertText", { text: question });
+    assert.equal((await popupState(page.protocol)).resultHidden, true, question);
+    await clickElement(page.protocol, "#runButton");
+    const result = await waitFor(async () => {
+      const state = await popupState(page.protocol);
+      return !state.resultHidden || !state.errorHidden ? state : null;
+    }, { timeoutMs: 20_000, label: `textbook solve: ${question}` });
+    if (answer === null) {
+      assert.equal(result.resultHidden, true, question);
+      assert.ok(result.error, question);
+    } else {
+      assert.equal(result.errorHidden, true, `${question}: ${result.error}`);
+      assert.ok(result.result.replaceAll(" ", "").includes(answer), `${question}: ${result.result}`);
+    }
+    await browser.send("Target.closeTarget", { targetId: page.target.id });
+    openedTargetIds.delete(page.target.id);
+  }
+
   let shortcutResult;
   if (shortcutScenario === "http-selection") {
     await clipboardWrite(clipboardProtocol, "9x=9");
@@ -507,6 +543,7 @@ try {
   console.log(JSON.stringify({
     ok: true,
     chromeVersion: browserVersion.Browser,
+    textbookCases: textbookCases.length,
     extensionId,
     commandShortcut: solveCommand.shortcut,
     paste: {

@@ -117,6 +117,14 @@ export function classifyCategory(question) {
   if (/展開|因数分解|式を簡単に|簡約|式を整理/u.test(text)) {
     addSignal(scores, reasons, "式の計算", 10, "式変形を示す語を検出");
   }
+  if (!/[=<>≤≥≦≧≠\r\n]/u.test(String(question)) && !/^[+-]?[01]{2,}\s*\(\s*2\s*\)$/u.test(text)) {
+    try {
+      parseMathExpression(question);
+      addSignal(scores, reasons, "式の計算", 12, "等号を含まない単一の数式を検出");
+    } catch {
+      // Classification never repairs prose, equations, or partial expressions.
+    }
+  }
 
   if (/二次方程式/u.test(text)) addSignal(scores, reasons, "二次方程式", 9, "「二次方程式」を検出");
   if (/(?:x\s*\^\s*2|x2)(?=[^0-9]|$)/i.test(text)) addSignal(scores, reasons, "二次方程式", 7, "xの2乗項を検出");

@@ -239,7 +239,8 @@ function parseInlineInstruction(line) {
   const prefix = /^([^。．.!！:：]+[。．.!！:：])\s*(.+)$/u.exec(line);
   if (prefix && !formulaEvidence(prefix[1])) {
     const instructionText = prefix[1].replace(/[。．.!！:：]$/u, "");
-    const instruction = contextualInstruction(instructionText, prefix[2]);
+    const formulaPart = separateQuestionLabel(prefix[2]);
+    const instruction = contextualInstruction(instructionText, formulaPart.remainingText);
     if (instruction && TEXTBOOK_PREFIX_COMMAND.test(instructionText.replace(/\s+/gu, ""))
       && formulaEvidence(prefix[2])) return { ...instruction, formulaText: prefix[2] };
   }
@@ -351,11 +352,16 @@ export function parseCombinedProblemText(value, { source = "selection" } = {}) {
       formulaSource: recordFieldSource,
     });
   }
+  const formulaPart = separateQuestionLabel(parsed.formulaText);
+  if ((questionLabel && formulaPart.detected) || formulaPart.reason) {
+    return problemRecord({ status: "unsupported", error: "問題番号が重複しているか数式と区別できません。1問ずつ入力してください。",
+      rawText, formulaText: body, source: recordSource, formulaSource: recordFieldSource });
+  }
   return normalizeProblemInput({
     rawText,
-    questionLabel,
+    questionLabel: questionLabel || formulaPart.questionLabel,
     instructionText: parsed.instructionText,
-    formulaText: parsed.formulaText,
+    formulaText: formulaPart.remainingText,
     source: recordSource,
     instructionSource: recordFieldSource,
     formulaSource: recordFieldSource,

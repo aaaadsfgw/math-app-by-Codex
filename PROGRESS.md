@@ -1030,3 +1030,18 @@ Last updated: 2026-11-04
 5. Inspect any uncommitted diff before editing.
 6. Continue with the first item under **Next**.
 7. After a verified checkpoint, update this file before committing.
+
+## 2026-11-05: Phases 4–5 completed
+
+- OCR now corroborates same-row circled labels using separate row/prefix readings
+  and existing component/spacing/baseline evidence. Missing geometry fails closed.
+- Final suite: 915 passed, zero failures, including the 5,500-case corpus.
+- Chrome 157: 25 new input UI cases, semantic paste/shortcut and 10 selection
+  cases passed. Printed （2）3x+2x passed WebGPU OCR through explicit verified
+  solve in Study/Quick. Recognition itself changed no history/result/clipboard.
+- Real ① (-3)+5 separated its label but misread the formula as (3)+S. Exact
+  recognition of this fixture remains unresolved. The separately asserted
+  correction flow passed after editing before confirmation, producing 2 with
+  correct Study/Quick history and preview cleanup. This is not an OCR accuracy claim.
+- Updated support, decision and test documents. No new app, cloud dependencies,
+  permissions or storage schema changes. Earlier checkpoints: 792eec9, b8069ff.

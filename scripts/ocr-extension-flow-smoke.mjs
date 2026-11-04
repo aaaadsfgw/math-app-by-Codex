@@ -609,6 +609,7 @@ async function fixtureGeometry(sourceProtocol) {
         expectedInstruction: String(target.dataset.expectedInstruction || ""),
         expectedSolveInstruction: String(target.dataset.expectedSolveInstruction || ""),
         expectedFormula: String(target.dataset.expectedFormula || "x+y"),
+        expectedRecognition: String(target.dataset.expectedRecognition || ""),
         expectedIntent: String(target.dataset.expectedIntent || ""),
         expectedAnswer: String(target.dataset.expectedAnswer || ""),
       };
@@ -1175,7 +1176,7 @@ async function runFlowUnsafe({
   );
   assert.equal(
     recognition.candidate.replaceAll(" ", ""),
-    geometry.expectedFormula.replaceAll(" ", ""),
+    (geometry.expectedRecognition || geometry.expectedFormula).replaceAll(" ", ""),
     JSON.stringify({ recognition, geometry }),
   );
   assert.equal(
@@ -1348,6 +1349,7 @@ async function runFlowUnsafe({
     instruction: recognition.instruction,
     editedInstruction: solveInstruction,
     editedQuestion: testQuestion.question,
+    candidateCorrectedBeforeConfirmation: !candidateMatchesSolveInput,
     answerMatched: true,
     devtoolsWindowRouteFallback,
     historyBefore,
