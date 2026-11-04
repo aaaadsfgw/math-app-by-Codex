@@ -95,7 +95,7 @@ test("番号か係数か曖昧な同一行selectionはverified結果にもclipbo
   let clipboardWrites = 0;
   const result = await assert.rejects(
     runShortcutWorkflow({
-      getSelectionText: async () => "(3) 1/x+2/(x+1)",
+      getSelectionText: async () => "(3) x^2",
       readClipboardText: async () => "original",
       writeClipboardText: async () => { clipboardWrites += 1; },
       settings: { shortcutAction: "answer", learningMode: "quick" },
@@ -336,7 +336,7 @@ test("unsupportedとinvalidはclipboardも履歴も変更しない", async () =>
 
 test("clipboard解析でterminal statusになった入力はsolver・clipboard・履歴へ進めない", async () => {
   for (const [clipboard, expectedCode] of [
-    ["(3) 1/x+2/(x+1)", "UNSUPPORTED_INPUT"],
+    ["(3) x^2", "UNSUPPORTED_INPUT"],
     ["2x=4\u0001", "INVALID_INPUT"],
   ]) {
     let solves = 0;

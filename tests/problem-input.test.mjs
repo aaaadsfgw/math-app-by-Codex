@@ -114,7 +114,6 @@ test("同一行の明確な数式runと対応済み日本語指示だけを分�
 test("同一行解析は曖昧な指示や複数数式を推測せず数式表記も書き換えない", () => {
   const untouched = [
     "x2 + 5x + 2 = 0",
-    "x+1 を計算せよ",
     "x^2<4 を解け",
     "f(x)=x^2 を解け",
     "x+1 と x-1 を展開せよ",
@@ -152,10 +151,9 @@ test("同一行解析は曖昧な指示や複数数式を推測せず数式表�
 
   const leadingFactor = parseCombinedProblemText("(2)x^2 を展開せよ");
   assert.equal(leadingFactor.questionLabel, "");
-  assert.equal(leadingFactor.status, "unsupported");
-  assert.equal(leadingFactor.instructionIntent, null);
-  assert.equal(leadingFactor.formulaText, "(2)x^2 を展開せよ");
-  assert.match(leadingFactor.error, /問題番号か数式の係数か判別できない/u);
+  assert.equal(leadingFactor.status, "ready");
+  assert.equal(leadingFactor.instructionIntent, "expand");
+  assert.equal(leadingFactor.formulaText, "(2)x^2");
 
   const labeledInlineProblem = parseCombinedProblemText("(3) 1/x+2/(x+1) を簡単にせよ");
   assert.equal(labeledInlineProblem.status, "ready");
@@ -164,8 +162,9 @@ test("同一行解析は曖昧な指示や複数数式を推測せず数式表�
   assert.equal(labeledInlineProblem.formulaText, "1/x+2/(x+1)");
 
   const formulaOnlyAmbiguity = parseCombinedProblemText("(3) 1/x+2/(x+1)");
-  assert.equal(formulaOnlyAmbiguity.status, "unsupported");
-  assert.equal(formulaOnlyAmbiguity.formulaText, "(3) 1/x+2/(x+1)");
+  assert.equal(formulaOnlyAmbiguity.status, "ready");
+  assert.equal(formulaOnlyAmbiguity.questionLabel, "(3)");
+  assert.equal(formulaOnlyAmbiguity.formulaText, "1/x+2/(x+1)");
 
   for (const source of [
     "(2) (x+1) を展開せよ",
@@ -201,7 +200,7 @@ test("問題番号は強い行構造または明確なinstruction後続時だけ
     ["問1 次の式を簡単にせよ。\nx+1", "問1"],
     ["問 1：次の式を簡単にせよ。\nx+1", "問 1"],
     ["問題1 x^2-1=0", "問題1"],
-    ["1.\n次の式を展開せよ。\n(x+1)(x-1)", "1"],
+    ["1.\n次の式を展開せよ。\n(x+1)(x-1)", "1."],
   ];
   for (const [source, label] of positives) {
     const result = separateQuestionLabel(source);
@@ -264,7 +263,7 @@ test("instructionとformulaの競合・不足・外部条件をterminalに拒否
     [{ instructionIntent: "limit", formulaText: "x^2" }, "invalid"],
     [{ instructionIntent: "tangent", formulaText: "x^2" }, "invalid"],
     [{ instructionIntent: "definite_integral", formulaText: "x^2" }, "invalid"],
-    [{ instructionText: "計算せよ", formulaText: "x^2" }, "unsupported"],
+    [{ instructionText: "計算せよ", formulaText: "x^2=1" }, "unsupported"],
     [{ instructionText: "展開せよ", instructionIntent: "factor", formulaText: "x^2" }, "invalid"],
     [{ formulaText: "1/x", conditions: ["x≠0"] }, "unsupported"],
   ];

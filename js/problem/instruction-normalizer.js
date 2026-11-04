@@ -1,3 +1,6 @@
+import { parseMathExpression } from "../math-core/expression-parser.js";
+import { inspectElementaryExpression } from "../math-core/elementary-expression.js";
+
 export const INSTRUCTION_INTENTS = Object.freeze([
   "simplify",
   "expand",
@@ -141,10 +144,10 @@ export function looksLikeInstructionText(value) {
 
 /**
  * Converts a bounded Japanese instruction into one closed canonical intent.
- * It never inspects or rewrites a formula. Generic "計算せよ" remains
- * ambiguous; only the explicit subject "分数式を計算" is the simplify alias.
+ * A generic calculation command stays ambiguous without one complete, supported
+ * expression. It never adds an equality or switches an explicit operation.
  */
-export function normalizeInstruction(value) {
+export function normalizeInstruction(value, { formulaText = "" } = {}) {
   const surface = normalizeSurface(value);
   if (surface.status) return surface;
   const { normalizedText } = surface;
@@ -176,6 +179,16 @@ export function normalizeInstruction(value) {
     });
   }
   if (/計算/u.test(compact)) {
+    if (/^(?:次の)?(?:式を計算|計算を|計算)(?:せよ|しなさい|してください)$/u.test(compact)
+      && formulaText && !/[\r\n①-⑳]/u.test(formulaText)) {
+      try {
+        inspectElementaryExpression(parseMathExpression(formulaText));
+        return frozenResult({ status: "recognized", intent: "simplify", normalizedText, candidates: ["simplify"] });
+      } catch {
+        // Equations, lists, incomplete expressions, and unsupported domains
+        // cannot grant a generic instruction an executable intent.
+      }
+    }
     return frozenResult({
       status: "ambiguous",
       normalizedText,

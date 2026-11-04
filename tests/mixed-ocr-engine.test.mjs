@@ -339,7 +339,7 @@ test("上段と同一行で問題番号が競合したらformula OCR前に停止
 
 test("同じ問題番号の末尾句読点差は競合とせずformulaから分離する", async () => {
   for (const [upper, probe, expected] of [
-    ["2. 次の式を簡単にせよ。", "2.", "2"],
+    ["2. 次の式を簡単にせよ。", "2.", "2."],
     ["問題2: 次の式を簡単にせよ。", "問題2", "問題2"],
   ]) {
     const { instance, calls, observed, remainderBlob } = engine({

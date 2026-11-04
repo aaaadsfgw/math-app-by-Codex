@@ -4,6 +4,20 @@ Last updated: 2026-11-04
 
 ## 2026-11-04: Junior-high calculation input, Phase 1
 
+### Phases 2–3 checkpoint
+
+- Routed plain workflow strings through the existing combined-input parser,
+  preserving the legacy `normalizeProblemInput(string)` contract and typed input.
+- Added whitespace-separated digit-led calculation labels, closing-parenthesis
+  labels, and lossless dotted labels. Attached `(2)x²` and `(1)+3` stay math;
+  ambiguous `(2) x²` and `(2) (x+1)` stay unexecuted. Remaining circled labels
+  are rejected before NFKC can flatten them into numeric operands.
+- Added closed sentence-prefix commands and contextual generic calculation
+  intent for one supported expression. Equations, lists, prose, missing
+  syntax, and compound-operation prefixes remain unexecuted.
+- Full Phase 2 suite: 912 passed. Full Phase 3 suite: 913 passed. Static project
+  check passed. OCR and real-browser validation are still pending.
+
 - Baseline: `5866a57`, branch `feat/digicon-learning-workflow`, clean tree;
   908 tests passed and project check passed (297 files).
 - Bare expressions now enter the existing asynchronous algebra adapter as

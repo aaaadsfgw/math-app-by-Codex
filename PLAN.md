@@ -53,8 +53,8 @@ confirmation.
 
 1. Done: route bare arithmetic/algebra expressions to verified simplification;
    exact fractions and independently checked constant square roots.
-2. Pending: conservative structural separation of same-line question labels.
-3. Pending: contextual Japanese calculation commands using the 13 existing intents.
+2. Done: conservative structural separation of same-line question labels.
+3. Done: contextual Japanese calculation commands using the 13 existing intents.
 4. Pending: integrate the label rules with OCR geometry and explicit confirmation.
 5. Pending: full regression and real Chrome verification, documentation, commits.
 

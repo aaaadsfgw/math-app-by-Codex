@@ -278,7 +278,8 @@ export async function solveAlgebraTransformation(
   }
 
   try {
-    const elementary = request.bare || (request.action === "simplify" && parsed.ast.type === "call" && parsed.ast.name === "sqrt")
+    const elementary = request.bare || !/[A-Za-z]/u.test(parsed.cas)
+      || (request.action === "simplify" && parsed.ast.type === "call" && parsed.ast.name === "sqrt")
       ? inspectElementaryExpression(parsed)
       : null;
     if (elementary?.squareRoot) {

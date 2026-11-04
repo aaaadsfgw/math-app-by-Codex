@@ -2,6 +2,7 @@ import { normalizeMathNotation } from "../math-core/notation.js";
 import {
   compileProblemInput,
   normalizeProblemInput,
+  parseCombinedProblemText,
 } from "./problem-input.js";
 
 export const STRUCTURED_PROBLEM_SCHEMA_VERSION = 1;
@@ -153,6 +154,12 @@ export function inspectFormulaSafety(formulaValue) {
   if (!formulaText) {
     return Object.freeze({ safe: true, code: null, message: "" });
   }
+  if (/[①-⑳]/u.test(formulaText)) {
+    return Object.freeze({
+      safe: false, code: "ambiguous_structure",
+      message: "数式内に問題番号が残っています。1問ずつ入力してください。",
+    });
+  }
 
   // normalizeMathNotation expands Unicode superscripts before NFKC. This keeps
   // x² and (x-3)² distinguishable from structure-losing x2 and (x-3)2.
@@ -183,7 +190,7 @@ function legacyProblemInputShape(value) {
 function canonicalSeed(value, fallbackSource) {
   if (typeof value === "string") {
     return Object.freeze({
-      seed: value,
+      seed: parseCombinedProblemText(value, { source: fallbackSource }),
       fields: {},
       legacyProblemInput: null,
       failureSource: "structured-input",

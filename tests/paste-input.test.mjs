@@ -162,10 +162,10 @@ test("a parenthesized coefficient without separator or closed instruction is nev
     assert.equal(acquired.problemInput.questionLabel, "", source);
     assert.equal(
       acquired.problemInput.formulaText,
-      source === "(1+x) を展開せよ" ? "(1+x)" : source,
+      source.replace(/ を展開せよ$/u, ""),
       source,
     );
-    if (source.startsWith("(2)")) assert.equal(acquired.problemInput.status, "unsupported", source);
+    if (source === "(2) x^2") assert.equal(acquired.problemInput.status, "unsupported", source);
   }
 });
 

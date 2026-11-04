@@ -1,12 +1,14 @@
 import {
   looksLikeInstructionText,
 } from "./instruction-normalizer.js";
+import { parseMathExpression } from "../math-core/expression-parser.js";
 
 const MAX_LABEL_CHARACTERS = 32;
 const CIRCLED_NUMBER = /^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]/u;
 const PARENTHESIZED_NUMBER = /^[（(]\s*[0-9０-９]{1,3}\s*[)）]/u;
 const QUESTION_WORD_NUMBER = /^(?:問|問題)\s*[0-9０-９]{1,3}(?![0-9０-９])(?:\s*[.．:：])?/u;
 const DOTTED_NUMBER = /^[0-9０-９]{1,3}[.．](?![0-9０-９])/u;
+const CLOSING_PAREN_NUMBER = /^[0-9０-９]{1,3}[)）]/u;
 const JAPANESE_START = /^[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 
 function result({ detected = false, questionLabel = "", remainingText = "", reason = "" }) {
@@ -27,10 +29,13 @@ function labelCandidate(line) {
     { kind: "circled", match: source.match(CIRCLED_NUMBER), strong: true },
     { kind: "parenthesized", match: source.match(PARENTHESIZED_NUMBER), strong: false },
     { kind: "dotted", match: source.match(DOTTED_NUMBER), strong: false },
+    { kind: "closing-parenthesis", match: source.match(CLOSING_PAREN_NUMBER), strong: false },
   ];
   for (const candidate of candidates) {
     if (!candidate.match) continue;
-    const questionLabel = candidate.match[0].trim().replace(/[.．:：]$/u, "").trim();
+    const questionLabel = candidate.kind === "question-word"
+      ? candidate.match[0].trim().replace(/[.．:：]$/u, "").trim()
+      : candidate.match[0].trim();
     const suffix = source.slice(candidate.match[0].length);
     const remainder = suffix.trim();
     if (
@@ -53,7 +58,21 @@ function labelCandidate(line) {
 export function isQuestionLabel(value) {
   const source = String(value ?? "").trim();
   const candidate = labelCandidate(source);
-  return Boolean(candidate && !candidate.remainder && candidate.questionLabel === source.replace(/[.．:：]$/u, ""));
+  return Boolean(candidate && !candidate.remainder && candidate.questionLabel === (
+    candidate.kind === "question-word" ? source.replace(/[.．:：]$/u, "") : source
+  ));
+}
+
+function isSeparatedCalculation(candidate) {
+  if (!candidate.separatedByHorizontalSpace) return false;
+  // `(2) x` and `(2) (x+1)` can still be a coefficient. A digit-led
+  // complete calculation after whitespace is the bounded textbook convention.
+  if (!/^[0-9０-９]/u.test(candidate.remainder)) return false;
+  try {
+    return parseMathExpression(candidate.remainder).ast.type === "binary";
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -84,8 +103,8 @@ export function inspectWeakInlineQuestionLabel(value) {
 
 /**
  * Removes a label only from the first non-empty line. Weak numeric forms such
- * as `(1)` and `1.` require either their own line or a following Japanese
- * instruction. A following mathematical expression is never consumed.
+ * as `(1)` require a separate line, instruction, or a whitespace-separated,
+ * digit-led complete calculation. Attached parentheses remain mathematics.
  */
 export function separateQuestionLabel(value) {
   let source;
@@ -102,6 +121,7 @@ export function separateQuestionLabel(value) {
   if (!candidate) return result({ remainingText: source });
   const safeRemainder = !candidate.remainder
     || candidate.strong
+    || isSeparatedCalculation(candidate)
     || (
       JAPANESE_START.test(candidate.remainder)
       && looksLikeInstructionText(candidate.remainder)
@@ -109,7 +129,8 @@ export function separateQuestionLabel(value) {
   if (!safeRemainder) {
     return result({
       remainingText: source,
-      reason: "数式先頭の括弧または番号と区別できないため、問題番号として分離しませんでした。",
+      reason: candidate.separatedByHorizontalSpace
+        ? "数式先頭の括弧または番号と区別できないため、問題番号として分離しませんでした。" : "",
     });
   }
 

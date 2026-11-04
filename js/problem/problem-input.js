@@ -42,8 +42,9 @@ const MAX_PROBLEM_ERROR_CHARACTERS = 1_000;
 const JAPANESE_CHARACTER = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
 const NON_JAPANESE_RUN = /[^\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu;
 const BARE_SOLVE_INSTRUCTION = /^を?(?:解け|解きなさい|解いてください)[。．.!！?？]*$/u;
-const DIRECT_INLINE_COMMAND = /^を(?:解け|解きなさい|解いてください|微分(?:せよ|しなさい|してください)|展開(?:せよ|しなさい|してください)|因数分解(?:せよ|しなさい|してください)|(?:簡単に|簡約|整理)(?:せよ|しなさい|してください))[。．.!！?？]*$/u;
+const DIRECT_INLINE_COMMAND = /^を(?:解け|解きなさい|解いてください|計算(?:せよ|しなさい|してください)|微分(?:せよ|しなさい|してください)|展開(?:せよ|しなさい|してください)|因数分解(?:せよ|しなさい|してください)|(?:簡単に|簡約|整理)(?:せよ|しなさい|してください))[。．.!！?？]*$/u;
 const INLINE_FORMULA_QUOTE = /[「」『』]/u;
+const TEXTBOOK_PREFIX_COMMAND = /^(?:次の)?(?:(?:式|方程式)を)?(?:計算を?(?:せよ|しなさい|してください)|(?:簡単に|展開|因数分解|簡約|整理|微分|積分)(?:せよ|しなさい|してください)|解け|解きなさい|解いてください)$/u;
 
 function frozenStrings(values) {
   return Object.freeze(values.map((value) => String(value)));
@@ -178,7 +179,7 @@ function parseInstructionPrefix(lines) {
 }
 
 function contextualInstruction(instructionText, formulaText) {
-  const normalized = normalizeInstruction(instructionText);
+  const normalized = normalizeInstruction(instructionText.replace(/^を/u, ""), { formulaText });
   if (normalized.status === "recognized") {
     return Object.freeze({
       instructionText,
@@ -235,6 +236,13 @@ function inlineFormulaFromRun(value) {
  */
 function parseInlineInstruction(line) {
   if (!JAPANESE_CHARACTER.test(line)) return null;
+  const prefix = /^([^。．.!！:：]+[。．.!！:：])\s*(.+)$/u.exec(line);
+  if (prefix && !formulaEvidence(prefix[1])) {
+    const instructionText = prefix[1].replace(/[。．.!！:：]$/u, "");
+    const instruction = contextualInstruction(instructionText, prefix[2]);
+    if (instruction && TEXTBOOK_PREFIX_COMMAND.test(instructionText.replace(/\s+/gu, ""))
+      && formulaEvidence(prefix[2])) return { ...instruction, formulaText: prefix[2] };
+  }
   const candidates = [];
   for (const match of line.matchAll(NON_JAPANESE_RUN)) {
     const rawRun = match[0];
@@ -467,7 +475,7 @@ export function normalizeProblemInput(value, { source = "manual" } = {}) {
     error = conditionsResult.error;
   }
 
-  const instruction = normalizeInstruction(instructionText);
+  const instruction = normalizeInstruction(instructionText.replace(/^を(?=計算)/u, ""), { formulaText });
   const suppliedIntent = snapshot.fields.instructionIntent;
   let instructionIntent = instruction.intent;
   if (suppliedIntent !== undefined && suppliedIntent !== null && suppliedIntent !== "") {
