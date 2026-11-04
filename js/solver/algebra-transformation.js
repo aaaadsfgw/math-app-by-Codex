@@ -5,6 +5,7 @@ import {
   serializeExpressionAst,
 } from "../math-core/expression-parser.js";
 import { exactRationalFunctionFromAst } from "../math-core/exact-rational-function.js";
+import { inspectElementaryExpression, serializeExactArithmetic } from "../math-core/elementary-expression.js";
 import {
   equivalentInWorker,
   expandInWorker,
@@ -55,6 +56,15 @@ function extractRequest(question) {
     const word = actionFirst ? match[1] : match[2];
     const expression = (actionFirst ? match[2] : match[1]).trim();
     return { action: actionKey(word), expression };
+  }
+  // A complete bare expression means simplification, never an implicit =0.
+  if (!/[=<>≤≥≦≧≠\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\r\n]/u.test(text)) {
+    try {
+      parseMathExpression(text);
+      return { action: "simplify", expression: text, bare: true };
+    } catch {
+      // Other explicit solver syntaxes remain available to the router.
+    }
   }
   return null;
 }
@@ -268,16 +278,36 @@ export async function solveAlgebraTransformation(
   }
 
   try {
-    const answer = String(await transform(parsed.cas)).trim();
+    const elementary = request.bare || (request.action === "simplify" && parsed.ast.type === "call" && parsed.ast.name === "sqrt")
+      ? inspectElementaryExpression(parsed)
+      : null;
+    if (elementary?.squareRoot) {
+      return solvedResult({
+        answer: elementary.exactAnswer,
+        exactAnswer: elementary.exactAnswer,
+        steps: genericSteps({ parsed, label: "平方根の簡約", displayAnswer: elementary.exactAnswer }),
+        verification: "元の根号内の有理数と結果の二乗が厳密に一致し、結果が非負であることを確認しました。",
+        solverId: ALGEBRA_TRANSFORMATION_SOLVER_ID,
+      });
+    }
+    const exactCas = serializeExactArithmetic(parsed.ast);
+    const answer = String(await transform(exactCas)).trim();
     if (!answer) {
       return failedResult(ALGEBRA_TRANSFORMATION_SOLVER_ID, "式変形の結果が空です");
     }
-    const equivalent = await symbolicOperations.equivalent(parsed.cas, answer);
+    const equivalent = await symbolicOperations.equivalent(exactCas, answer);
     if (!equivalent) {
       return failedResult(ALGEBRA_TRANSFORMATION_SOLVER_ID, "元の式との同値性を確認できませんでした");
     }
+    if (elementary?.exactAnswer !== null && elementary?.exactAnswer !== undefined) {
+      const actual = inspectElementaryExpression(parseMathExpression(answer));
+      if (actual.exactAnswer !== elementary.exactAnswer || actual.squareRoot) {
+        return failedResult(ALGEBRA_TRANSFORMATION_SOLVER_ID, "有理数の厳密検算が一致しませんでした。");
+      }
+    }
     const label = ACTION_LABELS[request.action];
-    const conditions = collectExactNonzeroDomainConditions(parsed.ast);
+    const conditions = elementary?.exactAnswer !== null && elementary?.exactAnswer !== undefined
+      ? [] : collectExactNonzeroDomainConditions(parsed.ast);
     const displayAnswer = conditions.length
       ? `${answer}（ただし ${conditions.join("、")}）`
       : answer;

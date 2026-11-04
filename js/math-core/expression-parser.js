@@ -366,7 +366,7 @@ export function collectNonzeroDomainConditions(node, conditions = new Set()) {
     }
     if (node.operator === "^") {
       const exponent = numericAstValue(node.right);
-      if (exponent !== null && exponent < 0) {
+      if (exponent !== null && exponent <= 0) {
         conditions.add(`${serializeExpressionAst(node.left)}≠0`);
       }
     }
@@ -426,7 +426,7 @@ export function collectExactNonzeroDomainConditions(node, conditions = new Set()
     if (node.operator === "/") addExactNonzeroCondition(node.right, conditions);
     if (node.operator === "^") {
       const exponent = numericAstValue(node.right);
-      if (exponent !== null && exponent < 0) {
+      if (exponent !== null && exponent <= 0) {
         addExactNonzeroCondition(node.left, conditions);
       }
     }

@@ -49,6 +49,17 @@ confirmation.
 
 ## Milestones
 
+### Junior-high textbook input checkpoint (2026-11-04)
+
+1. Done: route bare arithmetic/algebra expressions to verified simplification;
+   exact fractions and independently checked constant square roots.
+2. Pending: conservative structural separation of same-line question labels.
+3. Pending: contextual Japanese calculation commands using the 13 existing intents.
+4. Pending: integrate the label rules with OCR geometry and explicit confirmation.
+5. Pending: full regression and real Chrome verification, documentation, commits.
+
+### Existing roadmap
+
 1. **Durable project state**
    - Add this plan, progress log, decision log, and restart procedure.
    - Define the non-AI completion criteria and evaluation policy.

@@ -1,6 +1,21 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-10-06
+Last updated: 2026-11-04
+
+## 2026-11-04: Junior-high calculation input, Phase 1
+
+- Baseline: `5866a57`, branch `feat/digicon-learning-workflow`, clean tree;
+  908 tests passed and project check passed (297 files).
+- Bare expressions now enter the existing asynchronous algebra adapter as
+  simplification, without inventing an equation. Finite decimals are serialized
+  as exact fractions before CAS operations; numeric results also pass BigInt
+  rational re-evaluation. The original denominator restrictions are retained.
+- Single constant square roots reuse the exact quadratic algebra core and
+  verify both the squared value and nonnegative sign. Variable radicals and
+  compound radical arithmetic remain outside the new bare-expression profile.
+- A new regression exposed the missing nonzero condition on `x^0`; the domain
+  collector now preserves that source restriction too.
+- Phase 1 full suite: 911 tests passed, zero failures. Phases 2–5 remain pending.
 
 ## Repository checkpoint
 
