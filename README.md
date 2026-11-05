@@ -1,14 +1,42 @@
 # Math Study Log
 
-Math Study Log is a build-free Manifest V3 Chrome extension that solves
-supported mathematics problems entirely inside the extension and records how
-independently the learner reached the solution.
+Math Study Log solves supported mathematics problems offline. The build-free
+Manifest V3 Chrome extension also records how independently the learner reached
+the solution. The Windows desktop app provides manual calculation and a global
+clipboard shortcut using the same deterministic engine.
 
 The application uses deterministic JavaScript solvers and has no
 answer-generation AI, API key, external server, network host permission, remote
 script, or CDN. Its packaged OCR runtimes only transcribe machine-printed input;
 their editable output requires explicit user confirmation before the
 deterministic solver can see it.
+
+## Windows desktop app
+
+In PowerShell, run the following from the repository root with Node.js 22.12
+or newer.
+
+```powershell
+npm.cmd ci
+npm.cmd run desktop
+```
+
+The first launch may download the pinned Electron runtime. After that, the app
+can calculate offline. Copy a text problem in any Windows app and press
+**Ctrl+Shift+Y**. A verified answer replaces the clipboard text. The desktop
+window shows the latest result or error, including when Windows notifications
+are unavailable. For manual calculation, enter the problem in the window and
+use **計算する**, then **解答をコピー** to copy the verified answer.
+
+Closing the window keeps the app running in the notification area by default.
+The tray menu opens the window or quits the app. If the default shortcut is
+already registered, change its letter in the desktop window or free the key
+in the other app. Chrome extension shortcuts can be checked at
+`chrome://extensions/shortcuts`.
+
+See [Windows Phase 1](docs/windows-desktop.md) for setup, limits, the Windows
+test checklist, and the Phase 2 boundary. The Chrome extension can still be
+loaded unpacked from the repository root without installing Electron.
 
 ## Current state
 

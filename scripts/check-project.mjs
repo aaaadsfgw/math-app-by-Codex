@@ -169,7 +169,7 @@ assert(
   `Network host permissions are not allowed: ${(manifest.host_permissions ?? []).join(', ')}`,
 );
 
-const jsFiles = files.filter((file) => ['.js', '.mjs'].includes(extname(file)));
+const jsFiles = files.filter((file) => ['.js', '.mjs', '.cjs'].includes(extname(file)));
 const directFunctionConstructorPattern = new RegExp(
   '(?:^|[^A-Za-z0-9_$.])' + ['Fun', 'ction'].join('') + '\\s*\\(',
 );
@@ -267,7 +267,7 @@ for (const file of textFiles) {
 if (notes.length) failures.push(...notes);
 
 const htmlCount = files.filter((file) => extname(file) === '.html').length;
-const jsCount = files.filter((file) => ['.js', '.mjs'].includes(extname(file))).length;
+const jsCount = jsFiles.length;
 const cssCount = files.filter((file) => extname(file) === '.css').length;
 
 if (failures.length) {
@@ -275,6 +275,6 @@ if (failures.length) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log(`Project check passed: ${files.length} files, ${htmlCount} HTML, ${jsCount} JS/MJS, ${cssCount} CSS`);
+  console.log(`Project check passed: ${files.length} files, ${htmlCount} HTML, ${jsCount} JavaScript, ${cssCount} CSS`);
   console.log('Manifest, references, imports, syntax, permissions, URLs, markers, and empty files are valid.');
 }

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Math Study Log</title>
+  <link rel="stylesheet" href="../../css/base.css">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./renderer.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="brand" aria-hidden="true">∑</span>
+      <div>
+        <h1>Math Study Log</h1>
+        <p class="muted">Windows · オフライン計算</p>
+      </div>
+    </header>
+
+    <section aria-labelledby="input-heading">
+      <h2 id="input-heading">数式を入力</h2>
+      <form id="solve-form">
+        <label for="question" class="sr-only">問題文または数式</label>
+        <textarea id="question" maxlength="4096" rows="3" required placeholder="例　2x^2-7x+3=0"></textarea>
+        <button id="solve" class="primary" type="submit" disabled>計算する</button>
+      </form>
+    </section>
+
+    <section aria-labelledby="answer-heading">
+      <h2 id="answer-heading">解答</h2>
+      <p id="status" role="status">計算エンジンを準備しています。</p>
+      <p id="error" role="alert" hidden></p>
+      <div id="result" hidden>
+        <p id="result-kind" class="muted"></p>
+        <pre id="answer" class="mono"></pre>
+        <ul id="conditions" class="muted" hidden></ul>
+      </div>
+      <button id="copy" type="button" disabled>解答をコピー</button>
+    </section>
+
+    <section aria-labelledby="settings-heading">
+      <h2 id="settings-heading">ショートカットと常駐</h2>
+      <p id="shortcut-status" role="status"></p>
+      <p id="settings-error" role="alert" hidden></p>
+      <p class="muted"><kbd>Ctrl+Shift+X</kbd> · 画像の範囲選択用。今後対応予定。</p>
+      <form id="shortcut-form">
+        <label for="shortcut-key">クリップボード計算のキー</label>
+        <span class="key-row">
+          <span aria-hidden="true">Ctrl+Shift+</span>
+          <select id="shortcut-key" disabled></select>
+          <button id="save-shortcut" type="submit" disabled>登録</button>
+        </span>
+      </form>
+      <label class="checkbox-row"><input id="keep-in-tray" type="checkbox" disabled> ウィンドウを閉じても常駐する</label>
+      <p class="muted">完全に終了するには、通知領域のアイコンから「完全終了」を選びます。</p>
+    </section>
+  </main>
+</body>
+</html>

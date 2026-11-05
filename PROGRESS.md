@@ -1,6 +1,25 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-11-04
+Last updated: 2026-11-05
+
+## 2026-11-05: Windows desktop Phase 1
+
+- Added the Electron launcher, sandboxed window, tray lifecycle, single-instance
+  lock, configurable global clipboard shortcut, and desktop preferences.
+- Reused the shared solve and shortcut workflows and the bundled Algebrite
+  adapter inside a disposable worker with a 10-second deadline. Clipboard
+  writes remain contingent on a verified result and an unchanged text snapshot.
+- Baseline: 929 tests passed. With the desktop tests, 937 tests passed and the
+  static project check passed. The real worker returned the expected answers
+  for all five Windows examples through both entry points.
+- On Windows build 26200 with Electron 45.2.3, verified startup, all five
+  examples through the manual renderer path, default-key conflict feedback,
+  and OS registration with Ctrl+Shift+Z. An Electron API smoke run confirmed
+  tray creation, hiding and reopening the window, second-instance handling,
+  and full quit with key release. Automated tests covered shortcut routing
+  and a simulated clipboard.
+  A foreground keypress and system clipboard round trip remain on the native
+  checklist in `docs/windows-desktop.md`.
 
 ## 2026-11-04: Junior-high calculation input, Phase 1
 

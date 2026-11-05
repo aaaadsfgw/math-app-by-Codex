@@ -1,5 +1,19 @@
 # Decision log
 
+## Windows desktop Phase 1
+
+**Status:** accepted
+
+**Date:** 2026-11-05
+
+The Electron app and Chrome extension share the existing solve and shortcut
+workflows. Electron uses a disposable, time-bounded Node worker to connect
+the existing symbolic adapter to bundled Algebrite. The main process owns
+clipboard writes, tray and shortcut lifecycle, and desktop preferences.
+Renderer IPC accepts bounded text and explicit actions. Manual copying
+references a current verified result held by main. The future capture shortcut
+is listed as planned and has no system registration in Phase 1.
+
 ## D-001: Remove AI instead of replacing its provider
 
 **Status:** accepted

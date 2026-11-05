@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Verified high-school math solving and learning-log Chrome extension",
+  "description": "Verified offline mathematics for Chrome and Windows",
+  "main": "desktop/main.js",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "desktop": "electron .",
     "test:browser:serve": "node scripts/serve-browser-harness.mjs",
     "test:browser:ocr-flow": "node scripts/ocr-extension-flow-smoke.mjs",
     "test:browser:ocr-mixed-flow": "node scripts/ocr-extension-flow-smoke.mjs --mixed",
@@ -15,5 +17,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "electron": "45.2.3"
   }
 }
