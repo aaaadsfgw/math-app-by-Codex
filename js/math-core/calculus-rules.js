@@ -1,4 +1,5 @@
 import { serializeExpressionAst } from "./expression-parser.js";
+import { exactPolynomialFromAst } from "./exact-polynomial.js";
 
 export class CalculusRuleError extends Error {
   constructor(message, { code = "UNSUPPORTED_CALCULUS_RULE" } = {}) {
@@ -102,6 +103,9 @@ function differentiateNode(node, variable) {
         );
       }
       if (node.operator === "^") {
+        if (node.left.type === "constant" && node.left.name === "e") {
+          return result(`(exp(${right})*(${rightDerivative.expression}))`, conditions);
+        }
         const exponent = numericInteger(node.right);
         if (exponent === null || exponent === 0n || exponent < -32n || exponent > 32n) {
           throw new CalculusRuleError(
@@ -120,6 +124,14 @@ function differentiateNode(node, variable) {
       throw new CalculusRuleError(`演算子${node.operator}の微分規則は未対応です。`);
     }
     case "call": {
+      if (node.name === "log" && node.args[0]?.type === "call" && node.args[0].name === "abs") {
+        const innerNode = node.args[0].args[0];
+        const polynomial = exactPolynomialFromAst(innerNode);
+        if (polynomial.every((value) => value.isZero())) throw new CalculusRuleError("対数の真数が0です。");
+        const inner = differentiateNode(innerNode, variable);
+        const source = serializeExpressionAst(innerNode);
+        return result(`(${inner.expression})/(${source})`, [...inner.conditions, `${source}≠0`]);
+      }
       const argumentNode = node.args[0];
       const argument = serializeExpressionAst(argumentNode);
       const inner = differentiateNode(argumentNode, variable);
@@ -138,6 +150,15 @@ function differentiateNode(node, variable) {
         return result(`(exp(${argument})*(${inner.expression}))`, conditions);
       }
       if (node.name === "log") {
+        let constant = null;
+        let polynomial = null;
+        try { polynomial = exactPolynomialFromAst(argumentNode); } catch { /* Keep symbolic domain conditions. */ }
+        if (polynomial?.length === 1) constant = polynomial[0];
+        if (polynomial?.length === 3 && polynomial[2].numerator < 0n
+          && polynomial[1].multiply(polynomial[1]).subtract(polynomial[2].multiply(polynomial[0]).multiply(4n)).numerator <= 0n) {
+          throw new CalculusRuleError("対数の真数が正になる実数がありません。");
+        }
+        if (constant && constant.numerator <= 0n) throw new CalculusRuleError("対数の真数は正でなければなりません。");
         conditions.add(`${argument}>0`);
         return result(`((${inner.expression})/(${argument}))`, conditions);
       }

@@ -120,3 +120,11 @@ confirmation.
   the clipboard.
 - `PROGRESS.md` contains no unfinished milestone.
 
+
+### Calculus shortcut checkpoint (2026-11-05)
+
+Completed: reproduce nine failures; preserve structured-input safety while
+recognizing limit boundaries; add bounded AST substitution and logarithmic
+primitives; normalize ln and constant-e powers; reverse-differentiate candidates;
+run generated, integration and full regression checks. Evidence and limitations:
+`docs/calculus-shortcut-report.md`.

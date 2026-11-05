@@ -2,10 +2,20 @@ import assert from "node:assert/strict";
 import { resolve } from "node:path";
 
 const rawArguments = process.argv.slice(2);
+const calculusCases = [
+  ["lim_(x->1-) 1/(x-1)", "-∞"], ["lim_(x->1+) 1/(x-1)", "+∞"],
+  ["∫ 2x*cos(x^2) dx", "sin(x^2)+C"], ["∫ 2*x*cos(x^2) dx", "sin(x^2)+C"],
+  ["∫ 2*x*sin(x^2) dx", "-cos(x^2)+C"], ["∫ (2*x)/(x^2+1) dx", "log(x^2+1)+C"],
+  ["∫ 1/x dx", "log(abs(x))+C（ただし x≠0）"],
+  ["f(x)=ln(x) を微分せよ", "1/x（ただし x>0）"], ["f(x)=e^x を微分せよ", "exp(x)"],
+];
+const calculusArgument = rawArguments.find((arg) => arg.startsWith("--calculus-case="));
+const calculusCase = calculusArgument ? calculusCases[Number(calculusArgument.split("=")[1])] : null;
+if (calculusArgument && !calculusCase) throw new Error("Invalid calculus case index");
 const supportedFlags = new Set(["--allow-storage-reset"]);
 const shortcutArguments = rawArguments.filter((argument) => argument.startsWith("--shortcut="));
 if (shortcutArguments.length > 1) throw new TypeError("Specify at most one --shortcut scenario.");
-const shortcutScenario = shortcutArguments[0]?.slice("--shortcut=".length) || "http-selection";
+const shortcutScenario = calculusCase ? "http-clipboard" : shortcutArguments[0]?.slice("--shortcut=".length) || "http-selection";
 const shortcutScenarios = new Set([
   "http-selection",
   "http-clipboard",
@@ -20,7 +30,7 @@ if (!shortcutScenarios.has(shortcutScenario)) {
 const unknownFlags = rawArguments.filter(
   (argument) => argument.startsWith("--")
     && !supportedFlags.has(argument)
-    && !argument.startsWith("--shortcut="),
+    && !argument.startsWith("--shortcut=") && !argument.startsWith("--calculus-case="),
 );
 if (unknownFlags.length) throw new TypeError(`Unknown option: ${unknownFlags.join(", ")}`);
 if (!rawArguments.includes("--allow-storage-reset")) {
@@ -197,13 +207,20 @@ async function pressLetter(protocol, letter, modifiers, commands = undefined) {
 }
 
 async function clickElement(protocol, selector) {
-  const rect = await evaluate(protocol, `(() => {
+  let previous = "", stable = 0;
+  const rect = await waitFor(async () => {
+    const current = await evaluate(protocol, `(() => {
     const element = document.querySelector(${JSON.stringify(selector)});
-    if (!element) return null;
-    element.scrollIntoView({ block: "center", inline: "center" });
+    if (!element || element.disabled) return null;
+    element.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
     const rect = element.getBoundingClientRect();
     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
   })()`);
+    const key = JSON.stringify(current);
+    stable = current && key === previous ? stable + 1 : 0;
+    previous = key;
+    return stable >= 2 ? current : null;
+  }, { label: `stable clickable ${selector}` });
   if (!rect) throw new Error(`Element not found: ${selector}`);
   await protocol.send("Input.dispatchMouseEvent", {
     type: "mousePressed", x: rect.x, y: rect.y, button: "left", buttons: 1, clickCount: 1,
@@ -216,6 +233,7 @@ async function clickElement(protocol, selector) {
 async function clipboardRead(protocol) {
   await browser.send("Target.activateTarget", { targetId: clipboardTargetId });
   await protocol.send("Page.bringToFront").catch(() => undefined);
+  await waitFor(() => evaluate(protocol, "typeof navigator.clipboard?.readText === 'function'"), { label: "clipboard document ready" });
   return String(await evaluate(
     protocol,
     "navigator.clipboard['readText']()",
@@ -445,7 +463,7 @@ try {
     ["計算せよ。x=2", null], ["① 3+5 ② 2+4", null], ["(2) x²", null],
     ["3+", null], ["0*(1/0)", null], ["sqrt(x^2)", null],
   ];
-  for (const [question, answer] of textbookCases) {
+  for (const [question, answer] of (calculusCase ? [] : textbookCases)) {
     const page = await createPage(browser, extensionUrl(extensionId, "/popup.html?textbook=1"), openedTargetIds, openedProtocols);
     await waitFor(async () => evaluate(page.protocol, "Boolean(document.querySelector('#questionInput'))"), { label: "textbook panel" });
     await clickElement(page.protocol, "#questionInput");
@@ -482,18 +500,19 @@ try {
     assert.equal(selectionToast, true);
     shortcutResult = { source: "selection", clipboard: "x=2,3", toast: true };
   } else if (shortcutScenario === "http-clipboard") {
-    await clipboardWrite(clipboardProtocol, "3x=15");
+    const [clipboardQuestion, clipboardAnswer] = calculusCase || ["3x=15", "x=5"];
+    await clipboardWrite(clipboardProtocol, clipboardQuestion);
     await activate(browser, fixture.target, fixture.protocol);
     await evaluate(fixture.protocol, "getSelection().removeAllRanges(); true");
     await triggerShortcut(browser, fixture.target, fixture.protocol);
-    await waitForClipboard(clipboardProtocol, "x=5", "HTTP clipboard fallback shortcut");
+    await waitForClipboard(clipboardProtocol, clipboardAnswer, "HTTP clipboard fallback shortcut");
     const clipboardToast = await evaluate(
       fixture.protocol,
       "document.querySelector('#math-study-log-ai-toast')?.textContent"
         + ".includes('クリップボードから答えをコピー') === true",
     );
     assert.equal(clipboardToast, true);
-    shortcutResult = { source: "clipboard", clipboard: "x=5", toast: true };
+    shortcutResult = { source: "clipboard", question: clipboardQuestion, clipboard: clipboardAnswer, toast: true };
   } else if (shortcutScenario === "chrome") {
     const chromePage = await createPage(
       browser,
@@ -543,7 +562,7 @@ try {
   console.log(JSON.stringify({
     ok: true,
     chromeVersion: browserVersion.Browser,
-    textbookCases: textbookCases.length,
+    textbookCases: calculusCase ? 0 : textbookCases.length,
     extensionId,
     commandShortcut: solveCommand.shortcut,
     paste: {

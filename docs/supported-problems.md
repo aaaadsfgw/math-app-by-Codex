@@ -407,3 +407,15 @@ Chrome 157 recognized （2）3x+2x and solved 5*x after confirmation. A printed
 ① (-3)+5 fixture separated ① but misread the formula as (3)+S. This is a known
 transcription limitation; no correction is guessed. Editing to (-3)+5 before
 confirmation passed both Study and Quick. OCR is not mathematical verification.
+
+## Calculus input expansion (2026-11-05)
+
+Natural logarithm `ln(f)` aliases `log(f)`; differentiation retains f>0.
+Constant `e^f` is equivalent to `exp(f)` in calculus; e is reserved, not a free
+variable. Bounded rational-polynomial substitutions support q*f'*sin(f),
+q*f'*cos(f), and q*f'/f, including negative/rational scale. Primitives are checked
+by reverse differentiation. Logarithmic primitives use log(abs(f)) and original
+excluded points unless positivity is proved by exact constant/quadratic tests.
+C is independent on each connected domain interval. General internal functions
+and arbitrary domain partitioning remain unsupported. Full rules and examples:
+`calculus-shortcut-report.md`.

@@ -978,3 +978,21 @@ Recognition remains editable and unconfirmed. A known real OCR misreading of
 (-3)+5 is covered by a separate explicit correction scenario; the exact-OCR
 scenario still asserts the original formula and is not reported as passing.
 No AI answer generation, external API, dependencies or permissions were added.
+
+## D-039: Exact bounded calculus substitutions and structural limit operands
+
+**Status:** accepted
+**Date:** 2026-11-05
+
+A successfully parsed limit owns its approach-clause boundary. Inspect its
+operand for ambiguous exponents; do not waive the generic safety rule globally.
+Treat ln as the existing natural log and e as the parser's reserved constant.
+Normalize constant-e powers in calculus only, preserving other solver profiles.
+
+Generate substitution candidates from AST factorization and exact rational
+polynomial derivative proportionality (degree at most four). Independently
+reverse-differentiate and compare to the original expression before presentation.
+For logarithmic primitives use abs unless strict positivity is certified; retain
+original nonzero conditions and per-connected-interval integration constants.
+Existing bundled local CAS remains an adapter and verification tool, without
+adding external CAS, servers, APIs, or answer-generation AI.

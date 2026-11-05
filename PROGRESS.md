@@ -1045,3 +1045,17 @@ Last updated: 2026-11-04
   correct Study/Quick history and preview cleanup. This is not an OCR accuracy claim.
 - Updated support, decision and test documents. No new app, cloud dependencies,
   permissions or storage schema changes. Earlier checkpoints: 792eec9, b8069ff.
+
+## 2026-11-05: Calculus shortcut regression checkpoint
+
+Reproduced all nine reported failures at baseline 7b4e8c7 (915 passing tests).
+Implemented structural limit-boundary validation, ln alias, constant-e power
+normalization, exact polynomial substitution for sin/cos and logarithmic
+primitives, reverse differentiation and source-domain preservation. The new
+profile is bounded to rational polynomials with intermediate degree at most 4.
+Final full suite: 929 passed, including 5,500 corpus cases. See
+`docs/calculus-shortcut-report.md` for causes, restrictions and browser evidence.
+Real Chrome 157.0.8103.38: all nine clipboard-input Ctrl+Shift+Y cases passed,
+including full domain-condition output, success toast and no Quick history.
+Project check passed (303 files); browser harness now waits for clipboard
+document readiness and stable click coordinates. OCR accuracy was not remeasured.

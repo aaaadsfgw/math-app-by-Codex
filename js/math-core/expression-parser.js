@@ -16,6 +16,7 @@ const FUNCTION_NAMES = new Set([
   "cos",
   "exp",
   "log",
+  "ln",
   "sin",
   "sqrt",
   "tan",
@@ -315,7 +316,7 @@ class Parser {
     } else {
       argument = this.parseUnary();
     }
-    return this.node({ type: "call", name: functionToken.value, args: [argument] });
+    return this.node({ type: "call", name: functionToken.value === "ln" ? "log" : functionToken.value, args: [argument] });
   }
 }
 

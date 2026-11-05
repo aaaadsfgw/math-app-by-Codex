@@ -1,4 +1,5 @@
 import { normalizeMathNotation } from "../math-core/notation.js";
+import { parseFiniteLimitInput } from "../solver/limit-input.js";
 import {
   compileProblemInput,
   normalizeProblemInput,
@@ -163,7 +164,10 @@ export function inspectFormulaSafety(formulaValue) {
 
   // normalizeMathNotation expands Unicode superscripts before NFKC. This keeps
   // x² and (x-3)² distinguishable from structure-losing x2 and (x-3)2.
-  const comparable = normalizeMathNotation(formulaText);
+  const limit = parseFiniteLimitInput(formulaText);
+  // Only a fully parsed limit owns the boundary after its approach clause.
+  // Continue inspecting the complete operand, including ambiguous group digits.
+  const comparable = normalizeMathNotation(limit.ok ? limit.expression : formulaText);
   const closingGroupFollowedByDigits = /[\)\]\}]\s*\d+/u;
   // Treat a single variable-like symbol followed by digits as ambiguous, while
   // leaving multi-letter function names such as log10(...) alone.

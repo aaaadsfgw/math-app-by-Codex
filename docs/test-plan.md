@@ -486,3 +486,15 @@ loopback fixture server, and --enable-unsafe-extension-debugging:
 
 Future work: evaluate real textbook fonts/scans, minus and 5/S transcription,
 compound radicals with exact verification, and broader multi-variable bare input.
+
+## Calculus shortcut regression (2026-11-05)
+
+Run tests/calculus-shortcut-regression.test.mjs and the full npm test/check.
+The new suite covers 9 reported failures, 24 generated trigonometric polynomial
+substitutions, logarithmic positivity/poles, ln/e aliases, ambiguity rejection,
+failed-verification clipboard preservation, and the 14 known successful examples.
+For real Chrome clipboard shortcuts use the existing input-entry smoke with
+--calculus-case=0 through --calculus-case=8, each with a fresh disposable profile.
+The test asserts the actual clipboard output, including conditions, and restores
+the prior clipboard. Wait for page readiness and stable click geometry.
+See calculus-shortcut-report.md for command, supported profile and evidence.

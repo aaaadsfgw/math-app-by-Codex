@@ -27,13 +27,14 @@ import {
   ExactTrigonometricIntegralError,
   evaluateExactTrigonometricIntegral,
 } from "../math-core/exact-trigonometric-integral.js";
-import { MathParseError, parseMathExpression } from "../math-core/expression-parser.js";
+import { MathParseError, parseMathExpression, serializeExpressionAst, collectExactNonzeroDomainConditions } from "../math-core/expression-parser.js";
 import {
   equivalentInWorker,
   integrateInWorker,
   simplifyInWorker,
 } from "../math-core/symbolic-client.js";
 import { normalizeMathNotation } from "../math-core/notation.js";
+import { proposeSubstitutionIntegral } from "../math-core/substitution-integral.js";
 import { parseDefiniteIntegralInput } from "./definite-integral-input.js";
 import { failedResult, solvedResult, unsupportedResult } from "./utils.js";
 
@@ -113,7 +114,19 @@ function extractIntegralRequest(question) {
 }
 
 function parseSingleVariableExpression(expression) {
-  return parseMathExpression(expression, { symbols: ["x"] });
+  const parsed = parseMathExpression(expression, { symbols: ["x"] });
+  const canonical = (node) => {
+    if (node.type === "binary") {
+      const left = canonical(node.left), right = canonical(node.right);
+      if (node.operator === "^" && left.type === "constant" && left.name === "e") return { type: "call", name: "exp", args: [right] };
+      return { ...node, left, right };
+    }
+    if (node.type === "unary") return { ...node, argument: canonical(node.argument) };
+    if (node.type === "call") return { ...node, args: node.args.map(canonical) };
+    return node;
+  };
+  const ast = canonical(parsed.ast);
+  return { ...parsed, ast, cas: serializeExpressionAst(ast) };
 }
 
 function conditionDisplay(answer, conditions) {
@@ -595,15 +608,16 @@ export async function solveIndefiniteIntegral(
 
   try {
     const parsed = parseSingleVariableExpression(request.expression);
+    const proposal = proposeSubstitutionIntegral(parsed.ast);
     const antiderivative = String(
-      await symbolicOperations.integrate(parsed.cas, "x"),
+      proposal?.expression ?? await symbolicOperations.integrate(parsed.cas, "x"),
     ).trim();
     if (!antiderivative) {
       return failedResult(INDEFINITE_INTEGRAL_SOLVER_ID, "積分候補が空です。");
     }
     const antiderivativeAst = parseSingleVariableExpression(antiderivative);
     const differentiated = differentiateExpressionAst(antiderivativeAst.ast);
-    if (differentiated.conditions.length) {
+    if (differentiated.conditions.length && !proposal) {
       return unsupportedResult(
         "定義域を分けて扱う必要がある不定積分はまだ対応していません。",
       );
@@ -614,16 +628,28 @@ export async function solveIndefiniteIntegral(
         "積分候補を微分しても元の式と一致しませんでした。",
       );
     }
-    const answer = `${antiderivative}+C`;
+    const sourceConditions = collectExactNonzeroDomainConditions(parsed.ast).filter((condition) => {
+      let constant;
+      try { constant = exactRationalConstantFromAst(parseMathExpression(condition.slice(0, -2), { symbols: [] }).ast); }
+      catch { return true; }
+      if (constant.isZero()) throw new CalculusRuleError("元の分母が0です。");
+      return false;
+    });
+    const conditions = proposal?.conditions ?? sourceConditions;
+    const exactAnswer = `${antiderivative}+C`;
+    const answer = conditionDisplay(exactAnswer, conditions);
     return solvedResult({
       answer,
-      exactAnswer: answer,
+      exactAnswer,
+      conditions,
+      kind: conditions.length ? "conditional" : "exact",
       steps: [
         { type: "input", content: `被積分関数: ${parsed.normalized}` },
+        ...(conditions.length ? [{ type: "constraint", content: `定義域: ${conditions.join("、")}`, explanation: "積分定数Cは定義域の各連結区間で独立です。元の除外点を約分後も保持します。" }] : []),
         {
           type: "rule",
-          content: "基本積分公式と線形性を適用",
-          explanation: "和は項ごとに積分し、定数倍はそのまま外へ出します。",
+          content: proposal ? `置換 u=${proposal.argument}` : "基本積分公式と線形性を適用",
+          explanation: proposal ? "多項式の導関数と外側の係数の比が厳密な有理定数であることを全係数で照合します。" : "和は項ごとに積分し、定数倍はそのまま外へ出します。",
         },
         { type: "result", content: `不定積分: ${answer}` },
       ],
