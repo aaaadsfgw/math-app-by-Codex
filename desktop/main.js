@@ -1,11 +1,15 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, Notification, Tray,
+  app, BrowserWindow, clipboard, desktopCapturer, dialog, globalShortcut, ipcMain, Menu,
+  Notification, protocol, screen, session, Tray,
 } from "electron";
 import { createCalculator } from "./services/calculator.js";
 import { createEngine, MAX_INPUT_LENGTH } from "./services/engine.js";
+import { createLocalOcr, registerOcrScheme } from "./services/local-ocr.js";
+import { createOcrWorkflow } from "./services/ocr-workflow.js";
 import { loadPreferences, savePreferences, validShortcutKey } from "./services/preferences.js";
+import { createScreenCapture } from "./services/screen-capture.js";
 import { createShortcutRegistration } from "./services/shortcuts.js";
 import { logStartupFailure } from "./startup-log.js";
 
@@ -17,9 +21,12 @@ let window;
 let tray;
 let calculator;
 let shortcuts;
+let ocr;
+let localOcr;
 let preferences;
 let preferencesPath;
 let settingsError = "";
+let ocrShortcutError = "";
 let quitting = false;
 
 function getState() {
@@ -28,6 +35,10 @@ function getState() {
     preferences,
     activeKey: shortcuts.active,
     settingsError,
+    ocr: ocr?.getState() ?? { phase: "idle", message: "", preview: null },
+    ocrShortcutActive: shortcuts.captureActive,
+    ocrShortcutError,
+    calculationBlocked: ocr?.busy === true,
   };
 }
 
@@ -38,7 +49,7 @@ function publishState() {
 }
 
 function openWindow() {
-  if (quitting || !tray) return;
+  if (quitting || !tray || ocr?.getState().phase === "selecting") return;
   if (window) {
     if (window.isMinimized()) window.restore();
     window.show();
@@ -71,7 +82,9 @@ function openWindow() {
   contents.on("will-frame-navigate", (event) => event.preventDefault());
   window.once("ready-to-show", () => window?.show());
   window.on("close", (event) => {
-    if (quitting || !preferences.keepInTray) return;
+    if (quitting) return;
+    if (ocr?.busy) ocr.cancel();
+    if (!preferences.keepInTray) return;
     event.preventDefault();
     window.hide();
   });
@@ -110,7 +123,7 @@ function notify(message) {
 }
 
 async function onShortcut() {
-  if (!await calculator.solveClipboard() || quitting) return;
+  if (ocr?.busy || !await calculator.solveClipboard() || quitting) return;
   const { result, message } = calculator.getState();
   notify(result ? `計算完了：${result.answer.slice(0, 140)}\nクリップボードにコピーしました。` : message);
 }
@@ -146,9 +159,13 @@ function registerIpc() {
   };
   handle("state", (args) => args.length === 0, () => {});
   handle("solve", ([text, ...rest]) => rest.length === 0 && typeof text === "string"
-    && text.length <= MAX_INPUT_LENGTH, (text) => calculator.solveManual(text));
+    && text.length <= MAX_INPUT_LENGTH, (text) => !ocr?.busy && calculator.solveManual(text));
   handle("copy", ([id, ...rest]) => rest.length === 0 && Number.isSafeInteger(id),
-    (id) => calculator.copy(id));
+    (id) => !ocr?.busy && calculator.copy(id));
+  handle("ocr-copy", ([id, text, ...rest]) => rest.length === 0 && Number.isSafeInteger(id)
+    && typeof text === "string" && text.length <= MAX_INPUT_LENGTH, (id, text) => ocr?.copy(id, text));
+  handle("ocr-retry", ([id, ...rest]) => rest.length === 0 && Number.isSafeInteger(id), (id) => ocr?.retry(id));
+  handle("ocr-cancel", (args) => args.length === 0, () => ocr?.cancel());
   handle("keep-in-tray", ([enabled, ...rest]) => rest.length === 0 && typeof enabled === "boolean",
     (enabled) => updatePreferences({ ...preferences, keepInTray: enabled }));
   handle("shortcut-key", ([key, ...rest]) => rest.length === 0 && validShortcutKey(key),
@@ -163,13 +180,14 @@ async function start() {
   preferencesPath = join(app.getPath("userData"), "desktop-preferences.json");
   preferences = loadPreferences(preferencesPath);
   calculator = createCalculator({ engine: createEngine(), clipboard, onChange: publishState });
-  shortcuts = createShortcutRegistration({ globalShortcut, onCalculate: onShortcut });
+  shortcuts = createShortcutRegistration({ globalShortcut, onCalculate: onShortcut, onCapture: () => ocr?.start() });
   registerIpc();
 
   tray = new Tray(ICON);
   tray.setToolTip(APP_NAME);
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Math Study Log を開く", click: openWindow },
+    { label: "画像認識を中止", click: () => ocr?.cancel() },
     { type: "separator" },
     { label: "完全終了", click: () => app.quit() },
   ]));
@@ -181,6 +199,28 @@ async function start() {
     settingsError = error.message;
     notify(settingsError);
   }
+  try {
+    localOcr = createLocalOcr({ BrowserWindow, ipcMain, session });
+    ocr = createOcrWorkflow({
+      capture: createScreenCapture({ BrowserWindow, desktopCapturer, ipcMain, screen }),
+      recognize: (png, options) => localOcr.recognize(png, options),
+      clipboard,
+      isCalculationBusy: () => ["starting", "working"].includes(calculator.getState().phase),
+      onChange: publishState,
+      notify,
+    });
+  } catch (error) {
+    logStartupFailure("OCR service initialization failed", error);
+    ocrShortcutError = "画像認識の初期化に失敗しました。";
+  }
+  if (ocr) {
+    try {
+      shortcuts.bindCapture();
+    } catch (error) {
+      ocrShortcutError = error.message;
+    }
+  }
+  if (ocrShortcutError) notify(ocrShortcutError);
 
   openWindow();
   await calculator.initialize();
@@ -189,14 +229,17 @@ async function start() {
 }
 
 app.setName(APP_NAME);
+registerOcrScheme(protocol);
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on("second-instance", openWindow);
   app.on("activate", openWindow);
-  app.on("window-all-closed", () => { if (!quitting) app.quit(); });
+  app.on("window-all-closed", () => { if (!quitting && !preferences?.keepInTray) app.quit(); });
   app.on("before-quit", () => {
     quitting = true;
+    ocr?.cancel();
+    localOcr?.close();
     calculator?.close();
   });
   app.on("will-quit", () => {

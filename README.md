@@ -2,8 +2,8 @@
 
 Math Study Log solves supported mathematics problems offline. The build-free
 Manifest V3 Chrome extension also records how independently the learner reached
-the solution. The Windows desktop app provides manual calculation and a global
-clipboard shortcut using the same deterministic engine.
+the solution. The Windows desktop app provides manual calculation, a global
+clipboard shortcut, and screen selection for local OCR.
 
 The application uses deterministic JavaScript solvers and has no
 answer-generation AI, API key, external server, network host permission, remote
@@ -19,6 +19,10 @@ runtime if needed and creates a **Math Study Log** desktop shortcut.
 The shortcut opens the current source tree without a terminal window.
 After updating the source, quit from the tray and open the shortcut again.
 If the checkout moves, run setup from its new location.
+
+Press **Ctrl+Shift+X** and drag around one printed problem to capture it with
+local OCR. Candidates that pass the input checks are copied to the clipboard.
+Open Math Study Log to compare the candidate with its image and make corrections.
 
 The app can calculate offline. Copy a text problem in any Windows app and press
 **Ctrl+Shift+Y**. A verified answer replaces the clipboard text. The desktop

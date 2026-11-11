@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:; base-uri 'none'; form-action 'none'">
   <title>Math Study Log</title>
   <link rel="stylesheet" href="../../css/base.css">
   <link rel="stylesheet" href="./styles.css">
@@ -18,6 +18,29 @@
         <p class="muted">Windows · オフライン計算</p>
       </div>
     </header>
+
+    <section aria-labelledby="ocr-heading">
+      <h2 id="ocr-heading">画像から問題文を取り込む</h2>
+      <p id="ocr-shortcut-hint" class="muted"><kbd>Ctrl+Shift+X</kbd> を押し、画面上の問題文をドラッグで囲みます。</p>
+      <p id="ocr-shortcut-error" role="alert" hidden></p>
+      <p id="ocr-status" role="status" hidden></p>
+      <p id="ocr-error" role="alert" hidden></p>
+      <form id="ocr-form" hidden>
+        <img id="ocr-image" alt="画面で選択した問題文">
+        <p id="ocr-preview-note" class="muted">計算する前に、読み取った内容を元の画像と照らし合わせてください。</p>
+        <label for="ocr-draft">認識候補</label>
+        <textarea id="ocr-draft" class="mono" maxlength="4096" rows="3" required aria-describedby="ocr-preview-note"></textarea>
+        <details id="ocr-original" hidden>
+          <summary>認識時の出力</summary>
+          <pre id="ocr-raw" class="mono"></pre>
+        </details>
+        <div class="ocr-actions">
+          <button id="ocr-copy" class="primary" type="submit" disabled>問題文をコピー</button>
+          <button id="ocr-retry" type="button" disabled>再認識</button>
+        </div>
+      </form>
+      <button id="ocr-cancel" type="button" hidden>キャンセル</button>
+    </section>
 
     <section aria-labelledby="input-heading">
       <h2 id="input-heading">数式を入力</h2>
@@ -44,7 +67,6 @@
       <h2 id="settings-heading">ショートカットと常駐</h2>
       <p id="shortcut-status" role="status"></p>
       <p id="settings-error" role="alert" hidden></p>
-      <p class="muted"><kbd>Ctrl+Shift+X</kbd> · 画像の範囲選択用。今後対応予定。</p>
       <form id="shortcut-form">
         <label for="shortcut-key">クリップボード計算のキー</label>
         <span class="key-row">

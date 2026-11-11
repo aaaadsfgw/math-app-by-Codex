@@ -6,9 +6,21 @@ const copy = byId("copy");
 const shortcutKey = byId("shortcut-key");
 const saveShortcut = byId("save-shortcut");
 const keepInTray = byId("keep-in-tray");
+const ocrForm = byId("ocr-form");
+const ocrImage = byId("ocr-image");
+const ocrDraft = byId("ocr-draft");
+const ocrOriginal = byId("ocr-original");
+const ocrCopy = byId("ocr-copy");
+const ocrRetry = byId("ocr-retry");
+const ocrCancel = byId("ocr-cancel");
+const ocrError = byId("ocr-error");
 let resultId;
 let savedKey;
 let saving = false;
+let previewId;
+let previewText = "";
+let previewImage = "";
+let canActOnPreview = false;
 const resultKinds = {
   exact: "検証済み",
   approximate: "検証済み · 近似値",
@@ -24,12 +36,54 @@ function showError(element, message) {
   element.hidden = !message;
 }
 
-function render({ calculation, preferences, activeKey, settingsError }) {
+function updateOcrCopyButton() {
+  ocrCopy.disabled = !canActOnPreview || !ocrDraft.value.trim();
+}
+
+function renderOcr(ocr, mathBusy, blocked) {
+  const { phase, message, preview } = ocr;
+  const processing = phase === "selecting" || phase === "recognizing";
+  const nextText = preview?.text ?? "";
+  if (previewId !== preview?.id) {
+    ocrDraft.value = nextText;
+    ocrOriginal.open = false;
+  } else if (nextText !== previewText && ocrDraft.value === previewText) {
+    ocrDraft.value = nextText;
+  }
+  previewId = preview?.id;
+  previewText = nextText;
+
+  const imageUrl = preview?.imageUrl?.startsWith("data:image/png;base64,") ? preview.imageUrl : "";
+  if (imageUrl !== previewImage) {
+    if (imageUrl) ocrImage.src = imageUrl;
+    else ocrImage.removeAttribute("src");
+    previewImage = imageUrl;
+  }
+  ocrImage.hidden = !imageUrl;
+
+  const rawText = preview?.rawText ?? "";
+  ocrOriginal.hidden = !rawText || rawText === nextText;
+  byId("ocr-raw").textContent = rawText;
+  ocrForm.hidden = !preview;
+  canActOnPreview = !!preview && !processing && !mathBusy && !blocked;
+  ocrDraft.disabled = processing;
+  updateOcrCopyButton();
+  ocrRetry.disabled = !canActOnPreview || !imageUrl;
+  ocrCancel.hidden = !processing && !preview;
+  ocrCancel.textContent = processing || phase === "review" ? "キャンセル" : "閉じる";
+  const status = byId("ocr-status");
+  status.textContent = phase === "error" ? "" : message;
+  status.hidden = !status.textContent;
+  showError(ocrError, phase === "error" ? message : "");
+}
+
+function render({ calculation, preferences, activeKey, settingsError,
+  ocr, ocrShortcutActive, ocrShortcutError, calculationBlocked }) {
   const { phase, message, result } = calculation;
   const busy = phase === "starting" || phase === "working";
   resultId = result?.id;
-  solve.disabled = busy;
-  copy.disabled = busy || !result;
+  solve.disabled = busy || calculationBlocked;
+  copy.disabled = busy || calculationBlocked || !result;
   byId("status").textContent = phase === "error" ? "操作を完了できませんでした。" : message;
   showError(byId("error"), phase === "error" ? message : "");
   byId("result").hidden = !result;
@@ -53,6 +107,9 @@ function render({ calculation, preferences, activeKey, settingsError }) {
     ? `Ctrl+Shift+${activeKey} · クリップボードの数式を計算`
     : `Ctrl+Shift+${savedKey} · 未登録`;
   showError(byId("settings-error"), settingsError);
+  byId("ocr-shortcut-hint").hidden = !ocrShortcutActive;
+  showError(byId("ocr-shortcut-error"), ocrShortcutError);
+  renderOcr(ocr, busy, calculationBlocked);
 }
 
 async function invoke(action, errorElement) {
@@ -83,6 +140,13 @@ byId("solve-form").addEventListener("submit", (event) => {
   void invoke(() => api.solve(question.value), byId("error"));
 });
 copy.addEventListener("click", () => void invoke(() => api.copy(resultId), byId("error")));
+ocrDraft.addEventListener("input", updateOcrCopyButton);
+ocrForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!ocrCopy.disabled) void invoke(() => api.copyOcr(previewId, ocrDraft.value), ocrError);
+});
+ocrRetry.addEventListener("click", () => void invoke(() => api.retryOcr(previewId), ocrError));
+ocrCancel.addEventListener("click", () => void invoke(api.cancelOcr, ocrError));
 byId("shortcut-form").addEventListener("submit", (event) => {
   event.preventDefault();
   void save(() => api.setShortcutKey(shortcutKey.value));

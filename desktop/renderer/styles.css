@@ -22,6 +22,18 @@ button.primary:hover:enabled { background: #1948bc; }
   background: var(--surface-muted); border-radius: 0.5rem; font-size: 1.1rem;
 }
 #conditions { padding-inline-start: 1.4rem; }
+#ocr-image {
+  display: block; max-width: 100%; max-height: 15rem; margin: 0 0 0.65rem;
+  border: 1px solid var(--line); border-radius: 0.5rem;
+}
+#ocr-original { margin-bottom: 0.6rem; }
+#ocr-raw {
+  max-height: 8rem; overflow: auto; white-space: pre-wrap; unicode-bidi: plaintext;
+  margin: 0.4rem 0 0; padding: 0.55rem 0.75rem;
+  background: var(--surface-muted); border-radius: 0.5rem;
+}
+.ocr-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+#ocr-form:not([hidden]) + #ocr-cancel { margin-top: 0.5rem; }
 [role="alert"] { color: var(--danger); overflow-wrap: anywhere; }
 .key-row, .checkbox-row { display: flex; align-items: center; gap: 0.55rem; margin: 0.4rem 0 0.7rem; }
 .key-row select { width: auto; padding: 0.3rem 0.45rem; }

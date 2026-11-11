@@ -88,11 +88,13 @@ function abortFailure(signal) {
 export function createJapaneseOcrRecognizer({
   loadTesseract = defaultLoadTesseract,
   runtime = globalThis.chrome?.runtime,
+  resolveAssetUrl = (path) => extensionUrl(path, runtime),
   setTimer = globalThis.setTimeout?.bind(globalThis),
   clearTimer = globalThis.clearTimeout?.bind(globalThis),
   now = () => globalThis.performance?.now?.() ?? Date.now(),
 } = {}) {
   if (typeof loadTesseract !== "function") throw new TypeError("loadTesseractは関数で指定してください。");
+  if (typeof resolveAssetUrl !== "function") throw new TypeError("resolveAssetUrlは関数で指定してください。");
   let worker = null;
   let workerPromise = null;
   let initializingWorker = null;
@@ -160,9 +162,9 @@ export function createJapaneseOcrRecognizer({
             "jpn",
             module.OEM?.LSTM_ONLY ?? 1,
             {
-              workerPath: extensionUrl(JAPANESE_OCR_RUNTIME.workerPath, runtime),
-              corePath: extensionUrl(JAPANESE_OCR_RUNTIME.corePath, runtime),
-              langPath: extensionUrl(JAPANESE_OCR_RUNTIME.languagePath, runtime),
+              workerPath: resolveAssetUrl(JAPANESE_OCR_RUNTIME.workerPath),
+              corePath: resolveAssetUrl(JAPANESE_OCR_RUNTIME.corePath),
+              langPath: resolveAssetUrl(JAPANESE_OCR_RUNTIME.languagePath),
               workerBlobURL: false,
               cacheMethod: "none",
               gzip: false,

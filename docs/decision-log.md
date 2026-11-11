@@ -1,5 +1,22 @@
 # Decision log
 
+## Windows desktop Phase 2
+
+**Status:** accepted
+
+**Date:** 2026-11-11
+
+Ctrl+Shift+X opens a protected selection window on each display. The Windows
+app closes the selection windows before acquiring a fresh capture and sends
+only the cropped PNG to a sandboxed renderer. That renderer uses the same
+packaged OCR models and normalizer as the extension. Its local asset protocol
+serves the allowed source and model files from the checkout.
+
+The Windows app can copy a recognized candidate after checking its structure
+with the shared parsers. It retains the crop for review and keeps solving under
+the separate calculation shortcut. An ambiguous candidate or changed
+clipboard text requires a manual copy from the review screen.
+
 ## Windows desktop Phase 1
 
 **Status:** accepted

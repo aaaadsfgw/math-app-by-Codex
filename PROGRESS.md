@@ -2,6 +2,28 @@
 
 Last updated: 2026-11-11
 
+## 2026-11-11: Windows screen selection and local OCR
+
+- Added Ctrl+Shift+X selection per display, a bounded screen capture and crop,
+  and a sandboxed renderer for the bundled IBEM and Tesseract runtimes.
+- Added preview, correction, retry, cancellation, and guarded clipboard copy.
+  Calculation remains a separate operation using the existing workflow.
+- 955 automated tests and the static check passed. Native Windows at 125%
+  returned a 388×156 px crop from a reverse drag with no overlay or magenta
+  margin and removed the overlay on Escape. The Win32 rectangle path returned
+  the same crop when the test simulated missing display IDs.
+- With the production window hidden in the tray, a Windows Ctrl+Shift+X key
+  event and a trusted drag captured a displayed fixture. Real OCR copied
+  `2 + 3` to a simulated clipboard. A Windows Ctrl+Shift+Q key event, used
+  because Y was occupied, solved it to verified `5`. The system clipboard
+  was left intact.
+- Real Electron tests passed with WebGPU and forced WASM for printed arithmetic
+  and mixed Japanese input. The three requested more complex images had
+  recognition errors recorded in `docs/windows-desktop.md`.
+- Chrome 157 rendered fraction and Japanese mixed OCR passed through explicit
+  confirmation in disposable profiles. The regression harness used read-only
+  clipboard checks to preserve the current Windows clipboard.
+
 ## 2026-11-11: Windows desktop shortcut for the development checkout
 
 - Added a double-click setup that prepares Electron if needed and creates a
