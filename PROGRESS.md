@@ -1,6 +1,17 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-11-05
+Last updated: 2026-11-11
+
+## 2026-11-11: Windows desktop shortcut for the development checkout
+
+- Added a double-click setup that prepares Electron if needed and creates a
+  shortcut on the current user's Windows desktop. The shortcut opens Electron
+  from the checkout through the graphical Windows Script Host.
+- Verified the actual shortcut on Windows and checked diagnostic logs for a
+  missing runtime and a missing main module in a disposable fixture.
+- All 937 tests and the project check passed. A separate real Electron run
+  verified calculation, global key registration, tray lifecycle, and the
+  single-instance lock with the new application entry point.
 
 ## 2026-11-05: Windows desktop Phase 1
 

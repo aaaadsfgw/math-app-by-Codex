@@ -13,16 +13,14 @@ deterministic solver can see it.
 
 ## Windows desktop app
 
-In PowerShell, run the following from the repository root with Node.js 22.12
-or newer.
+With Node.js 22.12 or newer installed, double-click
+`Setup Math Study Log.cmd` in the repository. It prepares the pinned Electron
+runtime if needed and creates a **Math Study Log** desktop shortcut.
+The shortcut opens the current source tree without a terminal window.
+After updating the source, quit from the tray and open the shortcut again.
+If the checkout moves, run setup from its new location.
 
-```powershell
-npm.cmd ci
-npm.cmd run desktop
-```
-
-The first launch may download the pinned Electron runtime. After that, the app
-can calculate offline. Copy a text problem in any Windows app and press
+The app can calculate offline. Copy a text problem in any Windows app and press
 **Ctrl+Shift+Y**. A verified answer replaces the clipboard text. The desktop
 window shows the latest result or error, including when Windows notifications
 are unavailable. For manual calculation, enter the problem in the window and

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Verified offline mathematics for Chrome and Windows",
-  "main": "desktop/main.js",
+  "main": "desktop/bootstrap.js",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "desktop": "electron .",

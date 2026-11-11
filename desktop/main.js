@@ -7,6 +7,7 @@ import { createCalculator } from "./services/calculator.js";
 import { createEngine, MAX_INPUT_LENGTH } from "./services/engine.js";
 import { loadPreferences, savePreferences, validShortcutKey } from "./services/preferences.js";
 import { createShortcutRegistration } from "./services/shortcuts.js";
+import { logStartupFailure } from "./startup-log.js";
 
 const APP_NAME = "Math Study Log";
 const PAGE = new URL("./renderer/index.html", import.meta.url);
@@ -75,8 +76,9 @@ function openWindow() {
     window.hide();
   });
   window.on("closed", () => { window = undefined; });
-  void window.loadFile(fileURLToPath(PAGE)).catch(() => {
+  void window.loadFile(fileURLToPath(PAGE)).catch((error) => {
     if (quitting) return;
+    logStartupFailure("Window load failed", error);
     dialog.showErrorBox(APP_NAME, "操作画面を読み込めませんでした。");
     app.quit();
   });
@@ -182,6 +184,8 @@ async function start() {
 
   openWindow();
   await calculator.initialize();
+  const state = calculator.getState();
+  if (state.phase === "error") logStartupFailure("Engine initialization failed", state.message);
 }
 
 app.setName(APP_NAME);
@@ -199,7 +203,8 @@ if (!app.requestSingleInstanceLock()) {
     shortcuts?.close();
     tray?.destroy();
   });
-  void app.whenReady().then(start).catch(() => {
+  void app.whenReady().then(start).catch((error) => {
+    logStartupFailure("Electron startup failed", error);
     dialog.showErrorBox(APP_NAME, "Windows 版を起動できませんでした。");
     app.quit();
   });
