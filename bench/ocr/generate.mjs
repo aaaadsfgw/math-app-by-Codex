@@ -4,8 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { app, BrowserWindow } from "electron";
 import { fixtures } from "./fixtures.mjs";
+import { phase3Fixtures } from "./phase3-fixtures.mjs";
 
-const data = join(import.meta.dirname, "data");
+const phase3 = process.argv.includes("--phase3");
+const data = join(import.meta.dirname, phase3 ? "phase3-data" : "data");
 const fonts = [
   { math: "Cambria Math", file: "cambria.ttc" },
   { math: "Times New Roman", file: "times.ttf" },
@@ -22,13 +24,15 @@ function setup(row, index) {
   const scale = row.scale ?? 1;
   const fontSize = [28, 36, 44, 32, 40][index % 5];
   const padding = [8, 13, 19, 10][index % 4];
-  const render = { font: font.math, contextFont: "Yu Gothic", fontSize, padding, scale, mathml: row.body };
+  const render = { font: font.math, contextFont: "Yu Gothic", fontSize, padding, scale, mathml: row.body,
+    ...(row.inline && { inline: true }) };
   const html = `<!doctype html><meta charset="utf-8"><style>
     html, body { margin: 0; background: white; color: #111; }
     #image { width: max-content; }
     .context { font: ${22 * scale}px "Yu Gothic", sans-serif; padding: ${4 * scale}px ${padding * scale}px; }
     #formula { width: max-content; padding: ${padding * scale}px;
       font: ${fontSize * scale}px "${font.math}", "Cambria Math", serif; }
+    ${row.inline ? '#image { display: flex; align-items: center; }' : ''}
     math { font-family: inherit; }
     </style><div id="image">
     ${[row.label, row.instruction].filter(Boolean).map((text) => `<div class="context">${text}</div>`).join("")}
@@ -42,7 +46,7 @@ async function run() {
     webPreferences: { sandbox: true, nodeIntegration: false, contextIsolation: true, backgroundThrottling: false } });
   const cases = [];
   try {
-    for (const [index, row] of fixtures.entries()) {
+    for (const [index, row] of (phase3 ? phase3Fixtures : fixtures).entries()) {
       const { html, render } = setup(row, index);
       await window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
       const { formulaRect, width, height } = await window.webContents.executeJavaScript(`(async () => {
@@ -60,7 +64,8 @@ async function run() {
         throw new Error(`Unexpected captured size for ${row.id}`);
       }
       const image = `images/${row.id}.png`;
-      const formulaImage = formulaRect.y ? `images/${row.id}-formula.png` : image;
+      const formulaImage = formulaRect.x || formulaRect.y || (phase3 && (row.label || row.instruction))
+        ? `images/${row.id}-formula.png` : image;
       const png = source.toPNG();
       const formula = formulaImage === image ? png : source.crop(formulaRect).toPNG();
       await writeFile(join(data, image), png);

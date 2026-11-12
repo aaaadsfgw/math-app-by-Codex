@@ -14,15 +14,15 @@ deterministic solver can see it.
 ## Windows desktop app
 
 With Node.js 22.12 or newer installed, double-click
-`Setup Math Study Log.cmd` in the repository. It prepares the pinned Electron
-runtime if needed and creates a **Math Study Log** desktop shortcut.
+`Setup Math Study Log.cmd` in the repository. It prepares Electron and the
+isolated Pix2Text CPU runtime and creates a **Math Study Log** desktop shortcut.
 The shortcut opens the current source tree without a terminal window.
 After updating the source, quit from the tray and open the shortcut again.
 If the checkout moves, run setup from its new location.
 
 Press **Ctrl+Shift+X** and drag around one printed problem to capture it with
-local OCR. Candidates that pass the input checks are copied to the clipboard.
-Open Math Study Log to compare the candidate with its image and make corrections.
+local OCR. Compare the candidate with the original image, edit the problem if
+needed, and select **問題文をコピー**.
 
 The app can calculate offline. Copy a text problem in any Windows app and press
 **Ctrl+Shift+Y**. A verified answer replaces the clipboard text. The desktop
@@ -36,8 +36,8 @@ already registered, change its letter in the desktop window or free the key
 in the other app. Chrome extension shortcuts can be checked at
 `chrome://extensions/shortcuts`.
 
-See [Windows Phase 1](docs/windows-desktop.md) for setup, limits, the Windows
-test checklist, and the Phase 2 boundary. The Chrome extension can still be
+See [Windows desktop](docs/windows-desktop.md) for setup, limits, and Windows
+verification. The Chrome extension can still be
 loaded unpacked from the repository root without installing Electron.
 
 ## Current state

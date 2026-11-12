@@ -7,4 +7,7 @@ contextBridge.exposeInMainWorld("desktopOcrHost", {
   reply(id, response) {
     ipcRenderer.send("desktop:ocr-host:result", id, response);
   },
+  recognizeFormula(id, png) {
+    return ipcRenderer.invoke("desktop:ocr-host:formula", id, png);
+  },
 });

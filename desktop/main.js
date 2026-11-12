@@ -8,7 +8,8 @@ import { createCalculator } from "./services/calculator.js";
 import { createEngine, MAX_INPUT_LENGTH } from "./services/engine.js";
 import { createLocalOcr, registerOcrScheme } from "./services/local-ocr.js";
 import { createOcrWorkflow } from "./services/ocr-workflow.js";
-import { loadPreferences, savePreferences, validShortcutKey } from "./services/preferences.js";
+import { loadPreferences, savePreferences, validOcrModel, validShortcutKey } from "./services/preferences.js";
+import { createPix2TextService } from "./services/pix2text.js";
 import { createScreenCapture } from "./services/screen-capture.js";
 import { createShortcutRegistration } from "./services/shortcuts.js";
 import { logStartupFailure } from "./startup-log.js";
@@ -23,6 +24,8 @@ let calculator;
 let shortcuts;
 let ocr;
 let localOcr;
+let pix2text;
+let pix2textAvailable = false;
 let preferences;
 let preferencesPath;
 let settingsError = "";
@@ -38,6 +41,7 @@ function getState() {
     ocr: ocr?.getState() ?? { phase: "idle", message: "", preview: null },
     ocrShortcutActive: shortcuts.captureActive,
     ocrShortcutError,
+    pix2textAvailable,
     calculationBlocked: ocr?.busy === true,
   };
 }
@@ -170,6 +174,8 @@ function registerIpc() {
     (enabled) => updatePreferences({ ...preferences, keepInTray: enabled }));
   handle("shortcut-key", ([key, ...rest]) => rest.length === 0 && validShortcutKey(key),
     (key) => updatePreferences({ ...preferences, shortcutKey: key }, { rebind: true }));
+  handle("ocr-model", ([model, ...rest]) => rest.length === 0 && validOcrModel(model),
+    (model) => !ocr?.busy && updatePreferences({ ...preferences, ocrModel: model }));
 }
 
 async function start() {
@@ -200,14 +206,23 @@ async function start() {
     notify(settingsError);
   }
   try {
-    localOcr = createLocalOcr({ BrowserWindow, ipcMain, session });
+    pix2text = createPix2TextService();
+    pix2textAvailable = pix2text.isAvailable();
+    localOcr = createLocalOcr({ BrowserWindow, ipcMain, session, pix2text });
     ocr = createOcrWorkflow({
       capture: createScreenCapture({ BrowserWindow, desktopCapturer, ipcMain, screen }),
-      recognize: (png, options) => localOcr.recognize(png, options),
+      recognize: (png, options) => {
+        pix2textAvailable = pix2text.isAvailable();
+        const model = preferences.ocrModel === "auto"
+          ? (pix2textAvailable ? "pix2text" : "ibem")
+          : preferences.ocrModel;
+        return localOcr.recognize(png, { ...options, model });
+      },
       clipboard,
       isCalculationBusy: () => ["starting", "working"].includes(calculator.getState().phase),
       onChange: publishState,
       notify,
+      onReview: openWindow,
     });
   } catch (error) {
     logStartupFailure("OCR service initialization failed", error);
@@ -240,6 +255,7 @@ if (!app.requestSingleInstanceLock()) {
     quitting = true;
     ocr?.cancel();
     localOcr?.close();
+    pix2text?.close();
     calculator?.close();
   });
   app.on("will-quit", () => {

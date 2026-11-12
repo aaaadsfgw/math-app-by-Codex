@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("mathStudyLog", {
   cancelOcr: () => ipcRenderer.invoke("desktop:ocr-cancel"),
   setKeepInTray: (enabled) => ipcRenderer.invoke("desktop:keep-in-tray", enabled),
   setShortcutKey: (key) => ipcRenderer.invoke("desktop:shortcut-key", key),
+  setOcrModel: (model) => ipcRenderer.invoke("desktop:ocr-model", model),
   onState: (listener) => {
     ipcRenderer.on("desktop:state-changed", (_event, state) => listener(state));
   },

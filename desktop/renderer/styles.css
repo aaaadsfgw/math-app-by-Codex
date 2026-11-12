@@ -27,6 +27,11 @@ button.primary:hover:enabled { background: #1948bc; }
   border: 1px solid var(--line); border-radius: 0.5rem;
 }
 #ocr-original { margin-bottom: 0.6rem; }
+#ocr-fields { margin: 0.4rem 0 0.65rem; overflow-wrap: anywhere; }
+#ocr-fields dt { font-weight: 600; }
+#ocr-fields dd { margin: 0 0 0.25rem; }
+#ocr-warnings { padding-inline-start: 1.4rem; color: var(--danger); }
+#ocr-model { display: block; margin: 0.3rem 0 0.65rem; }
 #ocr-raw {
   max-height: 8rem; overflow: auto; white-space: pre-wrap; unicode-bidi: plaintext;
   margin: 0.4rem 0 0; padding: 0.55rem 0.75rem;

@@ -37,10 +37,14 @@ test("desktop OCR copies a candidate with its label and math structure preserved
   ]) {
     const { workflow, writes, notices } = fixture(recognition(formula, { questionLabel: label }));
     await workflow.start();
+    assert.equal(workflow.getState().phase, "review");
+    assert.deepEqual(writes, []);
+    const { id, text } = workflow.getState().preview;
+    await workflow.copy(id, text);
     assert.equal(workflow.getState().phase, "copied");
     assert.deepEqual(writes, [[label, expected].filter(Boolean).join("\n")]);
     assert.equal(workflow.getState().preview.text, writes[0]);
-    assert.match(notices[0], /認識候補/u);
+    assert.deepEqual(notices, []);
   }
 });
 
@@ -51,7 +55,19 @@ test("desktop OCR preserves a recognized Japanese instruction for the calculator
     warnings: ["指示と数式を別々に認識しました。各欄を画像と照合してください。"],
   }));
   await workflow.start();
+  const { id, text } = workflow.getState().preview;
+  await workflow.copy(id, text);
   assert.deepEqual(writes, ["(1)\n因数分解せよ\nx^2-1"]);
+});
+
+test("desktop OCR validates explicit definite bounds without ignoring ambiguity inside the integrand", async () => {
+  const { workflow, writes } = fixture(recognition("∫_(1)^(3) 2*x dx", { questionLabel: "(5)" }));
+  await workflow.start();
+  const { id, text } = workflow.getState().preview;
+  await workflow.copy(id, "(5)\n∫_(1)^(3) x2 dx");
+  assert.deepEqual(writes, []);
+  await workflow.copy(id, text);
+  assert.deepEqual(writes, ["(5)\n∫_(1)^(3) 2*x dx"]);
 });
 
 test("desktop OCR withholds ambiguous output and validates corrected text before copying", async () => {
@@ -83,9 +99,13 @@ test("desktop OCR does not expose or copy control characters", async () => {
   assert.deepEqual(writes, []);
 });
 
-test("desktop OCR leaves a review candidate when the clipboard cannot be read", async () => {
+test("desktop OCR exposes raw LaTeX even when conversion requires manual correction", async () => {
   const writes = [];
-  const { workflow } = fixture(recognition("x+1"), {
+  const { workflow } = fixture({
+    model: "pix2text",
+    structuredCandidate: { questionLabel: "", instructionText: "", formulaText: "", rawFormulaText: "\\unknown{x}" },
+    warnings: ["未対応の構文"],
+  }, {
     clipboard: {
       readText: async () => { throw new Error("clipboard unavailable"); },
       writeText: async (text) => { writes.push(text); },
@@ -93,8 +113,14 @@ test("desktop OCR leaves a review candidate when the clipboard cannot be read", 
   });
   await workflow.start();
   assert.equal(workflow.getState().phase, "review");
-  assert.equal(workflow.getState().preview.text, "x+1");
+  const { preview } = workflow.getState();
+  assert.equal(preview.text, "");
+  assert.equal(preview.rawFormula, "\\unknown{x}");
+  assert.equal(preview.model, "pix2text");
+  assert.match(preview.warnings[0], /未対応/u);
   assert.deepEqual(writes, []);
+  await workflow.copy(preview.id, "x+1");
+  assert.deepEqual(writes, ["x+1"]);
 });
 
 test("desktop OCR does not overwrite changed clipboard text and a retry needs an explicit copy", async () => {

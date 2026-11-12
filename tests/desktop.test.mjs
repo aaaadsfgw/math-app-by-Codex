@@ -201,13 +201,13 @@ test("desktop preferences survive restart and validate malformed data and the re
     await unlink(path).catch((error) => { if (error.code !== "ENOENT") throw error; });
     await rmdir(directory);
   });
-  assert.deepEqual(loadPreferences(path), { keepInTray: true, shortcutKey: "Y" });
+  assert.deepEqual(loadPreferences(path), { keepInTray: true, shortcutKey: "Y", ocrModel: "auto" });
   assert.equal(validShortcutKey("X"), false);
   assert.equal(validShortcutKey("Ctrl+Y"), false);
   savePreferences(path, { keepInTray: false, shortcutKey: "A" });
-  assert.deepEqual(loadPreferences(path), { keepInTray: false, shortcutKey: "A" });
-  savePreferences(path, { keepInTray: true, shortcutKey: "Z" });
-  assert.deepEqual(loadPreferences(path), { keepInTray: true, shortcutKey: "Z" });
+  assert.deepEqual(loadPreferences(path), { keepInTray: false, shortcutKey: "A", ocrModel: "auto" });
+  savePreferences(path, { keepInTray: true, shortcutKey: "Z", ocrModel: "pix2text" });
+  assert.deepEqual(loadPreferences(path), { keepInTray: true, shortcutKey: "Z", ocrModel: "pix2text" });
   await writeFile(path, '{"keepInTray":"true","shortcutKey":"X"}', "utf8");
-  assert.deepEqual(loadPreferences(path), { keepInTray: true, shortcutKey: "Y" });
+  assert.deepEqual(loadPreferences(path), { keepInTray: true, shortcutKey: "Y", ocrModel: "auto" });
 });

@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from urllib.request import urlopen
 
 LOCK = json.loads(Path(__file__).with_name("models.lock.json").read_text(encoding="utf-8"))
@@ -28,7 +29,8 @@ def main():
         output = args.destination / name
         if verified(output, file):
             continue
-        temporary = output.with_suffix(output.suffix + ".download")
+        with NamedTemporaryFile(prefix=f"{name}-", suffix=".download", dir=output.parent, delete=False) as target:
+            temporary = Path(target.name)
         try:
             with urlopen(file["url"], timeout=120) as response, temporary.open("wb") as destination:
                 total = 0

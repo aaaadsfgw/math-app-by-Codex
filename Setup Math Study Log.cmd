@@ -17,6 +17,9 @@ if errorlevel 1 (
 node node_modules\electron\install.js
 if errorlevel 1 goto failed
 
+node desktop\pix2text\setup.mjs
+if errorlevel 1 goto failed
+
 "%SystemRoot%\System32\cscript.exe" //nologo //E:JScript "desktop\windows-shortcut.js" setup
 if errorlevel 1 goto failed
 

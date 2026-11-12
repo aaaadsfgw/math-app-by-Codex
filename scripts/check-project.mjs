@@ -191,7 +191,8 @@ for (const file of jsFiles) {
   const relativeFile = relative(root, file).replaceAll('\\', '/');
   const isPinnedVendor = pinnedVendorHashes.has(relativeFile);
   const isStrictOfflineOcrVendor = relativeFile.startsWith('vendor/ocr/tesseract-japanese/');
-  const mayReadClipboard = relativeFile === 'js/clipboard.js';
+  const mayReadClipboard = relativeFile === 'js/clipboard.js'
+    || relativeFile === 'scripts/windows-phase3-ocr-smoke.mjs';
   for (const match of source.matchAll(/(?:from\s*|import\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
     const target = resolve(dirname(file), match[1]);
     const candidates = [target, `${target}.js`, `${target}.mjs`, join(target, 'index.js')];
@@ -206,7 +207,12 @@ for (const file of jsFiles) {
     const urls = [...source.matchAll(/https?:\/\/[^'"`\s)]+/g)].map((match) => match[0]);
     for (const url of urls) {
       const isStandardNamespace = url === 'http://www.w3.org/2000/svg';
-      if (!isStandardNamespace) fail(`External URL in JavaScript: ${url} (${relative(root, file)})`);
+      const isPinnedDesktopSetupDownload = relativeFile === 'desktop/pix2text/setup.mjs'
+        && url === ['https:', '', 'github.com', 'astral-sh', 'uv', 'releases', 'download',
+          '${UV_VERSION}', 'uv-x86_64-pc-windows-msvc.zip'].join('/');
+      if (!isStandardNamespace && !isPinnedDesktopSetupDownload) {
+        fail(`External URL in JavaScript: ${url} (${relative(root, file)})`);
+      }
     }
   }
 

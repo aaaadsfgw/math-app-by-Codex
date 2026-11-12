@@ -1,0 +1,1954 @@
+{
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "ramBytes": 34075979776,
+    "electron": "45.2.3",
+    "chromium": "156.0.8078.80"
+  },
+  "fixture_hashes": {
+    "baseline": "805cd9dbba49f27603a6d98be8d53b590a999b41679d627984fd107a1e0a8eed",
+    "unseen": "3e6df4230e4cfbfb7e4a3700f3c98afefcc4b2c2c1ae2df5b4094757d8317fe1"
+  },
+  "totals": {
+    "formula": {
+      "n": 34,
+      "raw_match": 31,
+      "structural_match": 31,
+      "operator_error": 0,
+      "structure_error": 1,
+      "label_match": 34,
+      "instruction_match": 34,
+      "complete_match": 31,
+      "review_warning": 0,
+      "copyable": 0
+    },
+    "mixed": {
+      "n": 6,
+      "raw_match": 6,
+      "structural_match": 6,
+      "operator_error": 0,
+      "structure_error": 0,
+      "label_match": 6,
+      "instruction_match": 6,
+      "complete_match": 6,
+      "review_warning": 0,
+      "copyable": 6
+    },
+    "unseen": {
+      "n": 12,
+      "raw_match": 11,
+      "structural_match": 12,
+      "operator_error": 0,
+      "structure_error": 0,
+      "label_match": 12,
+      "instruction_match": 11,
+      "complete_match": 11,
+      "review_warning": 4,
+      "copyable": 11
+    }
+  },
+  "groups": {
+    "formula": [
+      {
+        "id": "01-labelled-fraction",
+        "expected": {
+          "formula": "(x^2-5x+6)/(x-2)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\frac { x ^ { 2 } - 5 x + 6 } { x - 2 }",
+        "formula": "(x^2-5*x+6)/(x-2)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 1174.0390000632033,
+          "inferenceMs": 727.0751000614837,
+          "workingSetBytes": 224788480,
+          "peakWorkingSetBytes": 226492416,
+          "conversionMs": 0.6592000000000553,
+          "totalMs": 2180.0660000000003
+        }
+      },
+      {
+        "id": "02-implicit-products",
+        "expected": {
+          "formula": "3a(2a-b)-2b(a+3b)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "3 a ( 2 a - b ) - 2 b ( a + 3 b )",
+        "formula": "3*a*(2*a-b)-2*b*(a+3*b)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 609.6158000873402,
+          "workingSetBytes": 247848960,
+          "peakWorkingSetBytes": 249622528,
+          "conversionMs": 0.11079999999992651,
+          "totalMs": 610.4032000000002
+        }
+      },
+      {
+        "id": "03-labelled-product-fraction",
+        "expected": {
+          "formula": "2ab(a+b)/(4a)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\frac { 2 a b ( a + b ) } { 4 a }",
+        "formula": "(2*a*b*(a+b))/(4*a)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 856.9155000150204,
+          "workingSetBytes": 247848960,
+          "peakWorkingSetBytes": 253169664,
+          "conversionMs": 0.08449999999993452,
+          "totalMs": 857.7406999999998
+        }
+      },
+      {
+        "id": "04-arithmetic",
+        "expected": {
+          "formula": "2+3",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "2 + 3",
+        "formula": "2+3",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 546.9925999641418,
+          "workingSetBytes": 247848960,
+          "peakWorkingSetBytes": 253169664,
+          "conversionMs": 0.04640000000017608,
+          "totalMs": 547.7922999999996
+        }
+      },
+      {
+        "id": "05-signed-arithmetic",
+        "expected": {
+          "formula": "(+19)+(-14)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\left( \\right. + 1 9 \\left( \\right) + \\left( \\left. - 1 4 \\right) \\right)",
+        "formula": "",
+        "label": "",
+        "instruction": "",
+        "raw_match": false,
+        "structural_match": false,
+        "operator_error": null,
+        "structure_error": null,
+        "parse_error": "Empty or oversized formula",
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": false,
+        "conversionError": "未対応の LaTeX 区切り記号です。",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1303.2837000209838,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253169664,
+          "conversionMs": 0.17489999999997963,
+          "totalMs": 1304.3528999999999
+        }
+      },
+      {
+        "id": "06-fraction-equation",
+        "expected": {
+          "formula": "x/2=3",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\frac { x } { 2 } = 3",
+        "formula": "(x)/(2)=3",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 860.4731999803334,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.10559999999986758,
+          "totalMs": 861.3100000000004
+        }
+      },
+      {
+        "id": "07-quadratic-equation",
+        "expected": {
+          "formula": "2x^2-7x+3=0",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "2 x ^ { 2 } - 7 x + 3 = 0",
+        "formula": "2*x^2-7*x+3=0",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 930.1815000362694,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.06340000000000146,
+          "totalMs": 931.1101999999992
+        }
+      },
+      {
+        "id": "08-cubic-polynomial",
+        "expected": {
+          "formula": "x^3-3x^2+2x",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "x ^ { 3 } \\, - 3 x ^ { 2 } \\, + 2 x",
+        "formula": "x^3-3*x^2+2*x",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1105.0054000224918,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.08989999999903375,
+          "totalMs": 1105.9417999999996
+        }
+      },
+      {
+        "id": "09-grouped-exponent",
+        "expected": {
+          "formula": "(x+1)^2",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "( x + 1 ) ^ { 2 }",
+        "formula": "(x+1)^2",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 791.0943999886513,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.0525999999990745,
+          "totalMs": 791.9249
+        }
+      },
+      {
+        "id": "10-negative-exponent",
+        "expected": {
+          "formula": "x^(-2)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "x ^ { - 2 }",
+        "formula": "x^(-2)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 739.317600033246,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.08170000000063737,
+          "totalMs": 740.2564000000002
+        }
+      },
+      {
+        "id": "11-power-grouping",
+        "expected": {
+          "formula": "-(x-1)^2",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "- _ { \\left( x - 1 \\right) ^ { 2 } }",
+        "formula": "",
+        "label": "",
+        "instruction": "",
+        "raw_match": false,
+        "structural_match": false,
+        "operator_error": null,
+        "structure_error": null,
+        "parse_error": "Empty or oversized formula",
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": false,
+        "conversionError": "LaTeX に未対応の項または記号があります。",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 980.5484000826254,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.10319999999956053,
+          "totalMs": 981.5268999999989
+        }
+      },
+      {
+        "id": "12-radical",
+        "expected": {
+          "formula": "sqrt(x^2+1)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\sqrt { x ^ { 2 } + 1 }",
+        "formula": "sqrt(x^2+1)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 840.3232999844477,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.07980000000134169,
+          "totalMs": 840.9615000000013
+        }
+      },
+      {
+        "id": "13-cube-root",
+        "expected": {
+          "formula": "root(8/27,3)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\sqrt { \\frac { 8 } { 2 7 } }",
+        "formula": "sqrt((8)/(27))",
+        "label": "",
+        "instruction": "",
+        "raw_match": false,
+        "structural_match": false,
+        "operator_error": false,
+        "structure_error": true,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": false,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 931.3760000513867,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.061100000000806176,
+          "totalMs": 932.1237000000001
+        }
+      },
+      {
+        "id": "14-radical-sign",
+        "expected": {
+          "formula": "sqrt(2)-sqrt(3)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\sqrt { 2 } - \\sqrt { 3 }",
+        "formula": "sqrt(2)-sqrt(3)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 951.1657999828458,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.047599999999874854,
+          "totalMs": 951.7510999999995
+        }
+      },
+      {
+        "id": "15-nested-fractions",
+        "expected": {
+          "formula": "(1+1/x)/(x+2)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\cfrac { 1 + \\frac { 1 } { x } } { x + 2 }",
+        "formula": "(1+(1)/(x))/(x+2)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 956.0106999706477,
+          "workingSetBytes": 247918592,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.052700000000186265,
+          "totalMs": 956.6259000000009
+        }
+      },
+      {
+        "id": "16-integral",
+        "expected": {
+          "formula": "integral(2x*cos(x^2),x)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\int 2 x \\mathrm { c o s } \\, \\bigl ( \\, x ^ { 2 } \\, \\bigr ) \\ d x",
+        "formula": "∫ 2*x*cos(x^2) dx",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1214.3990999320522,
+          "workingSetBytes": 248115200,
+          "peakWorkingSetBytes": 253239296,
+          "conversionMs": 0.30719999999928405,
+          "totalMs": 1215.3979999999992
+        }
+      },
+      {
+        "id": "17-definite-integral",
+        "expected": {
+          "formula": "integral(0,1,x^2+1,x)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\int _ { 0 } ^ { 1 } \\, ( x ^ { 2 } \\, + 1 ) \\, d x",
+        "formula": "∫_(0)^(1) x^2+1 dx",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1176.0671000229195,
+          "workingSetBytes": 248115200,
+          "peakWorkingSetBytes": 253435904,
+          "conversionMs": 0.06810000000041327,
+          "totalMs": 1176.8081000000002
+        }
+      },
+      {
+        "id": "18-integral-fraction",
+        "expected": {
+          "formula": "integral(1/x,x)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\int \\frac { 1 } { x } \\, d x",
+        "formula": "∫ (1)/(x) dx",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 721.0969000589103,
+          "workingSetBytes": 248119296,
+          "peakWorkingSetBytes": 253440000,
+          "conversionMs": 0.03950000000259024,
+          "totalMs": 721.7122999999992
+        }
+      },
+      {
+        "id": "19-limit-removable",
+        "expected": {
+          "formula": "lim_(x->1)(x^2-1)/(x-1)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\underset { x \\to 1 } { \\operatorname* { l i m } } \\frac { x ^ { 2 } - 1 } { x - 1 }",
+        "formula": "lim_(x->1) (x^2-1)/(x-1)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1155.0251999869943,
+          "workingSetBytes": 248201216,
+          "peakWorkingSetBytes": 253440000,
+          "conversionMs": 0.18620000000009895,
+          "totalMs": 1155.660899999999
+        }
+      },
+      {
+        "id": "20-limit-right",
+        "expected": {
+          "formula": "lim_(x->1+)1/(x-1)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\underset { x \\; \\to \\; 1 ^ { + } } { \\operatorname* { l i m } } \\frac { 1 } { x \\; - \\; 1 }",
+        "formula": "lim_(x->1+) (1)/(x-1)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1214.7112999809906,
+          "workingSetBytes": 248856576,
+          "peakWorkingSetBytes": 253521920,
+          "conversionMs": 0.05800000000090222,
+          "totalMs": 1215.2833000000028
+        }
+      },
+      {
+        "id": "21-limit-infinity",
+        "expected": {
+          "formula": "lim_(x->infinity)(2x^2+1)/(x^2-3)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\lim _ { x \\rightarrow \\infty } { \\frac { 2 x ^ { 2 } \\, + 1 } { x ^ { 2 } \\, - 3 } }",
+        "formula": "lim_(x->infinity) (2*x^2+1)/(x^2-3)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1341.712399967946,
+          "workingSetBytes": 248922112,
+          "peakWorkingSetBytes": 254177280,
+          "conversionMs": 0.0764999999992142,
+          "totalMs": 1342.3047000000006
+        }
+      },
+      {
+        "id": "22-trig-identity",
+        "expected": {
+          "formula": "(sin(x))^2+(cos(x))^2=1",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\operatorname { s i n } ^ { 2 } \\! x + \\operatorname { c o s } ^ { 2 } \\! x = 1",
+        "formula": "sin(x)^2+cos(x)^2=1",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1133.3291000919417,
+          "workingSetBytes": 248922112,
+          "peakWorkingSetBytes": 254242816,
+          "conversionMs": 0.11499999999796273,
+          "totalMs": 1134.0188000000016
+        }
+      },
+      {
+        "id": "23-tangent",
+        "expected": {
+          "formula": "tan(pi/4)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\operatorname { t a n } ( \\frac { \\pi } { 4 } )",
+        "formula": "tan((pi)/(4))",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 856.495299958624,
+          "workingSetBytes": 248922112,
+          "peakWorkingSetBytes": 254242816,
+          "conversionMs": 0.04169999999794527,
+          "totalMs": 857.210500000001
+        }
+      },
+      {
+        "id": "24-log-base",
+        "expected": {
+          "formula": "log_2(x-1)=3",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\operatorname { l o g } _ { 2 } { ( x - 1 ) } = 3",
+        "formula": "log_2(x-1)=3",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 933.0348999937996,
+          "workingSetBytes": 248922112,
+          "peakWorkingSetBytes": 254242816,
+          "conversionMs": 0.041199999999662396,
+          "totalMs": 933.5995999999977
+        }
+      },
+      {
+        "id": "25-log-natural",
+        "expected": {
+          "formula": "ln(xy)=ln(x)+ln(y)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\operatorname { l n } \\big ( \\, x y \\, \\big ) \\, = { \\operatorname { l n } } x + { \\operatorname { l n } } y",
+        "formula": "ln(x*y)=ln(x)+ln(y)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1368.4312000405043,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254242816,
+          "conversionMs": 0.04689999999754946,
+          "totalMs": 1369.004499999999
+        }
+      },
+      {
+        "id": "26-inequality",
+        "expected": {
+          "formula": "x^2-4<=0",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "x ^ { 2 } \\, - 4 \\leq 0",
+        "formula": "x^2-4<=0",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 662.0366000570357,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254308352,
+          "conversionMs": 0.025299999997514533,
+          "totalMs": 662.5279999999984
+        }
+      },
+      {
+        "id": "27-explicit-products",
+        "expected": {
+          "formula": "2*(-3)+4",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "2 \\times ( - 3 ) + 4",
+        "formula": "2*(-3)+4",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 644.876700011082,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254308352,
+          "conversionMs": 0.04259999999703723,
+          "totalMs": 645.5803999999989
+        }
+      },
+      {
+        "id": "28-japanese-expand",
+        "expected": {
+          "formula": "(x+2)(x-3)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "( \\, x + 2 \\, ) \\, ( \\, x - 3 \\, )",
+        "formula": "(x+2)*(x-3)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 844.5603000000119,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254308352,
+          "conversionMs": 0.07879999999931897,
+          "totalMs": 845.2504999999983
+        }
+      },
+      {
+        "id": "29-japanese-equation",
+        "expected": {
+          "formula": "3x-7=5",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "3 x - 7 = 5",
+        "formula": "3*x-7=5",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 588.0641000112519,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254308352,
+          "conversionMs": 0.0220999999983178,
+          "totalMs": 588.6005000000005
+        }
+      },
+      {
+        "id": "30-japanese-derivative",
+        "expected": {
+          "formula": "f(x)=sin(3x^2)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "f ( x ) = \\operatorname { s i n } ( 3 x ^ { 2 } \\, )",
+        "formula": "f(x)=sin(3*x^2)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1056.5388000104576,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254308352,
+          "conversionMs": 0.04139999999824795,
+          "totalMs": 1057.0321000000004
+        }
+      },
+      {
+        "id": "31-short-fraction-bar",
+        "expected": {
+          "formula": "(a-b)/2",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\frac { a - b } { 2 }",
+        "formula": "(a-b)/(2)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 650.9585999883711,
+          "workingSetBytes": 248987648,
+          "peakWorkingSetBytes": 254308352,
+          "conversionMs": 0.06529999999838765,
+          "totalMs": 651.6563000000024
+        }
+      },
+      {
+        "id": "32-dpi-product-fraction",
+        "expected": {
+          "formula": "2ab(a+b)/(4a)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\frac { 2 a b ( a + b ) } { 4 a }",
+        "formula": "(2*a*b*(a+b))/(4*a)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 773.4595999354497,
+          "workingSetBytes": 249581568,
+          "peakWorkingSetBytes": 254902272,
+          "conversionMs": 0.06379999999990105,
+          "totalMs": 774.1797000000006
+        }
+      },
+      {
+        "id": "33-dpi-implicit-products",
+        "expected": {
+          "formula": "3a(2a-b)-2b(a+3b)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "3 a ( 2 a \\, - \\, b ) \\, - \\, 2 b ( a \\, + \\, 3 b )",
+        "formula": "3*a*(2*a-b)-2*b*(a+3*b)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 932.5145999900997,
+          "workingSetBytes": 249581568,
+          "peakWorkingSetBytes": 254902272,
+          "conversionMs": 0.036700000000564614,
+          "totalMs": 933.0764000000017
+        }
+      },
+      {
+        "id": "34-exponential-equation",
+        "expected": {
+          "formula": "2^(t+1)=8",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "2 ^ { t + 1 } = 8",
+        "formula": "2^(t+1)=8",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 588.3333999663591,
+          "workingSetBytes": 249581568,
+          "peakWorkingSetBytes": 254902272,
+          "conversionMs": 0.03269999999974971,
+          "totalMs": 588.8186999999998
+        }
+      }
+    ],
+    "mixed": [
+      {
+        "id": "01-labelled-fraction",
+        "expected": {
+          "formula": "(x^2-5x+6)/(x-2)",
+          "label": "(1)",
+          "instruction": ""
+        },
+        "latex": "\\frac { x ^ { 2 } - 5 x + 6 } { x - 2 }",
+        "formula": "(x^2-5*x+6)/(x-2)",
+        "label": "(1)",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "⑪)\n^ { ( 1 ) }",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(1)\n(x^2-5*x+6)/(x-2)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1021.9017000636086,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.09689999999682186,
+          "extraInferenceMs": 592.8525000344962,
+          "layoutMs": 3.3000000715255737,
+          "japaneseMs": 186.5,
+          "ocrMs": 1811.1000000238419,
+          "recognitionMs": 1932.3005999999987,
+          "validationMs": 3.463499999998021,
+          "copyMs": 0.20780000000377186,
+          "processingMs": 1935.9719000000005
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 41,
+            "width": 159,
+            "height": 83
+          },
+          "fractionCount": 1
+        }
+      },
+      {
+        "id": "03-labelled-product-fraction",
+        "expected": {
+          "formula": "2ab(a+b)/(4a)",
+          "label": "(1)",
+          "instruction": ""
+        },
+        "latex": "\\frac { 2 a b ( a + b ) } { 4 a }",
+        "formula": "(2*a*b*(a+b))/(4*a)",
+        "label": "(1)",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "⑪)\n^ { ( 1 ) }",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(1)\n(2*a*b*(a+b))/(4*a)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1110.8350999420509,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.046999999998661224,
+          "extraInferenceMs": 728.5837000235915,
+          "layoutMs": 3.5,
+          "japaneseMs": 134.29999995231628,
+          "ocrMs": 1983,
+          "recognitionMs": 2096.546900000001,
+          "validationMs": 0.6607999999978347,
+          "copyMs": 0.2407999999995809,
+          "processingMs": 2097.4484999999986
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 48,
+            "width": 237,
+            "height": 123
+          },
+          "fractionCount": 1
+        }
+      },
+      {
+        "id": "28-japanese-expand",
+        "expected": {
+          "formula": "(x+2)(x-3)",
+          "label": "(2)",
+          "instruction": "次の式を展開しなさい"
+        },
+        "latex": "( \\, x + 2 \\, ) \\, ( \\, x - 3 \\, )",
+        "formula": "(x+2)*(x-3)",
+        "label": "(2)",
+        "instruction": "次の式を展開しなさい",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "(2)\n次の式を展開しなさい",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(2)\n次の式を展開しなさい\n(x+2)*(x-3)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1071.1642999667674,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.059999999997671694,
+          "extraInferenceMs": 0,
+          "layoutMs": 4.100000023841858,
+          "japaneseMs": 221,
+          "ocrMs": 1301.6000000238419,
+          "recognitionMs": 1426.7151999999987,
+          "validationMs": 1.5409999999974389,
+          "copyMs": 0.33189999999740394,
+          "processingMs": 1428.5880999999936
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 5,
+            "y": 86,
+            "width": 344,
+            "height": 63
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "29-japanese-equation",
+        "expected": {
+          "formula": "3x-7=5",
+          "label": "(3)",
+          "instruction": "次の方程式を解きなさい"
+        },
+        "latex": "3 x - 7 = 5",
+        "formula": "3*x-7=5",
+        "label": "(3)",
+        "instruction": "次の方程式を解きなさい",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "(3)\n次の方程式を解きなさい",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(3)\n次の方程式を解きなさい\n3*x-7=5",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 829.0510999504477,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.04099999999743886,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.8000000715255737,
+          "japaneseMs": 217.200000166893,
+          "ocrMs": 1054.1000000238419,
+          "recognitionMs": 1173.7060999999958,
+          "validationMs": 0.539600000003702,
+          "copyMs": 0.1610000000000582,
+          "processingMs": 1174.4066999999995
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 87,
+            "width": 148,
+            "height": 38
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "30-japanese-derivative",
+        "expected": {
+          "formula": "f(x)=sin(3x^2)",
+          "label": "",
+          "instruction": "次の関数を微分しなさい"
+        },
+        "latex": "f ( x ) = \\operatorname { s i n } ( 3 x ^ { 2 } \\, )",
+        "formula": "f(x)=sin(3*x^2)",
+        "label": "",
+        "instruction": "次の関数を微分しなさい",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "次の関数を微分しなさい",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "次の関数を微分しなさい\nf(x)=sin(3*x^2)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1242.4832000397146,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.082300000001851,
+          "extraInferenceMs": 0,
+          "layoutMs": 4,
+          "japaneseMs": 217.39999997615814,
+          "ocrMs": 1468.1000000238419,
+          "recognitionMs": 1593.1691999999966,
+          "validationMs": 1.6560000000026776,
+          "copyMs": 0.18549999999959255,
+          "processingMs": 1595.010699999999
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 44,
+            "width": 283,
+            "height": 73
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "32-dpi-product-fraction",
+        "expected": {
+          "formula": "2ab(a+b)/(4a)",
+          "label": "(1)",
+          "instruction": ""
+        },
+        "latex": "\\frac { 2 a b ( a + b ) } { 4 a }",
+        "formula": "(2*a*b*(a+b))/(4*a)",
+        "label": "(1)",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "1)\n( 1 )",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(1)\n(2*a*b*(a+b))/(4*a)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1023.8854999188334,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.05219999999826541,
+          "extraInferenceMs": 696.2251000804827,
+          "layoutMs": 4.5,
+          "japaneseMs": 147.70000004768372,
+          "ocrMs": 1878.4000000953674,
+          "recognitionMs": 1998.4498000000021,
+          "validationMs": 0.4973000000027241,
+          "copyMs": 0.10499999999592546,
+          "processingMs": 1999.0521000000008
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 84,
+            "width": 357,
+            "height": 181
+          },
+          "fractionCount": 1
+        }
+      }
+    ],
+    "unseen": [
+      {
+        "id": "p3-01-inline-expand",
+        "expected": {
+          "formula": "2a(a-4b)",
+          "label": "",
+          "instruction": "次の式を展開しなさい。"
+        },
+        "latex": "2 a \\, ( \\, a - 4 b \\, )",
+        "formula": "2*a*(a-4*b)",
+        "label": "",
+        "instruction": "次の式を展開しなさい。",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "次の式を展開しなさい。",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "次の式を展開しなさい。\n2*a*(a-4*b)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 796.3217999786139,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.04019999999582069,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.600000023841858,
+          "japaneseMs": 179.39999997615814,
+          "ocrMs": 983,
+          "recognitionMs": 1083.3969999999972,
+          "validationMs": 0.4904999999998836,
+          "copyMs": 0.10300000000279397,
+          "processingMs": 1083.9904999999999
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 254,
+            "y": 0,
+            "width": 172,
+            "height": 44
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-02-inline-label",
+        "expected": {
+          "formula": "(x+4)(x-2)",
+          "label": "(2)",
+          "instruction": ""
+        },
+        "latex": "( x + 4 ) ( x - 2 )",
+        "formula": "(x+4)*(x-2)",
+        "label": "(2)",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "(2)",
+        "warnings": [
+          "行内の問題番号を位置から分けました。括弧付きの係数との区別を元画像で確認してください。"
+        ],
+        "review_warning": true,
+        "copyable": true,
+        "candidate": "(2)\n(x+4)*(x-2)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 803.7334999535233,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.0364999999947031,
+          "extraInferenceMs": 0,
+          "layoutMs": 2.8000000715255737,
+          "japaneseMs": 130.09999990463257,
+          "ocrMs": 940,
+          "recognitionMs": 1053.1463000000003,
+          "validationMs": 0.1886000000013155,
+          "copyMs": 0.05339999999705469,
+          "processingMs": 1053.3882999999987
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 56,
+            "y": 0,
+            "width": 220,
+            "height": 58
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-03-coefficient",
+        "expected": {
+          "formula": "2(x+1)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "( 2 ) ( x + 1 )",
+        "formula": "(2)*(x+1)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(2)*(x+1)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 752.4233000585809,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.0239000000001397,
+          "extraInferenceMs": 0,
+          "layoutMs": 2.9000000953674316,
+          "japaneseMs": 152.70000004768372,
+          "ocrMs": 911.2000000476837,
+          "recognitionMs": 1026.9496999999974,
+          "validationMs": 0.3830999999991036,
+          "copyMs": 0.05460000000311993,
+          "processingMs": 1027.3873999999996
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 212,
+            "height": 77
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-04-numbered-fraction",
+        "expected": {
+          "formula": "(x^2+3*x-4)/(x+4)",
+          "label": "問1",
+          "instruction": ""
+        },
+        "latex": "\\frac { x ^ { 2 } + 3 x - 4 } { x + 4 }",
+        "formula": "(x^2+3*x-4)/(x+4)",
+        "label": "問1",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "問1",
+        "warnings": [
+          "行内の問題番号を位置から分けました。元画像で区切りを確認してください。"
+        ],
+        "review_warning": true,
+        "copyable": true,
+        "candidate": "問1\n(x^2+3*x-4)/(x+4)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1136.0469999490306,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.045700000002398156,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.100000023841858,
+          "japaneseMs": 136.20000004768372,
+          "ocrMs": 1279.2999999523163,
+          "recognitionMs": 1398.6550999999963,
+          "validationMs": 0.757900000004156,
+          "copyMs": 0.10989999999583233,
+          "processingMs": 1399.5228999999963
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 53,
+            "y": 0,
+            "width": 184,
+            "height": 94
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-05-circled-fraction",
+        "expected": {
+          "formula": "(3*a-2*b)/(6*a)",
+          "label": "①",
+          "instruction": ""
+        },
+        "latex": "\\frac { 3 a - 2 b } { 6 a }",
+        "formula": "(3*a-2*b)/(6*a)",
+        "label": "①",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "①",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "①\n(3*a-2*b)/(6*a)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 938.3178000571206,
+          "workingSetBytes": 249589760,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.043600000004516914,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.899999976158142,
+          "japaneseMs": 138.39999997615814,
+          "ocrMs": 1084.3999999761581,
+          "recognitionMs": 1205.1695000000036,
+          "validationMs": 0.2831000000005588,
+          "copyMs": 0.0859000000054948,
+          "processingMs": 1205.5385000000097
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 72,
+            "width": 248,
+            "height": 155
+          },
+          "fractionCount": 1
+        }
+      },
+      {
+        "id": "p3-06-factoring",
+        "expected": {
+          "formula": "x^2-9",
+          "label": "(4)",
+          "instruction": "次の式を因数分解しなさい"
+        },
+        "latex": "x ^ { 2 } - 9",
+        "formula": "x^2-9",
+        "label": "(4)",
+        "instruction": "次の式を因数分解しなさい",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "(4\n^ { ( 4 ) }\n次の式を因数分解しなさい",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(4)\n次の式を因数分解しなさい\nx^2-9",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 758.7744999909773,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.04349999999976717,
+          "extraInferenceMs": 676.0179999982938,
+          "layoutMs": 3.200000047683716,
+          "japaneseMs": 206.30000007152557,
+          "ocrMs": 1650.3000000715256,
+          "recognitionMs": 1770.8346999999994,
+          "validationMs": 0.7180000000007567,
+          "copyMs": 0.12110000000393484,
+          "processingMs": 1771.6738000000041
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 2,
+            "y": 90,
+            "width": 98,
+            "height": 50
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-07-power",
+        "expected": {
+          "formula": "(x-2)^(n+1)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "( \\, x - 2 \\, ) ^ { \\, n \\; + \\; 1 }",
+        "formula": "(x-2)^(n+1)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "(x-2)^(n+1)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 953.0500000109896,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.04320000000006985,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.399999976158142,
+          "japaneseMs": 180.10000002384186,
+          "ocrMs": 1139.3999999761581,
+          "recognitionMs": 1263.5959000000003,
+          "validationMs": 0.23189999999885913,
+          "copyMs": 0.05890000000363216,
+          "processingMs": 1263.8867000000027
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 237,
+            "height": 80
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-08-radical",
+        "expected": {
+          "formula": "sqrt(x+7)-sqrt(3)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\sqrt { x + 7 } - \\sqrt { 3 }",
+        "formula": "sqrt(x+7)-sqrt(3)",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "sqrt(x+7)-sqrt(3)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 802.7376000536606,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.05439999999362044,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.799999952316284,
+          "japaneseMs": 0,
+          "ocrMs": 808.5,
+          "recognitionMs": 931.6912999999986,
+          "validationMs": 0.19729999999981374,
+          "copyMs": 0.07809999999881256,
+          "processingMs": 931.9666999999972
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 337,
+            "height": 98
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-09-integral",
+        "expected": {
+          "formula": "integral(3*x^2,x)",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\int 3 x ^ { 2 } \\, \\, \\, d x",
+        "formula": "∫ 3*x^2 dx",
+        "label": "",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "∫ 3*x^2 dx",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 935.4912999551743,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.05519999999523861,
+          "extraInferenceMs": 0,
+          "layoutMs": 2.3000000715255737,
+          "japaneseMs": 153.80000007152557,
+          "ocrMs": 1094.6000000238419,
+          "recognitionMs": 1215.4689999999973,
+          "validationMs": 0.22620000000461005,
+          "copyMs": 0.04170000000158325,
+          "processingMs": 1215.7369000000035
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 142,
+            "height": 56
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-10-definite-integral",
+        "expected": {
+          "formula": "integral(1,3,2*x,x)",
+          "label": "(5)",
+          "instruction": ""
+        },
+        "latex": "\\int _ { 1 } ^ { 3 } 2 x \\, d x",
+        "formula": "∫_(1)^(3) 2*x dx",
+        "label": "(5)",
+        "instruction": "",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "(5)",
+        "warnings": [
+          "行内の問題番号を位置から分けました。括弧付きの係数との区別を元画像で確認してください。"
+        ],
+        "review_warning": true,
+        "copyable": true,
+        "candidate": "(5)\n∫_(1)^(3) 2*x dx",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 959.344599978067,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.049099999996542465,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.399999976158142,
+          "japaneseMs": 129.5,
+          "ocrMs": 1095.3999999761581,
+          "recognitionMs": 1210.7911000000022,
+          "validationMs": 0.9241999999940163,
+          "copyMs": 0.07370000000082655,
+          "processingMs": 1211.788999999997
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 63,
+            "y": 0,
+            "width": 180,
+            "height": 129
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-11-limit",
+        "expected": {
+          "formula": "lim_(x->2-)(1/(2-x))",
+          "label": "",
+          "instruction": ""
+        },
+        "latex": "\\underset { x \\mathop \\to 2 ^ { - } } { \\operatorname* { l i m } } \\frac { 1 } { 2 - x }",
+        "formula": "lim_(x->2-) (1)/(2-x)",
+        "label": "",
+        "instruction": "",
+        "raw_match": false,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": true,
+        "complete_match": true,
+        "raw_instruction": "",
+        "warnings": [],
+        "review_warning": false,
+        "copyable": true,
+        "candidate": "lim_(x->2-) (1)/(2-x)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1513.1264000665396,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.12529999999969732,
+          "extraInferenceMs": 0,
+          "layoutMs": 2.4000000953674316,
+          "japaneseMs": 0,
+          "ocrMs": 1517.2000000476837,
+          "recognitionMs": 1633.4208999999973,
+          "validationMs": 1.6735000000044238,
+          "copyMs": 0.17599999999947613,
+          "processingMs": 1635.2704000000012
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 161,
+            "height": 88
+          },
+          "fractionCount": 0
+        }
+      },
+      {
+        "id": "p3-12-inline-japanese-fraction",
+        "expected": {
+          "formula": "(x^2-16)/(x-4)",
+          "label": "",
+          "instruction": "次の式を簡単にしなさい。"
+        },
+        "latex": "\\frac { x ^ { 2 } \\, - \\, 1 6 } { x \\, - \\, 4 }",
+        "formula": "(x^2-16)/(x-4)",
+        "label": "",
+        "instruction": "次の式を簡里にしなさい。",
+        "raw_match": true,
+        "structural_match": true,
+        "operator_error": false,
+        "structure_error": false,
+        "parse_error": null,
+        "label_match": true,
+        "instruction_match": false,
+        "complete_match": false,
+        "raw_instruction": "次の式を簡里にしなさい。",
+        "warnings": [
+          "数式や指示を修正してからコピーしてください。"
+        ],
+        "review_warning": true,
+        "copyable": false,
+        "candidate": "次の式を簡里にしなさい。\n(x^2-16)/(x-4)",
+        "metrics": {
+          "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+          "loadMs": 0,
+          "inferenceMs": 1170.558899990283,
+          "workingSetBytes": 249585664,
+          "peakWorkingSetBytes": 254910464,
+          "conversionMs": 0.08840000000054715,
+          "extraInferenceMs": 0,
+          "layoutMs": 3.899999976158142,
+          "japaneseMs": 171.69999992847443,
+          "ocrMs": 1350,
+          "recognitionMs": 1481.1429000000062,
+          "validationMs": 0.28299999999580905
+        },
+        "layout": {
+          "formulaBounds": {
+            "x": 281,
+            "y": 0,
+            "width": 145,
+            "height": 97
+          },
+          "fractionCount": 0
+        }
+      }
+    ]
+  }
+}

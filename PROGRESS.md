@@ -2,6 +2,25 @@
 
 Last updated: 2026-11-12
 
+## 2026-11-12: Windows OCR Phase 3
+
+- Integrated the pinned Pix2Text MFR 1.5 CPU model with verified setup,
+  a cancellable reusable local inference process, and explicit selection of IBEM.
+- Added Windows-only fraction and script grouping, mixed Japanese/number
+  segmentation, and restricted LaTeX conversion. Every OCR copy now requires
+  the preview action before the separate calculation shortcut can use it.
+- The installed runtime matched 31/34 formula structures, 6/6 existing
+  mixed problems, and 11/12 new problems. Reproducible inputs, per-image
+  results and limits are in `docs/windows-ocr-phase3.md`.
+- Ran the existing Chrome mixed OCR flow on rendered fixtures in headless
+  Chrome with its WASM recognizer and explicit confirmation.
+- Windows setup and desktop-link launch passed. A real 125% screen drag
+  showed the correct mixed candidate in the production app. The independent
+  Windows harness also copied three real captures and solved arithmetic
+  via the registered calculation shortcut using an isolated clipboard.
+- 978 automated tests passed. See the Phase 3 report for timing, raw outputs
+  and remaining transcription errors.
+
 ## 2026-11-12: Windows formula OCR model benchmark
 
 - Added 34 fixed formula fixtures and 40 PNGs with generation settings and

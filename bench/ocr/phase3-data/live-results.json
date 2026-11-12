@@ -1,0 +1,108 @@
+{
+  "platform": "win32",
+  "scaleFactor": 1.25,
+  "readyMs": 96.24950000000001,
+  "startupMs": 232.2577,
+  "clipboard": "isolated",
+  "tray": true,
+  "captureKey": "W",
+  "calculationKey": "Q",
+  "rows": [
+    {
+      "id": "04-arithmetic",
+      "phase": "review",
+      "complete": true,
+      "size": {
+        "width": 126,
+        "height": 73
+      },
+      "text": "2+3",
+      "latex": "2 + 3",
+      "warnings": [],
+      "copied": true,
+      "verifiedShortcutResult": "5",
+      "metrics": {
+        "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+        "loadMs": 1106.5834000473842,
+        "inferenceMs": 456.17180003318936,
+        "workingSetBytes": 223506432,
+        "peakWorkingSetBytes": 225210368,
+        "conversionMs": 0.6512000000002445,
+        "extraInferenceMs": 0,
+        "layoutMs": 3,
+        "japaneseMs": 167.30000007152557,
+        "ocrMs": 1927.7000000476837,
+        "overlayMs": 133.29180000000008,
+        "captureMs": 433.3597,
+        "recognitionMs": 2059.9056,
+        "validationMs": 2.820299999999861,
+        "copyMs": 0.2141999999998916,
+        "processingMs": 2629.5915999999997
+      }
+    },
+    {
+      "id": "01-labelled-fraction",
+      "phase": "review",
+      "complete": true,
+      "size": {
+        "width": 191,
+        "height": 155
+      },
+      "text": "(1)\n(x^2-5*x+6)/(x-2)",
+      "latex": "\\frac { x ^ { 2 } - 5 x + 6 } { x - 2 }",
+      "warnings": [],
+      "copied": true,
+      "verifiedShortcutResult": null,
+      "metrics": {
+        "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+        "loadMs": 0,
+        "inferenceMs": 633.7133999913931,
+        "workingSetBytes": 245239808,
+        "peakWorkingSetBytes": 250150912,
+        "conversionMs": 0.23549999999977445,
+        "extraInferenceMs": 415.5065000522882,
+        "layoutMs": 19.300000071525574,
+        "japaneseMs": 152.29999995231628,
+        "ocrMs": 1228.5,
+        "overlayMs": 122.10090000000037,
+        "captureMs": 379.41380000000026,
+        "recognitionMs": 1347.3233,
+        "validationMs": 0.6036000000003696,
+        "copyMs": 0.20230000000083237,
+        "processingMs": 1849.6439000000018
+      }
+    },
+    {
+      "id": "28-japanese-expand",
+      "phase": "review",
+      "complete": true,
+      "size": {
+        "width": 386,
+        "height": 180
+      },
+      "text": "(2)\n次の式を展開しなさい\n(x+2)*(x-3)",
+      "latex": "( \\, x + 2 \\, ) \\, ( \\, x - 3 \\, )",
+      "warnings": [],
+      "copied": true,
+      "verifiedShortcutResult": null,
+      "metrics": {
+        "modelRevision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+        "loadMs": 0,
+        "inferenceMs": 538.3833000669256,
+        "workingSetBytes": 247570432,
+        "peakWorkingSetBytes": 250560512,
+        "conversionMs": 0.12309999999888532,
+        "extraInferenceMs": 0,
+        "layoutMs": 5.600000023841858,
+        "japaneseMs": 230.5000001192093,
+        "ocrMs": 780.6999999284744,
+        "overlayMs": 125.26999999999953,
+        "captureMs": 356.2457999999997,
+        "recognitionMs": 900.4899999999998,
+        "validationMs": 0.9019000000007509,
+        "copyMs": 0.28660000000127184,
+        "processingMs": 1383.194300000001
+      }
+    }
+  ]
+}

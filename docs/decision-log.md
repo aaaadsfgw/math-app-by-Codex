@@ -1027,3 +1027,20 @@ For logarithmic primitives use abs unless strict positivity is certified; retain
 original nonzero conditions and per-connected-interval integration constants.
 Existing bundled local CAS remains an adapter and verification tool, without
 adding external CAS, servers, APIs, or answer-generation AI.
+
+## D-040: Isolate the Windows Pix2Text OCR backend
+
+**Status:** accepted
+**Date:** 2026-11-12
+
+Use the pinned Pix2Text CPU ONNX model through a private child process.
+Installation verifies model hashes, and worker initialization rechecks them.
+The worker accepts bounded PNGs, never sends inference data to a remote service,
+and is released on cancellation, timeout, inactivity or exit. Keep the
+previous IBEM path selectable and leave the Chrome capture path separate.
+
+Use screen geometry and local Japanese recognition together to propose one
+printed formula with optional short context. Show the original capture and
+retain the raw LaTeX. Treat even a syntactically valid candidate as unconfirmed
+until the explicit copy action. The independent calculation shortcut continues
+to use the deterministic JavaScript workflow and its verification requirements.

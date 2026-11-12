@@ -4,6 +4,7 @@ import argparse
 import ctypes
 from ctypes import wintypes
 import hashlib
+import importlib.util
 from importlib.metadata import version
 import json
 import os
@@ -80,52 +81,16 @@ def load_paddle(model, weights):
 
 
 def load_pix2text(weights, device):
-    import numpy as np
-    import onnxruntime as ort
     from PIL import Image
-    from tokenizers import Tokenizer
-
-    processing = json.loads((weights / "preprocessor_config.json").read_text())
-    generation = json.loads((weights / "generation_config.json").read_text())
-    start_token = generation["decoder_start_token_id"]
-    eos_token = generation["eos_token_id"]
-    size = processing["size"]
-    mean = np.asarray(processing["image_mean"], dtype=np.float32)
-    std = np.asarray(processing["image_std"], dtype=np.float32)
-    tokenizer = Tokenizer.from_file(str(weights / "tokenizer.json"))
-    options = ort.SessionOptions()
-    options.intra_op_num_threads = THREADS
-    options.inter_op_num_threads = 1
-    providers = ["CPUExecutionProvider"]
-    if device == "directml":
-        if "DmlExecutionProvider" not in ort.get_available_providers():
-            raise RuntimeError("The isolated DirectML environment is required.")
-        options.enable_mem_pattern = False
-        options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
-        providers.insert(0, "DmlExecutionProvider")
-    encoder = ort.InferenceSession(str(weights / "encoder_model.onnx"), options, providers)
-    decoder = ort.InferenceSession(str(weights / "decoder_model.onnx"), options, providers)
-    if any(model.get_providers()[0] != providers[0] for model in (encoder, decoder)):
-        raise RuntimeError("ONNX Runtime did not initialize the selected execution provider.")
+    path = ROOT.parents[1] / "desktop" / "pix2text" / "pix2text_model.py"
+    spec = importlib.util.spec_from_file_location("pix2text_model", path)
+    implementation = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(implementation)
+    infer = implementation.load_model(weights, device)
 
     def recognize(image_path):
         with Image.open(image_path) as image:
-            pixels = np.asarray(image.convert("RGB").resize(
-                (size["width"], size["height"]), processing["resample"],
-            ), dtype=np.float32)
-        pixels = ((pixels * processing["rescale_factor"] - mean) / std).transpose(2, 0, 1)[None]
-        hidden, *_ = encoder.run(None, {"pixel_values": pixels})
-        ids = [start_token]
-        # The official export disables the KV cache. Greedy generation feeds
-        # the full prefix for each token, as the published generation config does.
-        for _ in range(generation["max_new_tokens"]):
-            logits, *_ = decoder.run(None, {
-                "input_ids": np.asarray([ids], dtype=np.int64), "encoder_hidden_states": hidden,
-            })
-            ids.append(int(np.argmax(logits[0, -1])))
-            if ids[-1] == eos_token:
-                return tokenizer.decode(ids, skip_special_tokens=True).strip()
-        raise ValueError("Pix2Text reached its token limit before EOS")
+            return infer(image)
 
     runtime = "onnxruntime-directml" if device == "directml" else "onnxruntime"
     return recognize, (runtime, "tokenizers", "numpy", "Pillow")

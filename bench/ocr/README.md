@@ -67,3 +67,19 @@ node bench/ocr/score.mjs
 ```
 
 `results/*-cpu.json` と `results/*-gpu.json` は全問の出力・時間・エラーを保存する。`results/scored.json` は正解、数式別の判定、分野別の集計を併記する。採点時は全画像のハッシュと各ランの対象ケースを検証する。比較用の構文解析はこのコーパスを対象としたもので、採点のために誤認識を修復することはない。
+
+## Windows版 Phase 3
+
+セットアップ後、実装済みの Windows バックエンドを使って測定する。
+最初のコマンドは新規コーパスを再生成する場合のみ実行する。
+
+```powershell
+npm.cmd exec --no -- electron bench/ocr/generate.mjs --phase3
+npm.cmd exec --no -- electron bench/ocr/run-windows-phase3.mjs phase3-results.json
+npm.cmd exec --no -- electron scripts/windows-phase3-ocr-smoke.mjs phase3-live.json
+```
+
+数式単体34枚は本番の推論プロセスとLaTeX変換器で評価する。混合6枚と新規12枚は
+Electron のレイアウト解析・日本語OCR・確認処理まで通す。実画面の選択とキー登録を含む
+検証は最後のコマンドで別に実行する。記録済みの結果は
+[Phase 3 検証結果](../../docs/windows-ocr-phase3.md) にある。

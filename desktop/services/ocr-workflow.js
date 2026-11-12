@@ -7,12 +7,6 @@ import { parseFiniteLimitInput } from "../../js/solver/limit-input.js";
 import { MAX_INPUT_LENGTH } from "./engine.js";
 
 const UNSAFE_CHARACTERS = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\p{Cf}]/u;
-const INFORMATIONAL_WARNINGS = new Set([
-  "数式行左端の独立領域を問題番号として分離しました。",
-  "同一行左端の問題番号と数式を位置情報から分離しました。各欄を画像と照合してください。",
-  "指示と数式を別々に認識しました。各欄を画像と照合してください。",
-]);
-
 function boundedText(value) {
   if (typeof value !== "string" || value.length > MAX_INPUT_LENGTH || UNSAFE_CHARACTERS.test(value)) {
     throw new Error("認識結果に使用できない文字や長すぎる項目が含まれています。");
@@ -22,23 +16,33 @@ function boundedText(value) {
 
 function validateFormula(input) {
   const formula = input.formulaText;
-  if (!formula || /\n/u.test(formula) || !inspectFormulaSafety(formula).safe || !compileProblemInput(input).ok) {
+  if (!formula || /\n/u.test(formula) || !compileProblemInput(input).ok) {
     throw new Error("数式や指示を確認し、構造が分かるように修正してください。");
+  }
+  // The explicit bounds have already been parsed as exact numbers. Check
+  // for lost structure in the integrand without treating bounds as powers.
+  const definiteIntegral = parseDefiniteIntegralInput(formula);
+  if (!inspectFormulaSafety(definiteIntegral.ok ? definiteIntegral.expression : formula).safe) {
+    throw new Error("数式や指示を確認し、構造が分かるように修正してください。");
+  }
+  if (definiteIntegral.ok) {
+    parseMathExpression(definiteIntegral.expression);
+    return;
   }
   const limit = parseFiniteLimitInput(formula);
   if (limit.ok) {
     parseMathExpression(limit.expression);
     return;
   }
-  const definiteIntegral = parseDefiniteIntegralInput(formula);
-  if (definiteIntegral.ok) return;
 
   const normalized = normalizeMathNotation(formula);
   const expression = normalized.match(/^∫\s*(.+?)\s*d\s*x$/u)?.[1]
     ?? normalized.replace(/^f\s*\(\s*x\s*\)\s*=\s*/u, "");
   const parts = expression.split(/<=|>=|[=<>≤≥]/u);
   if (parts.length > 2) throw new Error("等式や不等式は1つずつ入力してください。");
-  for (const part of parts) parseMathExpression(part);
+  // The shared logarithmic equation solver accepts explicit integer bases.
+  // Validate the operand with the generic parser and retain the original base.
+  for (const part of parts) parseMathExpression(part.replace(/\blog_\d+(?=\()/gu, "log"));
 }
 
 function validateClipboardText(value) {
@@ -55,29 +59,30 @@ function reviewCandidate(output) {
   const label = boundedText(candidate.questionLabel);
   const instruction = boundedText(candidate.instructionText);
   const formula = boundedText(candidate.formulaText);
-  const rawText = boundedText([
-    boundedText(candidate.rawInstructionText ?? ""),
-    boundedText(candidate.rawFormulaText ?? ""),
-  ].filter(Boolean).join("\n"));
-  const original = boundedText([label, instruction, formula].filter(Boolean).join("\n"));
-  if (!original) throw new Error("画像から問題文を読み取れませんでした。");
-  try {
-    // IBEM already normalized the model's Typst. Running its normalizer on
-    // solver text could reinterpret implicit products as Typst function calls.
-    const validated = validateClipboardText(original);
-    const uncertain = !Array.isArray(output.warnings)
-      || output.warnings.some((warning) => !INFORMATIONAL_WARNINGS.has(warning))
-      || validated.input.questionLabel !== label
-      || validated.input.formulaText !== formula
-      || (instruction && !validated.input.instructionIntent)
-      || (Array.isArray(candidate.conditions) && candidate.conditions.length > 0);
-    return { text: validated.text, rawText, safe: !uncertain };
-  } catch {
-    return { text: original, rawText, safe: false };
+  const rawInstruction = boundedText(candidate.rawInstructionText ?? "");
+  const rawFormula = boundedText(candidate.rawFormulaText ?? "");
+  const text = boundedText([label, instruction, formula].filter(Boolean).join("\n"));
+  const warnings = Array.isArray(output.warnings)
+    ? output.warnings.slice(0, 10).map(boundedText).filter(Boolean) : [];
+  if (!text && !rawFormula && !rawInstruction && !warnings.length) {
+    throw new Error("画像から問題文を読み取れませんでした。");
   }
+  try {
+    const { input } = validateClipboardText(text);
+    if (input.questionLabel !== label || input.formulaText !== formula
+      || (instruction && !input.instructionIntent)
+      || (Array.isArray(candidate.conditions) && candidate.conditions.length > 0)) {
+      warnings.push("問題番号、指示、数式を画像と照合して入力欄を修正してください。");
+    }
+  } catch {
+    warnings.push("数式や指示を修正してからコピーしてください。");
+  }
+  return { text, label, instruction, formula, rawInstruction, rawFormula, warnings,
+    model: output.model === "pix2text" ? "pix2text" : "ibem" };
 }
 
-export function createOcrWorkflow({ capture, recognize, clipboard, isCalculationBusy, onChange, notify }) {
+export function createOcrWorkflow({ capture, recognize, clipboard, isCalculationBusy, onChange, notify,
+  onReview = () => {} }) {
   let state = { phase: "idle", message: "", preview: null };
   let image = null;
   let active = null;
@@ -92,14 +97,6 @@ export function createOcrWorkflow({ capture, recognize, clipboard, isCalculation
     return !active && !isCalculationBusy();
   }
 
-  async function clipboardSnapshot() {
-    try {
-      return await clipboard.readText();
-    } catch {
-      return undefined;
-    }
-  }
-
   async function run(action) {
     if (!canStart()) return;
     const operation = { controller: new AbortController(), committing: false };
@@ -111,6 +108,7 @@ export function createOcrWorkflow({ capture, recognize, clipboard, isCalculation
         const message = error instanceof Error ? error.message : "画像認識に失敗しました。";
         publish("error", message, state.preview);
         notify(message);
+        if (state.preview) onReview();
       }
     } finally {
       active = null;
@@ -118,64 +116,51 @@ export function createOcrWorkflow({ capture, recognize, clipboard, isCalculation
     }
   }
 
-  async function recognizeImage(operation, originalClipboard) {
+  async function recognizeImage(operation, captureMetrics = {}) {
     const { signal } = operation.controller;
+    const started = performance.now();
     const preview = {
       id: ++nextId,
       imageUrl: `data:image/png;base64,${Buffer.from(image).toString("base64")}`,
       text: "",
-      rawText: "",
     };
     publish("recognizing", "画像を認識しています。", preview);
     const output = await recognize(image, { signal });
     signal.throwIfAborted();
+    const recognized = performance.now();
     const result = reviewCandidate(output);
-    const candidate = { ...preview, text: result.text, rawText: result.rawText };
-    const message = "認識候補を画像と照合し、必要に応じて修正してコピーしてください。";
-    if (originalClipboard === undefined || !result.safe) {
-      publish("review", message, candidate);
-      notify(message);
-      return;
-    }
-    const currentClipboard = await clipboardSnapshot();
-    signal.throwIfAborted();
-    if (currentClipboard !== originalClipboard) {
-      const changed = currentClipboard === undefined
-        ? "クリップボードの状態を確認できません。認識候補は画面で確認できます。"
-        : "画像認識中にクリップボードのテキストが変わりました。認識候補は画面で確認できます。";
-      publish("review", changed, candidate);
-      notify(changed);
-      return;
-    }
-    operation.committing = true;
-    try {
-      await clipboard.writeText(result.text);
-    } catch {
-      publish("review", "自動コピーに失敗しました。認識候補を画面で確認してください。", candidate);
-      notify(state.message);
-      return;
-    }
-    publish("copied", "画像認識完了。認識候補をコピーしました。Math Study Log で確認・修正できます。", candidate);
-    notify(state.message);
+    const ready = performance.now();
+    const metrics = { ...output.metrics, ...captureMetrics, recognitionMs: recognized - started,
+      validationMs: ready - recognized };
+    publish("review", "認識候補を画像と照合し、必要に応じて修正してコピーしてください。",
+      { ...preview, ...result, metrics });
+    onReview();
   }
 
   return {
     getState: () => state,
     get busy() { return active !== null; },
     start: () => run(async (operation) => {
+      const started = performance.now();
       image = null;
       publish("selecting", "画面上で数式を囲んでください。Esc で中止できます。");
       const { signal } = operation.controller;
-      const originalClipboard = await clipboardSnapshot();
-      signal.throwIfAborted();
-      const selected = await capture.select({ signal });
+      const metrics = {};
+      const selected = await capture.select({ signal,
+        onOverlayReady: () => { metrics.overlayMs = performance.now() - started; },
+        onSelection: () => { metrics.selectionAt = performance.now(); },
+      });
       signal.throwIfAborted();
       if (!selected) {
         publish("idle", "範囲選択を中止しました。");
         return;
       }
       image = selected;
-      await recognizeImage(operation, originalClipboard);
+      const { selectionAt, overlayMs } = metrics;
+      await recognizeImage(operation, {
+        overlayMs,
+        captureMs: selectionAt === undefined ? undefined : performance.now() - selectionAt,
+      });
     }),
     retry(id) {
       if (!image || state.preview?.id !== id) return;
@@ -185,6 +170,7 @@ export function createOcrWorkflow({ capture, recognize, clipboard, isCalculation
       const preview = state.preview;
       if (!preview || preview.id !== id) return;
       return run(async (operation) => {
+        const started = performance.now();
         let validated;
         try {
           validated = validateClipboardText(text);
@@ -194,7 +180,10 @@ export function createOcrWorkflow({ capture, recognize, clipboard, isCalculation
         }
         operation.committing = true;
         await clipboard.writeText(validated.text);
-        publish("copied", "認識候補をコピーしました。", { ...preview, text: validated.text });
+        const copyMs = performance.now() - started;
+        const { overlayMs = 0, captureMs = 0, recognitionMs = 0, validationMs = 0 } = preview.metrics ?? {};
+        publish("copied", "認識候補をコピーしました。", { ...preview, text: validated.text,
+          metrics: { ...preview.metrics, copyMs, processingMs: overlayMs + captureMs + recognitionMs + validationMs + copyMs } });
       });
     },
     cancel() {

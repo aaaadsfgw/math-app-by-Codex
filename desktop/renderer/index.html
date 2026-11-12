@@ -28,10 +28,17 @@
       <form id="ocr-form" hidden>
         <img id="ocr-image" alt="画面で選択した問題文">
         <p id="ocr-preview-note" class="muted">計算する前に、読み取った内容を元の画像と照らし合わせてください。</p>
-        <label for="ocr-draft">認識候補</label>
+        <p id="ocr-model-used" class="muted" hidden></p>
+        <dl id="ocr-fields" hidden>
+          <dt>問題番号</dt><dd id="ocr-label"></dd>
+          <dt>指示文</dt><dd id="ocr-instruction"></dd>
+          <dt>数式</dt><dd><output id="ocr-formula" class="mono"></output></dd>
+        </dl>
+        <ul id="ocr-warnings" aria-label="認識時の警告" hidden></ul>
+        <label for="ocr-draft">コピーする問題文</label>
         <textarea id="ocr-draft" class="mono" maxlength="4096" rows="3" required aria-describedby="ocr-preview-note"></textarea>
         <details id="ocr-original" hidden>
-          <summary>認識時の出力</summary>
+          <summary id="ocr-raw-title">認識時の出力</summary>
           <pre id="ocr-raw" class="mono"></pre>
         </details>
         <div class="ocr-actions">
@@ -76,6 +83,13 @@
         </span>
       </form>
       <label class="checkbox-row"><input id="keep-in-tray" type="checkbox" disabled> ウィンドウを閉じても常駐する</label>
+      <label for="ocr-model">数式OCRモデル</label>
+      <select id="ocr-model" disabled>
+        <option value="auto">自動</option>
+        <option value="pix2text">Pix2Text MFR 1.5</option>
+        <option value="ibem">IBEM</option>
+      </select>
+      <p id="ocr-model-hint" class="muted" hidden>Pix2Textを使うには「Setup Math Study Log.cmd」を実行してください。</p>
       <p class="muted">完全に終了するには、通知領域のアイコンから「完全終了」を選びます。</p>
     </section>
   </main>

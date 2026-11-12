@@ -97,7 +97,7 @@ function overlayWindow(BrowserWindow, bounds) {
   return window;
 }
 
-async function selectRegion({ BrowserWindow, ipcMain, screen, signal }) {
+async function selectRegion({ BrowserWindow, ipcMain, screen, signal, onOverlayReady, onSelection }) {
   let resolve;
   let reject;
   const promise = new Promise((resolveSelection, rejectSelection) => {
@@ -141,6 +141,7 @@ async function selectRegion({ BrowserWindow, ipcMain, screen, signal }) {
         throw new Error("同じモニター内で範囲を選択してください。");
       }
       active = false;
+      onSelection?.();
       resolve({ display, viewport, selection: validated.selectionCss });
     } catch (error) {
       fail(error);
@@ -179,6 +180,7 @@ async function selectRegion({ BrowserWindow, ipcMain, screen, signal }) {
       ready = true;
       const focused = [...overlays.values()].find(({ display }) => display.id === cursorDisplay.id);
       (focused ?? overlays.values().next().value).window.focus();
+      onOverlayReady?.();
     }).catch(fail);
     return await promise;
   } finally {
@@ -298,11 +300,11 @@ export function createScreenCapture({
 }) {
   let active = false;
   return Object.freeze({
-    async select({ signal } = {}) {
+    async select({ signal, onOverlayReady, onSelection } = {}) {
       if (active || signal?.aborted) return null;
       active = true;
       try {
-        const region = await selectRegion({ BrowserWindow, ipcMain, screen, signal });
+        const region = await selectRegion({ BrowserWindow, ipcMain, screen, signal, onOverlayReady, onSelection });
         if (!region || signal?.aborted) return null;
         return await captureRegion({ desktopCapturer, screen, region, captureWindows, signal });
       } catch (error) {
