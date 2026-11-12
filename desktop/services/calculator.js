@@ -22,6 +22,14 @@ export function createCalculator({ engine, clipboard, onChange, now = () => perf
     publish({ phase: "error", message: error.message, result });
   }
 
+  async function solve(mode, input, options) {
+    const outcome = await engine.run(mode, input, options);
+    if (outcome?.ok !== true || typeof outcome.answer !== "string" || !outcome.answer.trim()) {
+      throw new Error(outcome?.error || "検証済みの解答を得られませんでした。");
+    }
+    return { answer: outcome.answer, kind: outcome.kind, conditions: outcome.conditions };
+  }
+
   async function calculate(mode, question) {
     const shortcut = mode === "shortcut";
     if (stopped || busy() || (shortcut && now() - lastShortcutFinished < SHORTCUT_COOLDOWN_MS)) return false;
@@ -36,11 +44,8 @@ export function createCalculator({ engine, clipboard, onChange, now = () => perf
         throw new Error(shortcut ? "クリップボードにテキストの問題がありません。" : "数式を入力してください。");
       }
 
-      const outcome = await engine.run(mode, text);
+      const outcome = await solve(mode, text);
       if (stopped) return false;
-      if (outcome?.ok !== true || typeof outcome.answer !== "string" || !outcome.answer.trim()) {
-        throw new Error(outcome?.error || "検証済みの解答を得られませんでした。");
-      }
 
       if (shortcut) {
         const current = await clipboard.readText();
@@ -52,7 +57,7 @@ export function createCalculator({ engine, clipboard, onChange, now = () => perf
       publish({
         phase: "success",
         message: shortcut ? "計算完了。クリップボードにコピーしました。" : "計算完了。解答を検証しました。",
-        result: { id: ++nextResultId, answer: outcome.answer, kind: outcome.kind, conditions: outcome.conditions },
+        result: { id: ++nextResultId, ...outcome },
       });
     } catch (error) {
       failure(error);
@@ -75,6 +80,10 @@ export function createCalculator({ engine, clipboard, onChange, now = () => perf
     },
     solveManual: (text) => calculate("manual", text),
     solveClipboard: () => calculate("shortcut"),
+    calculateOcr(problemInput, { signal } = {}) {
+      if (stopped || busy()) throw new Error("計算エンジンは使用中か終了しています。");
+      return solve("ocr", problemInput, { signal });
+    },
     async copy(resultId) {
       const { result } = state;
       if (stopped || busy() || !result || result.id !== resultId) return;

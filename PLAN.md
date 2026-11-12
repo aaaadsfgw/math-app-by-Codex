@@ -12,9 +12,10 @@ diagram-based geometry, and proof generation are explicitly out of scope. The
 single acquisition-only exception permits local transcription of a tightly
 cropped, machine-printed image containing exactly one formula and, optionally,
 one or two short Japanese problem-number/instruction lines above it into
-editable structured fields. OCR never solves or verifies mathematics, and the
-existing deterministic solver receives the fields only after explicit user
-confirmation.
+editable structured fields. OCR transcribes input. Chrome requires explicit
+confirmation before passing these fields to the deterministic solver. On
+Windows, the desktop workflow may pass the fields directly after validating
+the selected input and screening for ambiguity.
 
 ## Constraints
 
@@ -27,8 +28,9 @@ confirmation.
   and fail without submitting or solving when neither provider succeeds. The
   separate Japanese recognizer is packaged WASM-only and may receive only the
   bounded upper regions isolated by the conservative segmenter.
-- OCR output must remain visibly untrusted and editable until the user confirms
-  it; recognition alone must never invoke a solver or create verified history.
+- Keep OCR output visibly editable and distinguish transcription from
+  mathematical verification. Chrome requires confirmation. Windows may solve
+  automatically after a user-selected capture meets the desktop checks.
 - Unsupported or ambiguous input must return a clear limitation instead of a
   guessed answer.
 - Existing history records must continue to load.

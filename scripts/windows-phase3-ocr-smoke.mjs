@@ -170,7 +170,7 @@ async function smoke() {
       if (complete) {
         await workflow.copy(preview.id, preview.text);
         assert.equal(await clip.readText(), preview.text);
-        assert.equal(workflow.getState().phase, "copied");
+        assert.match(workflow.getState().message, /問題文をクリップボードにコピー/u);
       }
       if (id === "04-arithmetic") {
         await press(calculationKey);

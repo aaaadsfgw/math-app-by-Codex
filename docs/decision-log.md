@@ -1044,3 +1044,19 @@ printed formula with optional short context. Show the original capture and
 retain the raw LaTeX. Treat even a syntactically valid candidate as unconfirmed
 until the explicit copy action. The independent calculation shortcut continues
 to use the deterministic JavaScript workflow and its verification requirements.
+
+## D-041: Automate verified Windows OCR calculations
+
+**Status:** accepted
+**Date:** 2026-11-12
+
+The user-selected Windows capture authorizes a direct worker call only after
+the Windows workflow validates the recognized structure and screens for
+unresolved warnings. Chrome keeps its explicit confirmation boundary.
+Store the transcription separately from the submitted problem and verified
+answer. A manual correction can start a new calculation from the preview.
+
+Guard an automatic write with the Windows clipboard sequence and owner
+captured before screen selection. Compare and write under the same native
+clipboard lock. Keep verified results available for explicit copy when the
+clipboard changed. Cancel outstanding work before it can reach the write.

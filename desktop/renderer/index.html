@@ -20,14 +20,23 @@
     </header>
 
     <section aria-labelledby="ocr-heading">
-      <h2 id="ocr-heading">画像から問題文を取り込む</h2>
-      <p id="ocr-shortcut-hint" class="muted"><kbd>Ctrl+Shift+X</kbd> を押し、画面上の問題文をドラッグで囲みます。</p>
+      <h2 id="ocr-heading">画像から計算する</h2>
+      <p id="ocr-shortcut-hint" class="muted"><kbd>Ctrl+Shift+X</kbd> を押し、画面上の問題をドラッグで囲みます。解答が検証できると自動でコピーします。</p>
       <p id="ocr-shortcut-error" role="alert" hidden></p>
       <p id="ocr-status" role="status" hidden></p>
       <p id="ocr-error" role="alert" hidden></p>
       <form id="ocr-form" hidden>
         <img id="ocr-image" alt="画面で選択した問題文">
-        <p id="ocr-preview-note" class="muted">計算する前に、読み取った内容を元の画像と照らし合わせてください。</p>
+        <div id="ocr-result" hidden>
+          <h3>画像の計算結果</h3>
+          <p id="ocr-result-kind" class="muted"></p>
+          <pre id="ocr-answer" class="mono"></pre>
+          <ul id="ocr-conditions" aria-label="解答の条件" hidden></ul>
+        </div>
+        <div id="ocr-submission" hidden>
+          <h3>計算エンジンに渡した問題文</h3>
+          <pre id="ocr-submitted" class="mono"></pre>
+        </div>
         <p id="ocr-model-used" class="muted" hidden></p>
         <dl id="ocr-fields" hidden>
           <dt>問題番号</dt><dd id="ocr-label"></dd>
@@ -35,15 +44,18 @@
           <dt>数式</dt><dd><output id="ocr-formula" class="mono"></output></dd>
         </dl>
         <ul id="ocr-warnings" aria-label="認識時の警告" hidden></ul>
-        <label for="ocr-draft">コピーする問題文</label>
+        <label for="ocr-draft">認識内容を修正</label>
+        <p id="ocr-preview-note" class="muted">画像と照らし合わせ、読み取り違いがあれば修正してください。</p>
         <textarea id="ocr-draft" class="mono" maxlength="4096" rows="3" required aria-describedby="ocr-preview-note"></textarea>
         <details id="ocr-original" hidden>
           <summary id="ocr-raw-title">認識時の出力</summary>
           <pre id="ocr-raw" class="mono"></pre>
         </details>
         <div class="ocr-actions">
-          <button id="ocr-copy" class="primary" type="submit" disabled>問題文をコピー</button>
+          <button id="ocr-recalculate" class="primary" type="submit" disabled>再計算</button>
+          <button id="ocr-copy-answer" type="button" disabled hidden>解答をコピー</button>
           <button id="ocr-retry" type="button" disabled>再認識</button>
+          <button id="ocr-copy" type="button" disabled>問題文をコピー</button>
         </div>
       </form>
       <button id="ocr-cancel" type="button" hidden>キャンセル</button>

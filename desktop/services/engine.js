@@ -9,12 +9,13 @@ export function createEngine({ timeoutMs = SOLVE_TIMEOUT_MS, WorkerType = Worker
   let closed = false;
 
   return {
-    async run(mode, text) {
+    async run(mode, input, { signal } = {}) {
       if (closed || cancelActive) throw new Error("計算エンジンは使用中か終了しています。");
+      signal?.throwIfAborted();
       return new Promise((resolve, reject) => {
         const worker = new WorkerType(WORKER_URL, {
           execArgv: [],
-          workerData: { mode, text },
+          workerData: { mode, input },
           resourceLimits: { maxOldGenerationSizeMb: 96, maxYoungGenerationSizeMb: 16, stackSizeMb: 4 },
         });
         let finishing = false;
@@ -22,6 +23,7 @@ export function createEngine({ timeoutMs = SOLVE_TIMEOUT_MS, WorkerType = Worker
           if (finishing) return;
           finishing = true;
           clearTimeout(timer);
+          signal?.removeEventListener("abort", abort);
           // Wait for termination before allowing a replacement worker.
           try {
             await worker.terminate();
@@ -32,7 +34,8 @@ export function createEngine({ timeoutMs = SOLVE_TIMEOUT_MS, WorkerType = Worker
           if (error) reject(error);
           else resolve(result);
         };
-        cancelActive = () => void finish(new Error("計算を中止しました。"));
+        const abort = () => void finish(new Error("計算を中止しました。"));
+        cancelActive = abort;
         const timer = setTimeout(
           () => void finish(new Error("計算が制限時間内に完了しませんでした。")),
           timeoutMs,
@@ -40,6 +43,8 @@ export function createEngine({ timeoutMs = SOLVE_TIMEOUT_MS, WorkerType = Worker
         worker.once("message", (result) => void finish(null, result));
         worker.once("error", (cause) => void finish(new Error("計算ワーカーでエラーが発生しました。", { cause })));
         worker.once("exit", () => void finish(new Error("計算ワーカーが予期せず終了しました。")));
+        signal?.addEventListener("abort", abort, { once: true });
+        if (signal?.aborted) abort();
       });
     },
     close() {

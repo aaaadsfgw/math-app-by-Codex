@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld("mathStudyLog", {
   getState: () => ipcRenderer.invoke("desktop:state"),
   solve: (text) => ipcRenderer.invoke("desktop:solve", text),
   copy: (id) => ipcRenderer.invoke("desktop:copy", id),
+  recalculateOcr: (id, text) => ipcRenderer.invoke("desktop:ocr-recalculate", id, text),
+  copyOcrAnswer: (id) => ipcRenderer.invoke("desktop:ocr-copy-answer", id),
   copyOcr: (id, text) => ipcRenderer.invoke("desktop:ocr-copy", id, text),
   retryOcr: (id) => ipcRenderer.invoke("desktop:ocr-retry", id),
   cancelOcr: () => ipcRenderer.invoke("desktop:ocr-cancel"),

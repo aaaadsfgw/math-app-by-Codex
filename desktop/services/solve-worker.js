@@ -27,7 +27,7 @@ function failure(message) {
   return { ok: false, error: message.replace(/ページから取得またはOCRも利用できます。$/u, "") };
 }
 
-async function calculate({ mode, text }) {
+async function calculate({ mode, input }) {
   if (mode === "initialize") {
     if (simplifySymbolic("1+1") !== "2") throw new Error("計算エンジンを初期化できませんでした。");
     return { ok: true };
@@ -38,13 +38,15 @@ async function calculate({ mode, text }) {
   if (mode === "shortcut") {
     ({ workflow, clipboardOutput: answer } = await runShortcutWorkflow({
       getSelectionText: () => "",
-      readClipboardText: () => text,
+      readClipboardText: () => input,
       // A verified candidate is returned to main, which owns the system clipboard.
       writeClipboardText: () => {},
       symbolicOperations,
     }));
-  } else if (mode === "manual") {
-    workflow = await solveWorkflow(text, { symbolicOperations });
+  } else if (mode === "manual" || mode === "ocr") {
+    // Only the Windows main process can select the OCR route. It has already
+    // checked the layout and input, or accepted an explicit user correction.
+    workflow = await solveWorkflow(input, { symbolicOperations, ocrConfirmed: mode === "ocr" });
     answer = shortcutClipboardOutput(workflow);
   } else {
     throw new Error("計算モードが正しくありません。");

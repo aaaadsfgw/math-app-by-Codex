@@ -2,6 +2,20 @@
 
 Last updated: 2026-11-12
 
+## 2026-11-12: Windows OCR Phase 4
+
+- Windows capture now validates the OCR candidate, solves directly in the
+  shared worker, and automatically writes the verified answer. The preview
+  shows the submitted problem, result, conditions, and any OCR warnings.
+- A Windows clipboard sequence and owner check under the same lock as the
+  write protects concurrent clipboard changes. Corrections can be recalculated
+  from the preview and workers can be cancelled before the write starts.
+- The installed app completed a real Ctrl+Shift+X capture while minimized.
+  A separate Windows tray smoke test passed all seven real captures and
+  pasted their answers into another process. Both restored the clipboard.
+  See `docs/windows-ocr-phase4.md` for results and timings.
+- 996 automated tests and the project check passed.
+
 ## 2026-11-12: Windows OCR Phase 3
 
 - Integrated the pinned Pix2Text MFR 1.5 CPU model with verified setup,

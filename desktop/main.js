@@ -7,6 +7,7 @@ import {
 import { createCalculator } from "./services/calculator.js";
 import { createEngine, MAX_INPUT_LENGTH } from "./services/engine.js";
 import { createLocalOcr, registerOcrScheme } from "./services/local-ocr.js";
+import { createOcrClipboard } from "./services/ocr-clipboard.js";
 import { createOcrWorkflow } from "./services/ocr-workflow.js";
 import { loadPreferences, savePreferences, validOcrModel, validShortcutKey } from "./services/preferences.js";
 import { createPix2TextService } from "./services/pix2text.js";
@@ -87,8 +88,10 @@ function openWindow() {
   window.once("ready-to-show", () => window?.show());
   window.on("close", (event) => {
     if (quitting) return;
-    if (ocr?.busy) ocr.cancel();
-    if (!preferences.keepInTray) return;
+    if (!preferences.keepInTray) {
+      if (ocr?.busy) ocr.cancel();
+      return;
+    }
     event.preventDefault();
     window.hide();
   });
@@ -168,6 +171,10 @@ function registerIpc() {
     (id) => !ocr?.busy && calculator.copy(id));
   handle("ocr-copy", ([id, text, ...rest]) => rest.length === 0 && Number.isSafeInteger(id)
     && typeof text === "string" && text.length <= MAX_INPUT_LENGTH, (id, text) => ocr?.copy(id, text));
+  handle("ocr-recalculate", ([id, text, ...rest]) => rest.length === 0 && Number.isSafeInteger(id)
+    && typeof text === "string" && text.length <= MAX_INPUT_LENGTH, (id, text) => ocr?.recalculate(id, text));
+  handle("ocr-copy-answer", ([id, ...rest]) => rest.length === 0 && Number.isSafeInteger(id),
+    (id) => ocr?.copyAnswer(id));
   handle("ocr-retry", ([id, ...rest]) => rest.length === 0 && Number.isSafeInteger(id), (id) => ocr?.retry(id));
   handle("ocr-cancel", (args) => args.length === 0, () => ocr?.cancel());
   handle("keep-in-tray", ([enabled, ...rest]) => rest.length === 0 && typeof enabled === "boolean",
@@ -193,7 +200,7 @@ async function start() {
   tray.setToolTip(APP_NAME);
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Math Study Log を開く", click: openWindow },
-    { label: "画像認識を中止", click: () => ocr?.cancel() },
+    { label: "画像からの計算を中止", click: () => ocr?.cancel() },
     { type: "separator" },
     { label: "完全終了", click: () => app.quit() },
   ]));
@@ -218,7 +225,8 @@ async function start() {
           : preferences.ocrModel;
         return localOcr.recognize(png, { ...options, model });
       },
-      clipboard,
+      calculator,
+      clipboard: createOcrClipboard(clipboard),
       isCalculationBusy: () => ["starting", "working"].includes(calculator.getState().phase),
       onChange: publishState,
       notify,

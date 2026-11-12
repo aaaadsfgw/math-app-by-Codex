@@ -21,8 +21,9 @@ After updating the source, quit from the tray and open the shortcut again.
 If the checkout moves, run setup from its new location.
 
 Press **Ctrl+Shift+X** and drag around one printed problem to capture it with
-local OCR. Compare the candidate with the original image, edit the problem if
-needed, and select **問題文をコピー**.
+local OCR. When the input passes validation and the engine verifies an answer,
+Windows copies the answer automatically. The app keeps the source image and
+editable transcription available for review and recalculation.
 
 The app can calculate offline. Copy a text problem in any Windows app and press
 **Ctrl+Shift+Y**. A verified answer replaces the clipboard text. The desktop

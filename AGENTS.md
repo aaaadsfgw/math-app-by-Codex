@@ -22,7 +22,10 @@ previously submitted extension.
   proof generation. The sole image-input exception is a user-selected, tightly
   cropped, machine-printed single formula. Local OCR may produce an untrusted,
   editable candidate, but that candidate may reach the existing deterministic
-  solver only after an explicit user confirmation. Handwriting, page OCR,
+  solver in Chrome only after an explicit user confirmation. On Windows an
+  explicit screen selection may start deterministic solving after the desktop
+  workflow validates the candidate and checks for unresolved OCR ambiguity.
+  Handwriting, page OCR,
   photographs, prose, tables, graphs, diagrams, and spatial inference remain
   outside scope.
 
