@@ -1,0 +1,55 @@
+{
+  "model": "PP-FormulaNet_plus-M",
+  "device": "cpu",
+  "provider": null,
+  "context": true,
+  "context_mode": "standalone-full-image",
+  "threads": 1,
+  "runtime": {
+    "paddlepaddle": "3.3.1",
+    "paddleocr": "3.7.0",
+    "paddlex": "3.7.2",
+    "numpy": "2.3.5",
+    "Pillow": "13.0.0"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.12",
+  "model_id": "712e6e2e4c313b1ea163be5c350127b82662c58d",
+  "fixture_sha256": "805cd9dbba49f27603a6d98be8d53b590a999b41679d627984fd107a1e0a8eed",
+  "load_ms": 9321.74629997462,
+  "baseline_rss_bytes": 25206784,
+  "peak_rss_bytes": 1160847360,
+  "memory_scope": "Windows process PeakWorkingSetSize; excludes GPU VRAM",
+  "rows": [
+    {
+      "id": "01-labelled-fraction",
+      "text": "\\begin{aligned}&(1)\\\\ &\\frac{x^{2}-5x+6}{x-2}\\\\ \\end{aligned}",
+      "elapsed_ms": 3842.441799934022
+    },
+    {
+      "id": "03-labelled-product-fraction",
+      "text": "\\begin{aligned}&(1)\\\\ &\\frac{2ab(a+b)}{4a}\\\\ \\end{aligned}",
+      "elapsed_ms": 2801.9581000553444
+    },
+    {
+      "id": "28-japanese-expand",
+      "text": "\\begin{aligned}&(2)\\\\ &\\overset{ 次 \\mathcal{O} 式专展開乚丘忘 \\mathrm{、}}{\\left(\\left.x+2\\right.\\right)\\left(\\left.x-3\\right.\\right)}\\\\ \\end{aligned}",
+      "elapsed_ms": 4219.004000071436
+    },
+    {
+      "id": "29-japanese-equation",
+      "text": "\\begin{aligned}&(3)\\\\ &\\begin{aligned}\\\\ & 次 \\mathcal{O} 方程式  左解  吉忘  忘 \\begin{aligned}\\\\ &1\\\\&3x-7=5\\\\ &\\end{aligned}\\\\ &\\end{aligned}\\\\ \\end{aligned}",
+      "elapsed_ms": 4063.016999978572
+    },
+    {
+      "id": "30-japanese-derivative",
+      "text": "\\begin{aligned}& 次 \\mathcal{O} 関数  忄微 \\mathcal{O} 乚左占认 \\\\&f(x)=\\sin(3x^2)\\\\ \\end{aligned}",
+      "elapsed_ms": 3587.5056999502704
+    },
+    {
+      "id": "32-dpi-product-fraction",
+      "text": "\\begin{aligned}&(1)\\\\ &\\frac{2ab(a+b)}{4a}\\\\ \\end{aligned}",
+      "elapsed_ms": 2885.386300040409
+    }
+  ]
+}

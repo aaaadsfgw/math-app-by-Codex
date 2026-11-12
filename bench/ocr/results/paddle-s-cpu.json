@@ -1,0 +1,194 @@
+{
+  "model": "PP-FormulaNet_plus-S",
+  "device": "cpu",
+  "provider": null,
+  "context": false,
+  "threads": 1,
+  "runtime": {
+    "paddlepaddle": "3.3.1",
+    "paddleocr": "3.7.0",
+    "paddlex": "3.7.2",
+    "numpy": "2.3.5",
+    "Pillow": "13.0.0"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.12",
+  "model_id": "3d46f557e3a1752f4bf81202395af3b5ecfadfd2",
+  "fixture_sha256": "805cd9dbba49f27603a6d98be8d53b590a999b41679d627984fd107a1e0a8eed",
+  "load_ms": 8950.124999973923,
+  "baseline_rss_bytes": 25018368,
+  "peak_rss_bytes": 716140544,
+  "memory_scope": "Windows process PeakWorkingSetSize; excludes GPU VRAM",
+  "rows": [
+    {
+      "id": "01-labelled-fraction",
+      "text": "\\frac{x^{2}-5x+6}{x-2}",
+      "elapsed_ms": 901.9972999813035
+    },
+    {
+      "id": "02-implicit-products",
+      "text": "3a(2a-b)-2b(a+3b)",
+      "elapsed_ms": 611.6331999655813
+    },
+    {
+      "id": "03-labelled-product-fraction",
+      "text": "\\frac{2a b(a+b)}{4a}",
+      "elapsed_ms": 608.8424000190571
+    },
+    {
+      "id": "04-arithmetic",
+      "text": "2+3",
+      "elapsed_ms": 501.431499957107
+    },
+    {
+      "id": "05-signed-arithmetic",
+      "text": "(+19)+(-14)",
+      "elapsed_ms": 574.7508000349626
+    },
+    {
+      "id": "06-fraction-equation",
+      "text": "\\frac{x}{2}=3",
+      "elapsed_ms": 603.0237999511883
+    },
+    {
+      "id": "07-quadratic-equation",
+      "text": "2x^{2}-7x+3=0",
+      "elapsed_ms": 578.0776999890804
+    },
+    {
+      "id": "08-cubic-polynomial",
+      "text": "x^{3}-3x^{2}+2x",
+      "elapsed_ms": 620.6525000743568
+    },
+    {
+      "id": "09-grouped-exponent",
+      "text": "\\left(x+1\\right)^{2}",
+      "elapsed_ms": 534.0402000583708
+    },
+    {
+      "id": "10-negative-exponent",
+      "text": "x^{-2}",
+      "elapsed_ms": 524.9595999484882
+    },
+    {
+      "id": "11-power-grouping",
+      "text": "-(x-1)^{2}",
+      "elapsed_ms": 569.8296000482515
+    },
+    {
+      "id": "12-radical",
+      "text": "\\sqrt{x^{2}+1}",
+      "elapsed_ms": 581.8256000056863
+    },
+    {
+      "id": "13-cube-root",
+      "text": "\\sqrt{8}\\sqrt{\\frac{8}{27}}",
+      "elapsed_ms": 688.8134999899194
+    },
+    {
+      "id": "14-radical-sign",
+      "text": "\\sqrt{2}-\\sqrt{3}",
+      "elapsed_ms": 609.9330000579357
+    },
+    {
+      "id": "15-nested-fractions",
+      "text": "\\frac{1+\\frac{1}{x}}{x+2}",
+      "elapsed_ms": 686.5861000260338
+    },
+    {
+      "id": "16-integral",
+      "text": "\\int2x2\\mathrm{c o s}\\left(x^{2}\\right)x^",
+      "elapsed_ms": 709.7710999660194
+    },
+    {
+      "id": "17-definite-integral",
+      "text": "\\int_{0}^{1}(x^{2}+1)d x",
+      "elapsed_ms": 676.4627000084147
+    },
+    {
+      "id": "18-integral-fraction",
+      "text": "\\int\\frac{1}{x}d x",
+      "elapsed_ms": 575.7852999959141
+    },
+    {
+      "id": "19-limit-removable",
+      "text": "\\operatorname*{l i m}_{x\\:\\to\\:1}\\frac{x^{2}-1}{x-1}",
+      "elapsed_ms": 839.6466000704095
+    },
+    {
+      "id": "20-limit-right",
+      "text": "\\operatorname*{l i m}_{x\\to1^{+}}\\frac{1}{x-1}",
+      "elapsed_ms": 789.8865999886766
+    },
+    {
+      "id": "21-limit-infinity",
+      "text": "\\operatorname*{l i m}_{x\\to\\ \\infty}\\frac{2x^{2}+1}{x^{2}-3}",
+      "elapsed_ms": 870.0150001095608
+    },
+    {
+      "id": "22-trig-identity",
+      "text": "{\\sin{^2}}x+{\\cos{^2}}x=1",
+      "elapsed_ms": 716.7766999918967
+    },
+    {
+      "id": "23-tangent",
+      "text": "\\operatorname{t a n}(\\frac{\\pi}{4}).",
+      "elapsed_ms": 641.3830000674352
+    },
+    {
+      "id": "24-log-base",
+      "text": "\\operatorname{l o g}_{2}\\ x(x-1)=3",
+      "elapsed_ms": 646.2734000524506
+    },
+    {
+      "id": "25-log-natural",
+      "text": "\\operatorname{l n}\\left(y\\ \\ \\ \\ )\\ \\ =\\mathrm{l n}x+\\mathrm{l n}y",
+      "elapsed_ms": 793.0386000080034
+    },
+    {
+      "id": "26-inequality",
+      "text": "x^{2}-4\\leq0",
+      "elapsed_ms": 571.5884000528604
+    },
+    {
+      "id": "27-explicit-products",
+      "text": "2\\times(-3)+4",
+      "elapsed_ms": 580.7889000279829
+    },
+    {
+      "id": "28-japanese-expand",
+      "text": "\\left({x+2}\\right)\\left({x-3}\\right)",
+      "elapsed_ms": 645.7663999171928
+    },
+    {
+      "id": "29-japanese-equation",
+      "text": "3x-7=5",
+      "elapsed_ms": 544.7161999763921
+    },
+    {
+      "id": "30-japanese-derivative",
+      "text": "f(x)=\\operatorname{s i n}(3x^{2})",
+      "elapsed_ms": 699.5264999568462
+    },
+    {
+      "id": "31-short-fraction-bar",
+      "text": "\\frac{a-b}{2}",
+      "elapsed_ms": 559.1835000086576
+    },
+    {
+      "id": "32-dpi-product-fraction",
+      "text": "\\frac{2a b(a+b)}{4a}",
+      "elapsed_ms": 635.9977000392973
+    },
+    {
+      "id": "33-dpi-implicit-products",
+      "text": "3a(2a-b)-2b(a+3b)",
+      "elapsed_ms": 813.1652999436483
+    },
+    {
+      "id": "34-exponential-equation",
+      "text": "2^{t+1}=8",
+      "elapsed_ms": 587.6825000159442
+    }
+  ]
+}

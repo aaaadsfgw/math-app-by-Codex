@@ -1,0 +1,82 @@
+{
+  "model": "IBEM-im2typst",
+  "device": "cpu",
+  "provider": "wasm",
+  "adapter": null,
+  "threads": 1,
+  "runtime": "45.2.3",
+  "chromium": "156.0.8078.80",
+  "platform": "win32",
+  "os": "10.0.26200",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "logical_cores": 16,
+  "total_memory_bytes": 34075979776,
+  "model_id": "ibem-semantic-length33-phase10-step002000",
+  "weight_artifacts": {
+    "encoder.int8.onnx": {
+      "bytes": 11039884,
+      "sha256": "6c889df95eb503c3debefad306e3bdc1f4d4a4f1d217f89a664d5710262bdab1"
+    },
+    "decoder-step.int8.onnx": {
+      "bytes": 7541001,
+      "sha256": "fea2c1792dcfbb8b9e4ed3215d9591fa8ad5f99bd626bc9862355c666083eecf"
+    }
+  },
+  "fixture_sha256": "805cd9dbba49f27603a6d98be8d53b590a999b41679d627984fd107a1e0a8eed",
+  "load_ms": null,
+  "baseline_rss_bytes": 221863936,
+  "peak_rss_bytes": 986427392,
+  "memory_scope": "sampled sum of working sets across Electron processes; shared pages can be counted more than once",
+  "context": true,
+  "context_mode": "windows-mixed-pipeline",
+  "rows": [
+    {
+      "id": "01-labelled-fraction",
+      "text": "",
+      "error": "MIXED_OCR_MULTIPLE_FORMULAS: 上側にも数式らしい領域があり、1つの数式を特定できません。",
+      "elapsed_ms": 314.6308
+    },
+    {
+      "id": "03-labelled-product-fraction",
+      "text": "⟦mat(⟦→(@)⟧ @ > A q ; a,)⟧",
+      "raw_text": "mat( arrow( \\@ ) \\@ > A q ; a , )",
+      "label": "(1)",
+      "instruction": "2の( + の)",
+      "provider": "wasm",
+      "elapsed_ms": 2342.0817
+    },
+    {
+      "id": "28-japanese-expand",
+      "text": "( X + 2 ) ( X - 3 )",
+      "raw_text": "\\( X + 2 \\) \\( X - 3 \\)",
+      "label": "(2)",
+      "instruction": "次の式を展開しなさい",
+      "provider": "wasm",
+      "elapsed_ms": 2865.0382999999997
+    },
+    {
+      "id": "29-japanese-equation",
+      "text": "3*X - 7 = s",
+      "raw_text": "3 X - 7 = s",
+      "label": "(3)",
+      "instruction": "次の方程式を解きなさい",
+      "provider": "wasm",
+      "elapsed_ms": 2326.2457000000004
+    },
+    {
+      "id": "30-japanese-derivative",
+      "text": "⟦f(X)⟧ = s i ⟦n(3*X ^2)⟧",
+      "raw_text": "f \\( X \\) = s i n \\( 3 X ^( 2 ) \\)",
+      "label": "",
+      "instruction": "次の関数を微分しなさい",
+      "provider": "wasm",
+      "elapsed_ms": 2417.8859
+    },
+    {
+      "id": "32-dpi-product-fraction",
+      "text": "",
+      "error": "MIXED_OCR_LAYOUT_MULTIPLE_FORMULAS: 独立した行領域が多く、1つの数式を安全に特定できません。",
+      "elapsed_ms": 135.98899999999958
+    }
+  ]
+}

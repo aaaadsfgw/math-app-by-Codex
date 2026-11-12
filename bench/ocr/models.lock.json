@@ -1,0 +1,91 @@
+{
+  "PP-FormulaNet_plus-S": {
+    "revision": "3d46f557e3a1752f4bf81202395af3b5ecfadfd2",
+    "license": "Apache-2.0",
+    "files": {
+      "inference.json": {
+        "bytes": 506956,
+        "sha256": "01238434e33df83588e2627f350559b576e34551d2b2ffea148345032de56c00",
+        "url": "https://huggingface.co/PaddlePaddle/PP-FormulaNet_plus-S/resolve/3d46f557e3a1752f4bf81202395af3b5ecfadfd2/inference.json"
+      },
+      "inference.yml": {
+        "bytes": 2244564,
+        "sha256": "96062655d94c21d39274328dbc82c1a487e66addb8425f5a7fd5b7dfb2421ec3",
+        "url": "https://huggingface.co/PaddlePaddle/PP-FormulaNet_plus-S/resolve/3d46f557e3a1752f4bf81202395af3b5ecfadfd2/inference.yml"
+      },
+      "inference.pdiparams": {
+        "bytes": 256845006,
+        "sha256": "e464f94412feaa98f8791eacc84684f887b3569e30e80c52b8112e9cf7d4069b",
+        "url": "https://huggingface.co/PaddlePaddle/PP-FormulaNet_plus-S/resolve/3d46f557e3a1752f4bf81202395af3b5ecfadfd2/inference.pdiparams"
+      }
+    }
+  },
+  "PP-FormulaNet_plus-M": {
+    "revision": "712e6e2e4c313b1ea163be5c350127b82662c58d",
+    "license": "Apache-2.0",
+    "files": {
+      "inference.json": {
+        "bytes": 1130158,
+        "sha256": "8333a7f650766a748e273c550d278601dd19dfeee1c4b01038ff632f134d9884",
+        "url": "https://huggingface.co/PaddlePaddle/PP-FormulaNet_plus-M/resolve/712e6e2e4c313b1ea163be5c350127b82662c58d/inference.json"
+      },
+      "inference.yml": {
+        "bytes": 2244564,
+        "sha256": "87b5f3d7f2b2fe553627d77b37f496608ca150ebd0ef62d362591edca47b5538",
+        "url": "https://huggingface.co/PaddlePaddle/PP-FormulaNet_plus-M/resolve/712e6e2e4c313b1ea163be5c350127b82662c58d/inference.yml"
+      },
+      "inference.pdiparams": {
+        "bytes": 617064962,
+        "sha256": "f16ef9b5c8227da70d3ec969a5195f4d62c1154427b883f4d6cff07633654041",
+        "url": "https://huggingface.co/PaddlePaddle/PP-FormulaNet_plus-M/resolve/712e6e2e4c313b1ea163be5c350127b82662c58d/inference.pdiparams"
+      }
+    }
+  },
+  "Pix2Text-MFR-1.5": {
+    "revision": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+    "license": "MIT",
+    "files": {
+      "encoder_model.onnx": {
+        "bytes": 87510770,
+        "sha256": "080a3f660f08bc9ebcacdd96e34be6b6400f8c7e62d7cd0dd8251badc37f610b",
+        "url": "https://huggingface.co/breezedeus/pix2text-mfr-1.5/resolve/1cef9f0bdcd6a4c63df7de1311fb0894593340cc/encoder_model.onnx"
+      },
+      "decoder_model.onnx": {
+        "bytes": 32026253,
+        "sha256": "917deb98e91a0453c5f234f58a0f32f9fb037de8527c7eb4ed394daf9e692f2a",
+        "url": "https://huggingface.co/breezedeus/pix2text-mfr-1.5/resolve/1cef9f0bdcd6a4c63df7de1311fb0894593340cc/decoder_model.onnx"
+      },
+      "preprocessor_config.json": {
+        "bytes": 450,
+        "sha256": "36a945a7cc645688b9ef64dabae16979cf5f7c1c448569cc306694edc0598b9b",
+        "url": "https://huggingface.co/breezedeus/pix2text-mfr-1.5/resolve/1cef9f0bdcd6a4c63df7de1311fb0894593340cc/preprocessor_config.json"
+      },
+      "generation_config.json": {
+        "bytes": 211,
+        "sha256": "7363c031c6142d35a276815b0e285cc289dfb9f51d0b7c63de8f3ed65cc8d8ad",
+        "url": "https://huggingface.co/breezedeus/pix2text-mfr-1.5/resolve/1cef9f0bdcd6a4c63df7de1311fb0894593340cc/generation_config.json"
+      },
+      "tokenizer.json": {
+        "bytes": 113168,
+        "sha256": "4ffbeb2143e6a38324bb6111b7a8109530d38a076a8439aa5777535f0a32758a",
+        "url": "https://huggingface.co/breezedeus/pix2text-mfr-1.5/resolve/1cef9f0bdcd6a4c63df7de1311fb0894593340cc/tokenizer.json"
+      }
+    }
+  },
+  "pix2tex": {
+    "revision": "v0.0.1",
+    "license": "CC BY-NC-SA",
+    "files": {
+      "weights.pth": {
+        "bytes": 102113875,
+        "sha256": "a63d9141c53d266cb682fb5a8bd83bd5cbe283145e0e78ebdc0f895195a1dfaa",
+        "url": "https://github.com/lukas-blecher/LaTeX-OCR/releases/download/v0.0.1/weights.pth"
+      },
+      "image_resizer.pth": {
+        "bytes": 19441973,
+        "sha256": "1c3820659985ad142b526490bb25c23d977176ac2073591b3bddada692718458",
+        "url": "https://github.com/lukas-blecher/LaTeX-OCR/releases/download/v0.0.1/image_resizer.pth"
+      }
+    }
+  }
+}

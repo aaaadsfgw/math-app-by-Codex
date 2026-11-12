@@ -1,6 +1,21 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
+
+## 2026-11-12: Windows formula OCR model benchmark
+
+- Added 34 fixed formula fixtures and 40 PNGs with generation settings and
+  hashes. Ran the five requested models on Windows with isolated runtimes.
+- On the same formula-only CPU inputs, Pix2Text MFR 1.5 and
+  PP-FormulaNet_plus-M tied at 31/34 structural matches. The plus-S variant
+  reached 29/34 with the fastest warm CPU median among distribution candidates.
+- Recorded CPU, IBEM WebGPU, Pix2Text DirectML, full-image stress tests and
+  the current mixed Japanese pipeline. Selected Pix2Text CPU as the next
+  integration trial based on accuracy, runtime and the official ONNX release.
+- Saved per-case outputs, license and weight pins, regeneration steps and the
+  integration plan in `docs/ocr-model-benchmark.md` and `bench/ocr`.
+- All 957 automated tests and the static project check passed. Regenerating the
+  fixtures on the benchmark machine produced identical files.
 
 ## 2026-11-11: Windows screen selection and local OCR
 

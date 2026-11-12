@@ -1,0 +1,70 @@
+{
+  "model": "IBEM-im2typst",
+  "device": "cpu",
+  "provider": "wasm",
+  "adapter": null,
+  "threads": 1,
+  "runtime": "45.2.3",
+  "chromium": "156.0.8078.80",
+  "platform": "win32",
+  "os": "10.0.26200",
+  "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+  "logical_cores": 16,
+  "total_memory_bytes": 34075979776,
+  "model_id": "ibem-semantic-length33-phase10-step002000",
+  "weight_artifacts": {
+    "encoder.int8.onnx": {
+      "bytes": 11039884,
+      "sha256": "6c889df95eb503c3debefad306e3bdc1f4d4a4f1d217f89a664d5710262bdab1"
+    },
+    "decoder-step.int8.onnx": {
+      "bytes": 7541001,
+      "sha256": "fea2c1792dcfbb8b9e4ed3215d9591fa8ad5f99bd626bc9862355c666083eecf"
+    }
+  },
+  "fixture_sha256": "805cd9dbba49f27603a6d98be8d53b590a999b41679d627984fd107a1e0a8eed",
+  "load_ms": 578.7999999523163,
+  "baseline_rss_bytes": 450449408,
+  "peak_rss_bytes": 896598016,
+  "memory_scope": "sampled sum of working sets across Electron processes; shared pages can be counted more than once",
+  "context": true,
+  "context_mode": "standalone-full-image",
+  "rows": [
+    {
+      "id": "01-labelled-fraction",
+      "text": "⟦mat(( 1 ) ; x ^2 - 5*x + 6 ; x - 2)⟧",
+      "raw_text": "mat( \\( 1 \\) ; x ^( 2 ) - 5 x + 6 ; x - 2 )",
+      "elapsed_ms": 511.6999999284744
+    },
+    {
+      "id": "03-labelled-product-fraction",
+      "text": "((( 1 ))/(2 a ⟦b(a + b)⟧))",
+      "raw_text": "frac( \\( 1 \\) , 2 a b \\( a + b \\) )",
+      "elapsed_ms": 372.2000000476837
+    },
+    {
+      "id": "28-japanese-expand",
+      "text": "⟦mat(⟦mat(( 2 ) ;,,;,* σ)⟧ != ± ⟦overline(beta)⟧ ⟦overline(5)⟧ ⟦overline(5)⟧ | _( ⟦hat(beta)⟧ ),!= ± Ξ,;,( x + 2 ) ℘ ( x - 3 ))⟧",
+      "raw_text": "mat( mat( \\( 2 \\) ; , , ; , times sigma \\) != plus.minus overline( beta ) overline( 5 ) overline( 5 ) | _( hat( beta ) ) , != plus.minus Xi , ; , \\( x + 2 \\) ℘ \\( x - 3 ) )",
+      "elapsed_ms": 998
+    },
+    {
+      "id": "29-japanese-equation",
+      "text": "",
+      "error": "OCR_OUTPUT_POLICY_REJECTED: OCR出力が数式候補の安全条件を満たしません。",
+      "elapsed_ms": 872.1000000238419
+    },
+    {
+      "id": "30-japanese-derivative",
+      "text": "",
+      "error": "OCR_OUTPUT_POLICY_REJECTED: OCR出力が数式候補の安全条件を満たしません。",
+      "elapsed_ms": 1183
+    },
+    {
+      "id": "32-dpi-product-fraction",
+      "text": "⟦mat(( 1 ) ; 2 a ⟦b(a + b)⟧ ; A a)⟧",
+      "raw_text": "mat( \\( 1 \\) ; 2 a b \\( a + b \\) ; A a )",
+      "elapsed_ms": 488.2000000476837
+    }
+  ]
+}

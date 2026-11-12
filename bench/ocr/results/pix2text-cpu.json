@@ -1,0 +1,192 @@
+{
+  "model": "Pix2Text-MFR-1.5",
+  "device": "cpu",
+  "context": false,
+  "threads": 1,
+  "runtime": {
+    "onnxruntime": "1.31.1",
+    "tokenizers": "0.23.3",
+    "numpy": "2.2.6",
+    "Pillow": "12.2.0"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.12",
+  "model_id": "1cef9f0bdcd6a4c63df7de1311fb0894593340cc",
+  "fixture_sha256": "805cd9dbba49f27603a6d98be8d53b590a999b41679d627984fd107a1e0a8eed",
+  "load_ms": 3889.5418000174686,
+  "baseline_rss_bytes": 24883200,
+  "peak_rss_bytes": 254971904,
+  "memory_scope": "Windows process PeakWorkingSetSize; excludes GPU VRAM",
+  "rows": [
+    {
+      "id": "01-labelled-fraction",
+      "text": "\\frac { x ^ { 2 } - 5 x + 6 } { x - 2 }",
+      "elapsed_ms": 796.9412999227643
+    },
+    {
+      "id": "02-implicit-products",
+      "text": "3 a ( 2 a - b ) - 2 b ( a + 3 b )",
+      "elapsed_ms": 684.9920999957249
+    },
+    {
+      "id": "03-labelled-product-fraction",
+      "text": "\\frac { 2 a b ( a + b ) } { 4 a }",
+      "elapsed_ms": 703.383699990809
+    },
+    {
+      "id": "04-arithmetic",
+      "text": "2 + 3",
+      "elapsed_ms": 392.4733999883756
+    },
+    {
+      "id": "05-signed-arithmetic",
+      "text": "\\left( \\right. + 1 9 \\left( \\right) + \\left( \\left. - 1 4 \\right) \\right)",
+      "elapsed_ms": 927.784499945119
+    },
+    {
+      "id": "06-fraction-equation",
+      "text": "\\frac { x } { 2 } = 3",
+      "elapsed_ms": 520.9866999648511
+    },
+    {
+      "id": "07-quadratic-equation",
+      "text": "2 x ^ { 2 } - 7 x + 3 = 0",
+      "elapsed_ms": 829.7251999611035
+    },
+    {
+      "id": "08-cubic-polynomial",
+      "text": "x ^ { 3 } \\, - 3 x ^ { 2 } \\, + 2 x",
+      "elapsed_ms": 1012.2248999541625
+    },
+    {
+      "id": "09-grouped-exponent",
+      "text": "( x + 1 ) ^ { 2 }",
+      "elapsed_ms": 635.2802999317646
+    },
+    {
+      "id": "10-negative-exponent",
+      "text": "x ^ { - 2 }",
+      "elapsed_ms": 530.7211999315768
+    },
+    {
+      "id": "11-power-grouping",
+      "text": "- _ { \\left( x - 1 \\right) ^ { 2 } }",
+      "elapsed_ms": 685.4822000022978
+    },
+    {
+      "id": "12-radical",
+      "text": "\\sqrt { x ^ { 2 } + 1 }",
+      "elapsed_ms": 578.8933999137953
+    },
+    {
+      "id": "13-cube-root",
+      "text": "\\sqrt { \\frac { 8 } { 2 7 } }",
+      "elapsed_ms": 769.4549999432638
+    },
+    {
+      "id": "14-radical-sign",
+      "text": "\\sqrt { 2 } - \\sqrt { 3 }",
+      "elapsed_ms": 752.1227999823168
+    },
+    {
+      "id": "15-nested-fractions",
+      "text": "\\cfrac { 1 + \\frac { 1 } { x } } { x + 2 }",
+      "elapsed_ms": 858.394099981524
+    },
+    {
+      "id": "16-integral",
+      "text": "\\int 2 x \\mathrm { c o s } \\, \\bigl ( \\, x ^ { 2 } \\, \\bigr ) \\ d x",
+      "elapsed_ms": 1213.1402000086382
+    },
+    {
+      "id": "17-definite-integral",
+      "text": "\\int _ { 0 } ^ { 1 } \\, ( x ^ { 2 } \\, + 1 ) \\, d x",
+      "elapsed_ms": 1002.0341000054032
+    },
+    {
+      "id": "18-integral-fraction",
+      "text": "\\int \\frac { 1 } { x } \\, d x",
+      "elapsed_ms": 713.692200020887
+    },
+    {
+      "id": "19-limit-removable",
+      "text": "\\underset { x \\to 1 } { \\operatorname* { l i m } } \\frac { x ^ { 2 } - 1 } { x - 1 }",
+      "elapsed_ms": 1205.1410999847576
+    },
+    {
+      "id": "20-limit-right",
+      "text": "\\underset { x \\; \\to \\; 1 ^ { + } } { \\operatorname* { l i m } } \\frac { 1 } { x \\; - \\; 1 }",
+      "elapsed_ms": 1236.0393999842927
+    },
+    {
+      "id": "21-limit-infinity",
+      "text": "\\lim _ { x \\rightarrow \\infty } { \\frac { 2 x ^ { 2 } \\, + 1 } { x ^ { 2 } \\, - 3 } }",
+      "elapsed_ms": 1114.5518000703305
+    },
+    {
+      "id": "22-trig-identity",
+      "text": "\\operatorname { s i n } ^ { 2 } \\! x + \\operatorname { c o s } ^ { 2 } \\! x = 1",
+      "elapsed_ms": 1055.958200013265
+    },
+    {
+      "id": "23-tangent",
+      "text": "\\operatorname { t a n } ( \\frac { \\pi } { 4 } )",
+      "elapsed_ms": 808.6370000382885
+    },
+    {
+      "id": "24-log-base",
+      "text": "\\operatorname { l o g } _ { 2 } { ( x - 1 ) } = 3",
+      "elapsed_ms": 836.958899977617
+    },
+    {
+      "id": "25-log-natural",
+      "text": "\\operatorname { l n } \\big ( \\, x y \\, \\big ) \\, = { \\operatorname { l n } } x + { \\operatorname { l n } } y",
+      "elapsed_ms": 1352.6667000260204
+    },
+    {
+      "id": "26-inequality",
+      "text": "x ^ { 2 } \\, - 4 \\leq 0",
+      "elapsed_ms": 848.1321999570355
+    },
+    {
+      "id": "27-explicit-products",
+      "text": "2 \\times ( - 3 ) + 4",
+      "elapsed_ms": 715.6939000124112
+    },
+    {
+      "id": "28-japanese-expand",
+      "text": "( \\, x + 2 \\, ) \\, ( \\, x - 3 \\, )",
+      "elapsed_ms": 807.7151000034064
+    },
+    {
+      "id": "29-japanese-equation",
+      "text": "3 x - 7 = 5",
+      "elapsed_ms": 515.6692999880761
+    },
+    {
+      "id": "30-japanese-derivative",
+      "text": "f ( x ) = \\operatorname { s i n } ( 3 x ^ { 2 } \\, )",
+      "elapsed_ms": 871.1661000270396
+    },
+    {
+      "id": "31-short-fraction-bar",
+      "text": "\\frac { a - b } { 2 }",
+      "elapsed_ms": 686.1041000811383
+    },
+    {
+      "id": "32-dpi-product-fraction",
+      "text": "\\frac { 2 a b ( a + b ) } { 4 a }",
+      "elapsed_ms": 871.2288999231532
+    },
+    {
+      "id": "33-dpi-implicit-products",
+      "text": "3 a ( 2 a \\, - \\, b ) \\, - \\, 2 b ( a \\, + \\, 3 b )",
+      "elapsed_ms": 957.455699914135
+    },
+    {
+      "id": "34-exponential-equation",
+      "text": "2 ^ { t + 1 } = 8",
+      "elapsed_ms": 635.0007000146434
+    }
+  ]
+}

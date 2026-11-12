@@ -1,0 +1,1138 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "electron": "45.2.3",
+    "chromium": "156.0.8078.80",
+    "platform": "win32",
+    "deviceScaleFactor": 1,
+    "fontHashes": {
+      "cambria.ttc": "84e70ccc1664482f4a960442c7a166c91a1b2cf98ff88c33cb73f79403f66d7b",
+      "times.ttf": "931c5de5c70401d9324d5014c123802b4fb753000360ceb2f56c589403cd58c5",
+      "seguisym.ttf": "a4a35dcc62cd30e1a6c97b695ecef83e59d2b149e3af834f6a49f11851d56b37",
+      "YuGothR.ttc": "cd24b5617c1e26572b0a7fe7e558f7121ca42c36f7b50e8d9216ac222a1c0a93"
+    }
+  },
+  "cases": [
+    {
+      "id": "01-labelled-fraction",
+      "category": "fraction",
+      "tags": [
+        "fraction",
+        "polynomial",
+        "label",
+        "exponent",
+        "implicit-multiplication",
+        "minus"
+      ],
+      "latex": "\\frac{x^{2}-5x+6}{x-2}",
+      "canonical": "(x^2-5x+6)/(x-2)",
+      "label": "(1)",
+      "instruction": "",
+      "image": "images/01-labelled-fraction.png",
+      "formulaImage": "images/01-labelled-fraction-formula.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 44,
+        "width": 159,
+        "height": 80
+      },
+      "width": 159,
+      "height": 124,
+      "sha256": "0fb3d03576a3f2e068f54a73f19d502fe443bd5a0db9db78426e9802fc65c30f",
+      "formulaSha256": "9117152727da17e005fbe6b7a5ec7817020a47045a69069531a5ee0259f82bd9",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mfrac linethickness=\"1px\"><mrow><msup><mi>x</mi><mn>2</mn></msup><mo >−</mo><mn>5</mn><mi>x</mi><mo >+</mo><mn>6</mn></mrow><mrow><mi>x</mi><mo >−</mo><mn>2</mn></mrow></mfrac>"
+      }
+    },
+    {
+      "id": "02-implicit-products",
+      "category": "implicit-multiplication",
+      "tags": [
+        "implicit-multiplication",
+        "polynomial",
+        "grouping",
+        "minus"
+      ],
+      "latex": "3a(2a-b)-2b(a+3b)",
+      "canonical": "3a(2a-b)-2b(a+3b)",
+      "label": "",
+      "instruction": "",
+      "image": "images/02-implicit-products.png",
+      "formulaImage": "images/02-implicit-products.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 374,
+        "height": 59
+      },
+      "width": 374,
+      "height": 59,
+      "sha256": "d3d79f6a6c0938a2cf3a6762a6f296c912138d7f7ccc13789c49a85002477cca",
+      "formulaSha256": "d3d79f6a6c0938a2cf3a6762a6f296c912138d7f7ccc13789c49a85002477cca",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><mn>3</mn><mi>a</mi><mrow><mo >(</mo><mn>2</mn><mi>a</mi><mo >−</mo><mi>b</mi><mo >)</mo></mrow><mo >−</mo><mn>2</mn><mi>b</mi><mrow><mo >(</mo><mi>a</mi><mo >+</mo><mn>3</mn><mi>b</mi><mo >)</mo></mrow></mrow>"
+      }
+    },
+    {
+      "id": "03-labelled-product-fraction",
+      "category": "fraction",
+      "tags": [
+        "fraction",
+        "label",
+        "implicit-multiplication",
+        "grouping"
+      ],
+      "latex": "\\frac{2ab(a+b)}{4a}",
+      "canonical": "2ab(a+b)/(4a)",
+      "label": "(1)",
+      "instruction": "",
+      "image": "images/03-labelled-product-fraction.png",
+      "formulaImage": "images/03-labelled-product-fraction-formula.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 44,
+        "width": 237,
+        "height": 127
+      },
+      "width": 237,
+      "height": 171,
+      "sha256": "da3b9eb9f1e394a0cac50dd4ea66023dac73106d60e02ee0aa7e2c4ff9c3b9f0",
+      "formulaSha256": "bd61fd2f8b5378f6a42ad5666f01733669c987f15350d54cefccd89e23c0a046",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mfrac linethickness=\"1.15px\"><mrow><mn>2</mn><mi>a</mi><mi>b</mi><mrow><mo >(</mo><mi>a</mi><mo >+</mo><mi>b</mi><mo >)</mo></mrow></mrow><mrow><mn>4</mn><mi>a</mi></mrow></mfrac>"
+      }
+    },
+    {
+      "id": "04-arithmetic",
+      "category": "arithmetic",
+      "tags": [
+        "arithmetic",
+        "plus"
+      ],
+      "latex": "2+3",
+      "canonical": "2+3",
+      "label": "",
+      "instruction": "",
+      "image": "images/04-arithmetic.png",
+      "formulaImage": "images/04-arithmetic.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 94,
+        "height": 42
+      },
+      "width": 94,
+      "height": 42,
+      "sha256": "784a5e00508956bb8bd4dd0f1b9e7f20f0bf3267843edd8ad66eeca420072aec",
+      "formulaSha256": "784a5e00508956bb8bd4dd0f1b9e7f20f0bf3267843edd8ad66eeca420072aec",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<mrow><mn>2</mn><mo >+</mo><mn>3</mn></mrow>"
+      }
+    },
+    {
+      "id": "05-signed-arithmetic",
+      "category": "arithmetic",
+      "tags": [
+        "arithmetic",
+        "grouping",
+        "minus"
+      ],
+      "latex": "(+19)+(-14)",
+      "canonical": "(+19)+(-14)",
+      "label": "",
+      "instruction": "",
+      "image": "images/05-signed-arithmetic.png",
+      "formulaImage": "images/05-signed-arithmetic.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 271,
+        "height": 52
+      },
+      "width": 271,
+      "height": 52,
+      "sha256": "05ba9bf37c4bd1c5f523c552c31acbe0adb127097ea303324a2764f1e11f0cf9",
+      "formulaSha256": "05ba9bf37c4bd1c5f523c552c31acbe0adb127097ea303324a2764f1e11f0cf9",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 40,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mrow><mrow><mo >(</mo><mo >+</mo><mn>19</mn><mo >)</mo></mrow><mo >+</mo><mrow><mo >(</mo><mo >−</mo><mn>14</mn><mo >)</mo></mrow></mrow>"
+      }
+    },
+    {
+      "id": "06-fraction-equation",
+      "category": "fraction",
+      "tags": [
+        "fraction",
+        "equation"
+      ],
+      "latex": "\\frac{x}{2}=3",
+      "canonical": "x/2=3",
+      "label": "",
+      "instruction": "",
+      "image": "images/06-fraction-equation.png",
+      "formulaImage": "images/06-fraction-equation.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 93,
+        "height": 71
+      },
+      "width": 93,
+      "height": 71,
+      "sha256": "ae9d270ab230db73015c3bae71527973b01946b123397f167fa63c5fe8ec1cd4",
+      "formulaSha256": "ae9d270ab230db73015c3bae71527973b01946b123397f167fa63c5fe8ec1cd4",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><mfrac linethickness=\"1px\"><mi>x</mi><mn>2</mn></mfrac><mo >=</mo><mn>3</mn></mrow>"
+      }
+    },
+    {
+      "id": "07-quadratic-equation",
+      "category": "equation",
+      "tags": [
+        "equation",
+        "polynomial",
+        "exponent",
+        "minus"
+      ],
+      "latex": "2x^{2}-7x+3=0",
+      "canonical": "2x^2-7x+3=0",
+      "label": "",
+      "instruction": "",
+      "image": "images/07-quadratic-equation.png",
+      "formulaImage": "images/07-quadratic-equation.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 305,
+        "height": 70
+      },
+      "width": 305,
+      "height": 70,
+      "sha256": "2575ffeb7e25f28f0c938e2b71381abc0dd1daadfd5b0438cb7d68efb508f723",
+      "formulaSha256": "2575ffeb7e25f28f0c938e2b71381abc0dd1daadfd5b0438cb7d68efb508f723",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mrow><mn>2</mn><msup><mi>x</mi><mn>2</mn></msup><mo >−</mo><mn>7</mn><mi>x</mi><mo >+</mo><mn>3</mn><mo >=</mo><mn>0</mn></mrow>"
+      }
+    },
+    {
+      "id": "08-cubic-polynomial",
+      "category": "polynomial",
+      "tags": [
+        "polynomial",
+        "exponent"
+      ],
+      "latex": "x^{3}-3x^{2}+2x",
+      "canonical": "x^3-3x^2+2x",
+      "label": "",
+      "instruction": "",
+      "image": "images/08-cubic-polynomial.png",
+      "formulaImage": "images/08-cubic-polynomial.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 271,
+        "height": 61
+      },
+      "width": 271,
+      "height": 61,
+      "sha256": "5a2e6451b6dcba7e35f72075fa3495df82894fffb3f6cd596c4dc71684c6a724",
+      "formulaSha256": "5a2e6451b6dcba7e35f72075fa3495df82894fffb3f6cd596c4dc71684c6a724",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<mrow><msup><mi>x</mi><mn>3</mn></msup><mo >−</mo><mn>3</mn><msup><mi>x</mi><mn>2</mn></msup><mo >+</mo><mn>2</mn><mi>x</mi></mrow>"
+      }
+    },
+    {
+      "id": "09-grouped-exponent",
+      "category": "exponent",
+      "tags": [
+        "exponent",
+        "grouping"
+      ],
+      "latex": "(x+1)^{2}",
+      "canonical": "(x+1)^2",
+      "label": "",
+      "instruction": "",
+      "image": "images/09-grouped-exponent.png",
+      "formulaImage": "images/09-grouped-exponent.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 124,
+        "height": 54
+      },
+      "width": 124,
+      "height": 54,
+      "sha256": "a7c70117d48ccadc2a8223ad190669ed549bb1abe7f73e1d3bb361710832d07b",
+      "formulaSha256": "a7c70117d48ccadc2a8223ad190669ed549bb1abe7f73e1d3bb361710832d07b",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<msup><mrow><mo >(</mo><mi>x</mi><mo >+</mo><mn>1</mn><mo >)</mo></mrow><mn>2</mn></msup>"
+      }
+    },
+    {
+      "id": "10-negative-exponent",
+      "category": "exponent",
+      "tags": [
+        "exponent",
+        "minus"
+      ],
+      "latex": "x^{-2}",
+      "canonical": "x^(-2)",
+      "label": "",
+      "instruction": "",
+      "image": "images/10-negative-exponent.png",
+      "formulaImage": "images/10-negative-exponent.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 87,
+        "height": 60
+      },
+      "width": 87,
+      "height": 60,
+      "sha256": "0f9e6ae9d48a71b0e5b499d11910b90409f4333ec9a734c53335ec011c2b88b2",
+      "formulaSha256": "0f9e6ae9d48a71b0e5b499d11910b90409f4333ec9a734c53335ec011c2b88b2",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 40,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<msup><mi>x</mi><mrow><mo >−</mo><mn>2</mn></mrow></msup>"
+      }
+    },
+    {
+      "id": "11-power-grouping",
+      "category": "exponent",
+      "tags": [
+        "exponent",
+        "grouping",
+        "minus"
+      ],
+      "latex": "-(x-1)^{2}",
+      "canonical": "-(x-1)^2",
+      "label": "",
+      "instruction": "",
+      "image": "images/11-power-grouping.png",
+      "formulaImage": "images/11-power-grouping.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 145,
+        "height": 71
+      },
+      "width": 145,
+      "height": 71,
+      "sha256": "0b77015263c484bbb7d5e9d0396bd8fbc0abeb5afe5dc81e1b8db806eac3b7b0",
+      "formulaSha256": "0b77015263c484bbb7d5e9d0396bd8fbc0abeb5afe5dc81e1b8db806eac3b7b0",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mrow><mo >−</mo><msup><mrow><mo >(</mo><mi>x</mi><mo >−</mo><mn>1</mn><mo >)</mo></mrow><mn>2</mn></msup></mrow>"
+      }
+    },
+    {
+      "id": "12-radical",
+      "category": "root",
+      "tags": [
+        "root",
+        "polynomial"
+      ],
+      "latex": "\\sqrt{x^{2}+1}",
+      "canonical": "sqrt(x^2+1)",
+      "label": "",
+      "instruction": "",
+      "image": "images/12-radical.png",
+      "formulaImage": "images/12-radical.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 151,
+        "height": 67
+      },
+      "width": 151,
+      "height": 67,
+      "sha256": "0cafc50102738c2dd79cbe01885152e1adc48cd4365413531e35f2012bf3b5f9",
+      "formulaSha256": "0cafc50102738c2dd79cbe01885152e1adc48cd4365413531e35f2012bf3b5f9",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<msqrt><mrow><msup><mi>x</mi><mn>2</mn></msup><mo >+</mo><mn>1</mn></mrow></msqrt>"
+      }
+    },
+    {
+      "id": "13-cube-root",
+      "category": "root",
+      "tags": [
+        "root",
+        "fraction"
+      ],
+      "latex": "\\sqrt[3]{\\frac{8}{27}}",
+      "canonical": "root(8/27,3)",
+      "label": "",
+      "instruction": "",
+      "image": "images/13-cube-root.png",
+      "formulaImage": "images/13-cube-root.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 105,
+        "height": 166
+      },
+      "width": 105,
+      "height": 166,
+      "sha256": "fc08a73cc422d70fee14cc3a2b94d0c481183148536f03906a97abfab13d44d2",
+      "formulaSha256": "fc08a73cc422d70fee14cc3a2b94d0c481183148536f03906a97abfab13d44d2",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mroot><mfrac linethickness=\"1px\"><mn>8</mn><mn>27</mn></mfrac><mn>3</mn></mroot>"
+      }
+    },
+    {
+      "id": "14-radical-sign",
+      "category": "root",
+      "tags": [
+        "root",
+        "minus"
+      ],
+      "latex": "\\sqrt{2}-\\sqrt{3}",
+      "canonical": "sqrt(2)-sqrt(3)",
+      "label": "",
+      "instruction": "",
+      "image": "images/14-radical-sign.png",
+      "formulaImage": "images/14-radical-sign.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 126,
+        "height": 58
+      },
+      "width": 126,
+      "height": 58,
+      "sha256": "1a0e626b1fb64837224c6859554a3f72f28ec0a7df8a150b432fc5bb2df17c0e",
+      "formulaSha256": "1a0e626b1fb64837224c6859554a3f72f28ec0a7df8a150b432fc5bb2df17c0e",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><msqrt><mrow><mn>2</mn></mrow></msqrt><mo >−</mo><msqrt><mrow><mn>3</mn></mrow></msqrt></mrow>"
+      }
+    },
+    {
+      "id": "15-nested-fractions",
+      "category": "fraction",
+      "tags": [
+        "fraction",
+        "nested-fraction"
+      ],
+      "latex": "\\frac{1+\\frac{1}{x}}{x+2}",
+      "canonical": "(1+1/x)/(x+2)",
+      "label": "",
+      "instruction": "",
+      "image": "images/15-nested-fractions.png",
+      "formulaImage": "images/15-nested-fractions.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 122
+      },
+      "width": 128,
+      "height": 122,
+      "sha256": "7c918a38cdc0d375c1bb477746c80f75728a446c834c72449c46af2d3cdbd1d0",
+      "formulaSha256": "7c918a38cdc0d375c1bb477746c80f75728a446c834c72449c46af2d3cdbd1d0",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 40,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mfrac linethickness=\"1.7px\"><mrow><mn>1</mn><mo >+</mo><mfrac linethickness=\"0.9px\"><mn>1</mn><mi>x</mi></mfrac></mrow><mrow><mi>x</mi><mo >+</mo><mn>2</mn></mrow></mfrac>"
+      }
+    },
+    {
+      "id": "16-integral",
+      "category": "integral",
+      "tags": [
+        "integral",
+        "exponent",
+        "implicit-multiplication"
+      ],
+      "latex": "\\int 2x\\cos(x^{2})\\,dx",
+      "canonical": "integral(2x*cos(x^2),x)",
+      "label": "",
+      "instruction": "",
+      "image": "images/16-integral.png",
+      "formulaImage": "images/16-integral.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 229,
+        "height": 80
+      },
+      "width": 229,
+      "height": 80,
+      "sha256": "6423b6bb6f1b77acc41ac5e0f2625d56196f1159f90a918ec3c608f11a03b8fd",
+      "formulaSha256": "6423b6bb6f1b77acc41ac5e0f2625d56196f1159f90a918ec3c608f11a03b8fd",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<mrow><mo >∫</mo><mn>2</mn><mi>x</mi><mrow><mi mathvariant=\"normal\">cos</mi><mrow><mo >(</mo><msup><mi>x</mi><mn>2</mn></msup><mo >)</mo></mrow></mrow><mrow><mspace width=\"0.22em\"></mspace><mi>d</mi><mi>x</mi></mrow></mrow>"
+      }
+    },
+    {
+      "id": "17-definite-integral",
+      "category": "integral",
+      "tags": [
+        "integral",
+        "bounds",
+        "exponent"
+      ],
+      "latex": "\\int_{0}^{1}(x^{2}+1)\\,dx",
+      "canonical": "integral(0,1,x^2+1,x)",
+      "label": "",
+      "instruction": "",
+      "image": "images/17-definite-integral.png",
+      "formulaImage": "images/17-definite-integral.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 223,
+        "height": 70
+      },
+      "width": 223,
+      "height": 70,
+      "sha256": "6e80bbf093d2f4bacafc68b07a1e057a778f9536f29c8e04169e9b753717b1aa",
+      "formulaSha256": "6e80bbf093d2f4bacafc68b07a1e057a778f9536f29c8e04169e9b753717b1aa",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mrow><msubsup><mo >∫</mo><mn>0</mn><mn>1</mn></msubsup><mrow><mo >(</mo><msup><mi>x</mi><mn>2</mn></msup><mo >+</mo><mn>1</mn><mo >)</mo></mrow><mrow><mspace width=\"0.22em\"></mspace><mi>d</mi><mi>x</mi></mrow></mrow>"
+      }
+    },
+    {
+      "id": "18-integral-fraction",
+      "category": "integral",
+      "tags": [
+        "integral",
+        "fraction"
+      ],
+      "latex": "\\int\\frac{1}{x}\\,dx",
+      "canonical": "integral(1/x,x)",
+      "label": "",
+      "instruction": "",
+      "image": "images/18-integral-fraction.png",
+      "formulaImage": "images/18-integral-fraction.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 151,
+        "height": 97
+      },
+      "width": 151,
+      "height": 97,
+      "sha256": "be4745e4b4edeba502497fef486133577d3ea7c9842c9e6baa9c7ddb3d35e663",
+      "formulaSha256": "be4745e4b4edeba502497fef486133577d3ea7c9842c9e6baa9c7ddb3d35e663",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><mo >∫</mo><mfrac linethickness=\"1px\"><mn>1</mn><mi>x</mi></mfrac><mrow><mspace width=\"0.22em\"></mspace><mi>d</mi><mi>x</mi></mrow></mrow>"
+      }
+    },
+    {
+      "id": "19-limit-removable",
+      "category": "limit",
+      "tags": [
+        "limit",
+        "fraction",
+        "exponent",
+        "minus"
+      ],
+      "latex": "\\lim_{x\\to1}\\frac{x^{2}-1}{x-1}",
+      "canonical": "lim_(x->1)(x^2-1)/(x-1)",
+      "label": "",
+      "instruction": "",
+      "image": "images/19-limit-removable.png",
+      "formulaImage": "images/19-limit-removable.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 185,
+        "height": 112
+      },
+      "width": 185,
+      "height": 112,
+      "sha256": "f23f560177a3abf3ad3ee6185ba5a165a2b23c5b4e73535d66784495d55eaf40",
+      "formulaSha256": "f23f560177a3abf3ad3ee6185ba5a165a2b23c5b4e73535d66784495d55eaf40",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mrow><munder><mi mathvariant=\"normal\">lim</mi><mrow><mi>x</mi><mo >→</mo><mn>1</mn></mrow></munder><mfrac linethickness=\"1px\"><mrow><msup><mi>x</mi><mn>2</mn></msup><mo >−</mo><mn>1</mn></mrow><mrow><mi>x</mi><mo >−</mo><mn>1</mn></mrow></mfrac></mrow>"
+      }
+    },
+    {
+      "id": "20-limit-right",
+      "category": "limit",
+      "tags": [
+        "limit",
+        "fraction",
+        "one-sided"
+      ],
+      "latex": "\\lim_{x\\to1^{+}}\\frac{1}{x-1}",
+      "canonical": "lim_(x->1+)1/(x-1)",
+      "label": "",
+      "instruction": "",
+      "image": "images/20-limit-right.png",
+      "formulaImage": "images/20-limit-right.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 194,
+        "height": 95
+      },
+      "width": 194,
+      "height": 95,
+      "sha256": "19ecf6cce928050f81f9863e60bd8db42e92167d913aaf0338c8822acc182ed7",
+      "formulaSha256": "19ecf6cce928050f81f9863e60bd8db42e92167d913aaf0338c8822acc182ed7",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 40,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<mrow><munder><mi mathvariant=\"normal\">lim</mi><mrow><mi>x</mi><mo >→</mo><msup><mn>1</mn><mo >+</mo></msup></mrow></munder><mfrac linethickness=\"1px\"><mn>1</mn><mrow><mi>x</mi><mo >−</mo><mn>1</mn></mrow></mfrac></mrow>"
+      }
+    },
+    {
+      "id": "21-limit-infinity",
+      "category": "limit",
+      "tags": [
+        "limit",
+        "fraction",
+        "exponent"
+      ],
+      "latex": "\\lim_{x\\to\\infty}\\frac{2x^{2}+1}{x^{2}-3}",
+      "canonical": "lim_(x->infinity)(2x^2+1)/(x^2-3)",
+      "label": "",
+      "instruction": "",
+      "image": "images/21-limit-infinity.png",
+      "formulaImage": "images/21-limit-infinity.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 180,
+        "height": 83
+      },
+      "width": 180,
+      "height": 83,
+      "sha256": "6775fd8750e92fda081e8379066b2a354111792b4e9c329424460446ff1f60d3",
+      "formulaSha256": "6775fd8750e92fda081e8379066b2a354111792b4e9c329424460446ff1f60d3",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mrow><munder><mi mathvariant=\"normal\">lim</mi><mrow><mi>x</mi><mo >→</mo><mo >∞</mo></mrow></munder><mfrac linethickness=\"1px\"><mrow><mn>2</mn><msup><mi>x</mi><mn>2</mn></msup><mo >+</mo><mn>1</mn></mrow><mrow><msup><mi>x</mi><mn>2</mn></msup><mo >−</mo><mn>3</mn></mrow></mfrac></mrow>"
+      }
+    },
+    {
+      "id": "22-trig-identity",
+      "category": "trigonometry",
+      "tags": [
+        "trigonometry",
+        "exponent",
+        "equation"
+      ],
+      "latex": "\\sin^{2}x+\\cos^{2}x=1",
+      "canonical": "(sin(x))^2+(cos(x))^2=1",
+      "label": "",
+      "instruction": "",
+      "image": "images/22-trig-identity.png",
+      "formulaImage": "images/22-trig-identity.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 303,
+        "height": 60
+      },
+      "width": 303,
+      "height": 60,
+      "sha256": "9cd8f8d582b42bf46ed8c3c66be0d069e5c8b4588451c16a8cd727c977985278",
+      "formulaSha256": "9cd8f8d582b42bf46ed8c3c66be0d069e5c8b4588451c16a8cd727c977985278",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><msup><mi mathvariant=\"normal\">sin</mi><mn>2</mn></msup><mi>x</mi><mo >+</mo><msup><mi mathvariant=\"normal\">cos</mi><mn>2</mn></msup><mi>x</mi><mo >=</mo><mn>1</mn></mrow>"
+      }
+    },
+    {
+      "id": "23-tangent",
+      "category": "trigonometry",
+      "tags": [
+        "trigonometry",
+        "fraction",
+        "grouping"
+      ],
+      "latex": "\\tan\\left(\\frac{\\pi}{4}\\right)",
+      "canonical": "tan(pi/4)",
+      "label": "",
+      "instruction": "",
+      "image": "images/23-tangent.png",
+      "formulaImage": "images/23-tangent.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 150,
+        "height": 102
+      },
+      "width": 150,
+      "height": 102,
+      "sha256": "5a2c9e0b9a20f37d9b57aee47e2208604baaed5cef9548e7190a724c7e2797fd",
+      "formulaSha256": "5a2c9e0b9a20f37d9b57aee47e2208604baaed5cef9548e7190a724c7e2797fd",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mrow><mi mathvariant=\"normal\">tan</mi><mrow><mo >(</mo><mfrac linethickness=\"1px\"><mi>π</mi><mn>4</mn></mfrac><mo >)</mo></mrow></mrow>"
+      }
+    },
+    {
+      "id": "24-log-base",
+      "category": "logarithm",
+      "tags": [
+        "logarithm",
+        "equation"
+      ],
+      "latex": "\\log_{2}(x-1)=3",
+      "canonical": "log_2(x-1)=3",
+      "label": "",
+      "instruction": "",
+      "image": "images/24-log-base.png",
+      "formulaImage": "images/24-log-base.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 231,
+        "height": 59
+      },
+      "width": 231,
+      "height": 59,
+      "sha256": "20cfbd222948572863f14957142a7a299649fadf37c1776006a4af80b976d4ff",
+      "formulaSha256": "20cfbd222948572863f14957142a7a299649fadf37c1776006a4af80b976d4ff",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<mrow><msub><mi mathvariant=\"normal\">log</mi><mn>2</mn></msub><mrow><mo >(</mo><mi>x</mi><mo >−</mo><mn>1</mn><mo >)</mo></mrow><mo >=</mo><mn>3</mn></mrow>"
+      }
+    },
+    {
+      "id": "25-log-natural",
+      "category": "logarithm",
+      "tags": [
+        "logarithm",
+        "grouping",
+        "equation"
+      ],
+      "latex": "\\ln(xy)=\\ln x+\\ln y",
+      "canonical": "ln(xy)=ln(x)+ln(y)",
+      "label": "",
+      "instruction": "",
+      "image": "images/25-log-natural.png",
+      "formulaImage": "images/25-log-natural.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 364,
+        "height": 65
+      },
+      "width": 364,
+      "height": 65,
+      "sha256": "d010450fdb97a4e7f0e61afef7f0903bf198128811b27d2ce49f88498dcab997",
+      "formulaSha256": "d010450fdb97a4e7f0e61afef7f0903bf198128811b27d2ce49f88498dcab997",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 40,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mrow><mi mathvariant=\"normal\">ln</mi><mrow><mo >(</mo><mi>x</mi><mi>y</mi><mo >)</mo></mrow><mo >=</mo><mi mathvariant=\"normal\">ln</mi><mi>x</mi><mo >+</mo><mi mathvariant=\"normal\">ln</mi><mi>y</mi></mrow>"
+      }
+    },
+    {
+      "id": "26-inequality",
+      "category": "inequality",
+      "tags": [
+        "inequality",
+        "polynomial",
+        "exponent"
+      ],
+      "latex": "x^{2}-4\\le0",
+      "canonical": "x^2-4<=0",
+      "label": "",
+      "instruction": "",
+      "image": "images/26-inequality.png",
+      "formulaImage": "images/26-inequality.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 143,
+        "height": 54
+      },
+      "width": 143,
+      "height": 54,
+      "sha256": "819caf21d04126dc74941684a106ce38aca294df0528e543eaf2291d1cafbe6a",
+      "formulaSha256": "819caf21d04126dc74941684a106ce38aca294df0528e543eaf2291d1cafbe6a",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><msup><mi>x</mi><mn>2</mn></msup><mo >−</mo><mn>4</mn><mo >≤</mo><mn>0</mn></mrow>"
+      }
+    },
+    {
+      "id": "27-explicit-products",
+      "category": "multiplication",
+      "tags": [
+        "multiplication",
+        "arithmetic",
+        "grouping"
+      ],
+      "latex": "2\\times(-3)+4",
+      "canonical": "2*(-3)+4",
+      "label": "",
+      "instruction": "",
+      "image": "images/27-explicit-products.png",
+      "formulaImage": "images/27-explicit-products.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 236,
+        "height": 71
+      },
+      "width": 236,
+      "height": 71,
+      "sha256": "0d138167c91b4e32d2c66998b59f4b2b308afadc11c8ce755a7b5e7f82017792",
+      "formulaSha256": "0d138167c91b4e32d2c66998b59f4b2b308afadc11c8ce755a7b5e7f82017792",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mrow><mn>2</mn><mo >×</mo><mrow><mo >(</mo><mo >−</mo><mn>3</mn><mo >)</mo></mrow><mo >+</mo><mn>4</mn></mrow>"
+      }
+    },
+    {
+      "id": "28-japanese-expand",
+      "category": "japanese",
+      "tags": [
+        "japanese",
+        "label",
+        "polynomial",
+        "implicit-multiplication"
+      ],
+      "latex": "(x+2)(x-3)",
+      "canonical": "(x+2)(x-3)",
+      "label": "(2)",
+      "instruction": "次の式を展開しなさい",
+      "image": "images/28-japanese-expand.png",
+      "formulaImage": "images/28-japanese-expand-formula.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 88,
+        "width": 354,
+        "height": 61
+      },
+      "width": 354,
+      "height": 149,
+      "sha256": "300ea6c97d7f20ba98ccf12a46226d6606f33aa1c9653468155ccf560812a68b",
+      "formulaSha256": "2888c32b9dada08c58329caeb6c047a3354f4e718d0bea295de279886a53945a",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 10,
+        "scale": 1,
+        "mathml": "<mrow><mrow><mo >(</mo><mi>x</mi><mo >+</mo><mn>2</mn><mo >)</mo></mrow><mrow><mo >(</mo><mi>x</mi><mo >−</mo><mn>3</mn><mo >)</mo></mrow></mrow>"
+      }
+    },
+    {
+      "id": "29-japanese-equation",
+      "category": "japanese",
+      "tags": [
+        "japanese",
+        "label",
+        "equation"
+      ],
+      "latex": "3x-7=5",
+      "canonical": "3x-7=5",
+      "label": "(3)",
+      "instruction": "次の方程式を解きなさい",
+      "image": "images/29-japanese-equation.png",
+      "formulaImage": "images/29-japanese-equation-formula.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 88,
+        "width": 150,
+        "height": 37
+      },
+      "width": 258,
+      "height": 125,
+      "sha256": "ca859c527540fbf0dfbbeca853f5e551af24aa30164fa9078aecb690ea5d0343",
+      "formulaSha256": "d773c540017fdf20e7fbc81b51f6e04e785ecc61690e474832310c79caa4bab6",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 8,
+        "scale": 1,
+        "mathml": "<mrow><mn>3</mn><mi>x</mi><mo >−</mo><mn>7</mn><mo >=</mo><mn>5</mn></mrow>"
+      }
+    },
+    {
+      "id": "30-japanese-derivative",
+      "category": "japanese",
+      "tags": [
+        "japanese",
+        "derivative",
+        "trigonometry",
+        "exponent"
+      ],
+      "latex": "f(x)=\\sin(3x^{2})",
+      "canonical": "f(x)=sin(3x^2)",
+      "label": "",
+      "instruction": "次の関数を微分しなさい",
+      "image": "images/30-japanese-derivative.png",
+      "formulaImage": "images/30-japanese-derivative-formula.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 44,
+        "width": 283,
+        "height": 73
+      },
+      "width": 283,
+      "height": 117,
+      "sha256": "685b5d403d5a0e945f32aade26562a0a8e71b37e15c62d57c396cbc0a3b2c866",
+      "formulaSha256": "21e72722348d3baa7d55f3ee752219566e87d3a7a55305aad01f0ca5c4bf53d4",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 40,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><mi>f</mi><mrow><mo >(</mo><mi>x</mi><mo >)</mo></mrow><mo >=</mo><mi mathvariant=\"normal\">sin</mi><mrow><mo >(</mo><mn>3</mn><msup><mi>x</mi><mn>2</mn></msup><mo >)</mo></mrow></mrow>"
+      }
+    },
+    {
+      "id": "31-short-fraction-bar",
+      "category": "fraction",
+      "tags": [
+        "fraction",
+        "thin-bar",
+        "minus"
+      ],
+      "latex": "\\frac{a-b}{2}",
+      "canonical": "(a-b)/2",
+      "label": "",
+      "instruction": "",
+      "image": "images/31-short-fraction-bar.png",
+      "formulaImage": "images/31-short-fraction-bar.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 105,
+        "height": 98
+      },
+      "width": 105,
+      "height": 98,
+      "sha256": "e7fa96370aa3e4022de256ec00075bfc40f1c190244b996dbe15fb30e1d0ec89",
+      "formulaSha256": "e7fa96370aa3e4022de256ec00075bfc40f1c190244b996dbe15fb30e1d0ec89",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 28,
+        "padding": 19,
+        "scale": 1,
+        "mathml": "<mfrac linethickness=\"0.65px\"><mrow><mi>a</mi><mo >−</mo><mi>b</mi></mrow><mn>2</mn></mfrac>"
+      }
+    },
+    {
+      "id": "32-dpi-product-fraction",
+      "category": "fraction",
+      "tags": [
+        "fraction",
+        "implicit-multiplication",
+        "grouping",
+        "dpi-variant"
+      ],
+      "latex": "\\frac{2ab(a+b)}{4a}",
+      "canonical": "2ab(a+b)/(4a)",
+      "label": "(1)",
+      "instruction": "",
+      "image": "images/32-dpi-product-fraction.png",
+      "formulaImage": "images/32-dpi-product-fraction-formula.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 86,
+        "width": 357,
+        "height": 179
+      },
+      "width": 357,
+      "height": 265,
+      "sha256": "aa179f60dfec35b4b3b4423ec44d09eaa5f98d0ff87c585d7fcfcbdc9eec9a06",
+      "formulaSha256": "3d7fe1e43b5ce2810a29ceafff832c1addea7bbdd52b7f26faaa025d428ad32d",
+      "render": {
+        "font": "Times New Roman",
+        "contextFont": "Yu Gothic",
+        "fontSize": 36,
+        "padding": 10,
+        "scale": 2,
+        "mathml": "<mfrac linethickness=\"1.15px\"><mrow><mn>2</mn><mi>a</mi><mi>b</mi><mrow><mo >(</mo><mi>a</mi><mo >+</mo><mi>b</mi><mo >)</mo></mrow></mrow><mrow><mn>4</mn><mi>a</mi></mrow></mfrac>"
+      }
+    },
+    {
+      "id": "33-dpi-implicit-products",
+      "category": "implicit-multiplication",
+      "tags": [
+        "implicit-multiplication",
+        "polynomial",
+        "minus",
+        "dpi-variant"
+      ],
+      "latex": "3a(2a-b)-2b(a+3b)",
+      "canonical": "3a(2a-b)-2b(a+3b)",
+      "label": "",
+      "instruction": "",
+      "image": "images/33-dpi-implicit-products.png",
+      "formulaImage": "images/33-dpi-implicit-products.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 687,
+        "height": 85
+      },
+      "width": 687,
+      "height": 85,
+      "sha256": "18f9b43a8b1104a10ad107ad34f39e16504b804ed2df5ac743e93466a009e545",
+      "formulaSha256": "18f9b43a8b1104a10ad107ad34f39e16504b804ed2df5ac743e93466a009e545",
+      "render": {
+        "font": "Segoe UI Symbol",
+        "contextFont": "Yu Gothic",
+        "fontSize": 44,
+        "padding": 8,
+        "scale": 1.5,
+        "mathml": "<mrow><mn>3</mn><mi>a</mi><mrow><mo >(</mo><mn>2</mn><mi>a</mi><mo >−</mo><mi>b</mi><mo >)</mo></mrow><mo >−</mo><mn>2</mn><mi>b</mi><mrow><mo >(</mo><mi>a</mi><mo >+</mo><mn>3</mn><mi>b</mi><mo >)</mo></mrow></mrow>"
+      }
+    },
+    {
+      "id": "34-exponential-equation",
+      "category": "exponent",
+      "tags": [
+        "exponent",
+        "equation"
+      ],
+      "latex": "2^{t+1}=8",
+      "canonical": "2^(t+1)=8",
+      "label": "",
+      "instruction": "",
+      "image": "images/34-exponential-equation.png",
+      "formulaImage": "images/34-exponential-equation.png",
+      "formulaRect": {
+        "x": 0,
+        "y": 0,
+        "width": 155,
+        "height": 55
+      },
+      "width": 155,
+      "height": 55,
+      "sha256": "dcf2b39d149b868acce2a4d88c5cd4506b245177657b6e597cb97d3bb76bfd71",
+      "formulaSha256": "dcf2b39d149b868acce2a4d88c5cd4506b245177657b6e597cb97d3bb76bfd71",
+      "render": {
+        "font": "Cambria Math",
+        "contextFont": "Yu Gothic",
+        "fontSize": 32,
+        "padding": 13,
+        "scale": 1,
+        "mathml": "<mrow><msup><mn>2</mn><mrow><mi>t</mi><mo >+</mo><mn>1</mn></mrow></msup><mo >=</mo><mn>8</mn></mrow>"
+      }
+    }
+  ]
+}
