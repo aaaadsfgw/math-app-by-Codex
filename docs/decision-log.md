@@ -1060,3 +1060,18 @@ Guard an automatic write with the Windows clipboard sequence and owner
 captured before screen selection. Compare and write under the same native
 clipboard lock. Keep verified results available for explicit copy when the
 clipboard changed. Cancel outstanding work before it can reach the write.
+
+## D-042: Build structured geometry in an independent branch
+
+**Status:** accepted
+**Date:** 2026-11-13
+
+Geometry uses a versioned explicit input, indexed forward propagation, exact
+numeric values and per-rule verification. The adapter is the boundary for
+shared expression parsing, rational arithmetic, quadratic roots and verified
+linear/system solving. Ambiguous geometry and unsupported numeric classes
+remain terminal when they prevent a justified result.
+
+The branch adds a standalone API and tests. Chrome, Windows, OCR, the
+existing solver and its routing keep their current behavior. Geometry image
+recognition and application integration are separate work.

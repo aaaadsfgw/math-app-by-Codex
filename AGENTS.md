@@ -18,8 +18,11 @@ previously submitted extension.
   below; it may transcribe input but must never answer or verify mathematics.
 - Do not use `eval`, `new Function`, or equivalent dynamic code execution for
   mathematics.
-- Do not add general image recognition, diagram-based geometry solving, or
-  proof generation. The sole image-input exception is a user-selected, tightly
+- The dedicated geometry branch permits a standalone deterministic engine for
+  explicitly structured geometry conditions. Keep it under `js/geometry/`
+  and use its adapter for shared math computations. App routing, image-based
+  geometry, and free-form proof generation are outside this checkpoint.
+  The sole image-input exception is a user-selected, tightly
   cropped, machine-printed single formula. Local OCR may produce an untrusted,
   editable candidate, but that candidate may reach the existing deterministic
   solver in Chrome only after an explicit user confirmation. On Windows an

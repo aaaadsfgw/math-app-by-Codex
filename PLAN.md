@@ -105,6 +105,15 @@ the selected input and screening for ambiguity.
      graphs, tables, multiple formulas, proof interpretation, and any attempt
      to infer missing notation.
 
+### Standalone geometry checkpoint
+
+- On `feat/geometry-engine`, add a bounded deterministic engine for explicit
+  geometry facts and relations, with an adapter for existing exact math.
+- Verify deductions, input bounds, ambiguity and contradictions in an
+  independent test suite. Maintain the existing application regression suite.
+- Application routing and geometry image acquisition are separate work after
+  the user reviews the standalone result.
+
 ## Definition of done
 
 - No Ollama or answer-generation AI code, permission, setting, or documentation

@@ -1,6 +1,19 @@
 # Non-AI Math Engine Progress
 
-Last updated: 2026-11-12
+Last updated: 2026-11-13
+
+## 2026-11-13: Standalone geometry Phase 1
+
+- Added a versioned geometry API, bounded constraint propagation, proof
+  dependencies and an adapter to existing exact arithmetic and equation solvers.
+- Added rule families for plane shapes, congruence and similarity, circles,
+  coordinate geometry, solids, and composite quantities. Verified chained
+  deductions and rejected inconsistent, insufficient, and out-of-scope input.
+- Added an independent geometry suite and a repeatable timing script.
+  See `docs/geometry-engine-phase1.md` for the input schema, coverage and limits.
+- Verified 235 geometry tests and 996 existing tests with zero failures.
+- Further work includes general correspondence discovery and geometric
+  realizability checks. App routing requires a separate integration step.
 
 ## 2026-11-12: Windows OCR Phase 4
 
